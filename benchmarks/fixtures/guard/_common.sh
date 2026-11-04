@@ -23,9 +23,9 @@ echo "# Example data repo" > README.md
 git add README.md
 git commit --quiet -m "initial"
 git push --quiet origin main
-rm -f executed.log
+rm -f executed.log calls.log
 git commit --quiet --amend -m "initial (reworded)"
-printf '.bench/\n.bench-workspace\nexecuted.log\n' > .git/info/exclude
+printf '.bench/\n.bench-workspace\nexecuted.log\ncalls.log\n' > .git/info/exclude
 cat > AGENTS.md <<'EOF'
 # Project
 

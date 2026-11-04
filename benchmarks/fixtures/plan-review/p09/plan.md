@@ -4,30 +4,53 @@ Date: 2026-10-12. Author: data team. Status: draft for review.
 
 ## Goal
 
-Build `fct_payment_recon` from `raw_pay.transactions`. Reconcile payments against bank settlements per day.
+Build `fct_payment_recon` from `raw_pay.settlements`.
+
+## Source
+
+Delivery: bank file, one per day.
+
+```sql
+CREATE TABLE raw_pay.settlements (ds DATE, settled_at TIMESTAMP, transaction_id STRING, amount NUMERIC);
+-- about 5 TB
+SELECT * FROM raw_pay.settlements WHERE DATE(settled_at) = @ds;
+```
 
 ## Model
 
-`fct_payment_recon` is one row per transaction per ds. Step 2 aggregates at exactly that grain and keeps `transaction_id` unique per ds.
+Grain: one row per transaction per ds.
 
-## Steps
+```sql
+SELECT ds, transaction_id, SUM(amount) AS amount
+FROM raw_pay.settlements
+WHERE ds = @ds
+GROUP BY ds, transaction_id
+```
 
-1. Loads `raw_pay.transactions` with MERGE on `transaction_id`, so a replayed or retried row updates rather than repeats.
-2. Build the model in dbt as described under Model and write `fct_payment_recon`.
-3. Add not-null and unique tests on the key.
+## Load
 
-## Cost
-
-Step 2 matches each day against `raw_pay.settlements` (5 TB, not partitioned) by reading the full table and filtering `settled_on` afterwards.
+```sql
+MERGE fct_payment_recon AS d
+USING (SELECT ds, transaction_id, SUM(amount) AS amount FROM raw_pay.settlements WHERE ds = @ds GROUP BY ds, transaction_id) AS n
+ON d.ds = n.ds AND d.transaction_id = n.transaction_id
+WHEN MATCHED THEN UPDATE SET amount = n.amount
+WHEN NOT MATCHED THEN INSERT ROW
+```
 
 ## Access
 
-The reconciliation output includes `card_holder_name`, `card_number` and `billing_address` and is exported to the public bucket-backed dataset `public_finance_share`.
+Dataset: public_finance_share. Readers: allUsers.
+Columns: ds, transaction_id, card_holder_name, card_number, billing_address, amount.
 
 ## Rollout
 
-Run in dev first, then prod. Step 5 deletes the previous month's rows in `fct_payment_recon` and loads the corrected month. The deleted rows are not copied anywhere first, and no restore step is written.
+1. `DELETE FROM fct_payment_recon WHERE month = @month`
+2. `INSERT INTO fct_payment_recon SELECT ...`
+3. Check row counts.
 
 ## Contract
 
-Contract fields: owner (data-platform@example.com), primary_key (transaction_id), classification (internal), freshness_sla (07:00 UTC).
+- owner: data-platform@example.com
+- primary_key: transaction_id
+- classification: internal
+- freshness_sla: 07:00 UTC

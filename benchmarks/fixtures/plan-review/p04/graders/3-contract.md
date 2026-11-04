@@ -3,6 +3,6 @@ type: llm
 weight: 1
 ---
 
-Answer key, category contract. Planted defect: the contract has no primary_key field although the config requires it. Location in the plan: the contract section.
+Answer key, category contract. Planted defect: in the Contract section primary_key is missing, although AGENTS.md requires owner, primary_key, classification and freshness_sla. Location: the Contract section of `dim_newsletter_segments`'s plan.
 
-PASS only if the review names this defect and ties it to the contract section in `dim_newsletter_segments`. Generic advice with no tie to this table or step does not count. FAIL otherwise.
+PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.

@@ -4,30 +4,54 @@ Date: 2026-10-12. Author: data team. Status: draft for review.
 
 ## Goal
 
-Build `fct_web_sessions` from `raw_web.page_views`. Sessionise page views with a 30 minute gap rule.
+Build `fct_web_sessions` from `raw_web.page_views`.
+
+## Source
+
+Delivery: tracker beacons, resent on network failure.
+
+```sql
+CREATE TABLE raw_web.page_views (ds DATE, viewed_at TIMESTAMP, session_id STRING, amount NUMERIC);
+-- about 2.5 TB
+SELECT * FROM raw_web.page_views WHERE DATE(viewed_at) = @ds;
+```
 
 ## Model
 
-`fct_web_sessions` is one row per session per ds. Step 2 aggregates at exactly that grain and keeps `session_id` unique per ds.
+Grain: one row per session per ds.
 
-## Steps
+```sql
+SELECT ds, session_id, SUM(amount) AS amount
+FROM raw_web.page_views
+WHERE ds = @ds
+GROUP BY ds, session_id
+```
 
-1. Inserts new rows from `raw_web.page_views` into `fct_web_sessions` each hour. The tracker retries failed beacons, so the same page view can arrive more than once. There is no key or MERGE.
-2. Build the model in dbt as described under Model and write `fct_web_sessions`.
-3. Add not-null and unique tests on the key.
+## Load
 
-## Cost
-
-`fct_web_sessions` is created without partitioning or clustering. The weekly dashboard query reads the full table of 2.5 billion rows.
+```sql
+INSERT INTO fct_web_sessions
+SELECT ds, session_id, SUM(amount) AS amount
+FROM raw_web.page_views
+WHERE ds = @ds
+GROUP BY ds, session_id
+```
 
 ## Access
 
-The output dataset `public_web_metrics` is shared with allAuthenticatedUsers so partners can use it. `fct_web_sessions` includes `visitor_email` and `ip_address` columns.
+Dataset: public_web_metrics. Readers: allAuthenticatedUsers.
+Columns: ds, session_id, visitor_email, ip_address, amount.
 
 ## Rollout
 
-Run in dev first, then prod. Rollback: restore `fct_web_sessions` from time travel within 7 days, or rebuild the previous ds from `raw_web.page_views` with the same job.
+1. `CREATE SNAPSHOT TABLE fct_web_sessions_bak CLONE fct_web_sessions`
+2. Rebuild `fct_web_sessions` for the ds range.
+3. Check row counts.
+4. To undo: restore from `fct_web_sessions_bak` or time travel (7 days).
 
 ## Contract
 
-Contract fields: owner (data-platform@example.com), primary_key (session_id), classification (internal), freshness_sla (07:00 UTC).
+- owner: data-platform@example.com
+- primary_key: session_id
+- classification: internal
+- freshness_sla: 07:00 UTC

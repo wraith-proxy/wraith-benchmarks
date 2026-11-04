@@ -4,30 +4,54 @@ Date: 2026-10-12. Author: data team. Status: draft for review.
 
 ## Goal
 
-Build `fct_pick_rates` from `raw_wms.pick_events`. Pick rate per picker per shift.
+Build `fct_pick_rates` from `raw_wms.pick_events`.
+
+## Source
+
+Delivery: scanner uploads, once per shift.
+
+```sql
+CREATE TABLE raw_wms.pick_events (ds DATE, picked_at TIMESTAMP, picker_id STRING, amount NUMERIC)
+PARTITION BY ds CLUSTER BY picker_id
+OPTIONS (require_partition_filter = TRUE);
+-- about 400 GB
+SELECT * FROM raw_wms.pick_events WHERE ds = @ds;
+```
 
 ## Model
 
-`fct_pick_rates` is one row per picker per shift. Step 2 averages the rate per picker across all shifts in the week, so the shift dimension is lost.
+Grain: one row per picker per shift per ds.
 
-## Steps
+```sql
+SELECT ds, picker_id, week, SUM(amount) AS amount
+FROM raw_wms.pick_events
+WHERE ds = @ds
+GROUP BY ds, picker_id, week
+```
 
-1. Loads `raw_wms.pick_events` with MERGE on `picker_id, shift_id`, so a replayed or retried row updates rather than repeats.
-2. Build the model in dbt as described under Model and write `fct_pick_rates`.
-3. Add not-null and unique tests on the key.
+## Load
 
-## Cost
-
-`fct_pick_rates` and `raw_wms.pick_events` are partitioned by ds, clustered on `picker_id, shift_id` and set to require a partition filter. Queries are dry run first.
+```sql
+MERGE fct_pick_rates AS d
+USING (SELECT ds, picker_id, shift_id, SUM(amount) AS amount FROM raw_wms.pick_events WHERE ds = @ds GROUP BY ds, picker_id, shift_id) AS n
+ON d.ds = n.ds AND d.picker_id = n.picker_id AND d.shift_id = n.shift_id
+WHEN MATCHED THEN UPDATE SET amount = n.amount
+WHEN NOT MATCHED THEN INSERT ROW
+```
 
 ## Access
 
-`fct_pick_rates` holds no personal data; identifiers are hashed and the dataset is private to the data team.
+Dataset: fct_private. Readers: group:data-team@example.com.
+Columns: ds, picker_id, shift_id, amount. Identifiers are hashed with SHA256.
 
 ## Rollout
 
-Run in dev first, then prod. Step 4 backfills two years by `UPDATE fct_pick_rates` in place. No snapshot is taken and the plan has no restore or rebuild step.
+1. `UPDATE fct_pick_rates SET amount = n.amount FROM (SELECT ...) n WHERE ...` for the last two years
+2. Check row counts.
 
 ## Contract
 
-The contract lists `primary_key`, `classification` and `freshness_sla`, and leaves `owner` as `TBD`.
+- owner: TBD
+- primary_key: picker_id, shift_id
+- classification: internal
+- freshness_sla: 07:00 UTC

@@ -4,30 +4,54 @@ Date: 2026-10-12. Author: data team. Status: draft for review.
 
 ## Goal
 
-Build `fct_mrr` from `raw_billing.subscriptions`. Monthly recurring revenue per subscription per month.
+Build `fct_mrr` from `raw_billing.subscription_changes`.
+
+## Source
+
+Delivery: CDC stream, one row per change, replays after restarts.
+
+```sql
+CREATE TABLE raw_billing.subscription_changes (ds DATE, changed_at TIMESTAMP, subscription_id STRING, amount NUMERIC);
+-- about 3 TB
+SELECT * FROM raw_billing.subscription_changes WHERE DATE(changed_at) = @ds;
+```
 
 ## Model
 
-`fct_mrr` is one row per subscription per month. Step 2 joins `raw_billing.invoice_items` and sums `amount` per customer, so subscriptions of one customer collapse into one row.
+Grain: one row per subscription per ds.
 
-## Steps
+```sql
+SELECT ds, customer_id, month, SUM(amount) AS amount
+FROM raw_billing.subscription_changes
+WHERE ds = @ds
+GROUP BY ds, customer_id, month
+```
 
-1. Appends the nightly CDC extract of `raw_billing.subscriptions`. The CDC job emits an update row per change and the plan keeps every row, with no latest-row selection.
-2. Build the model in dbt as described under Model and write `fct_mrr`.
-3. Add not-null and unique tests on the key.
+## Load
 
-## Cost
-
-Step 3 queries `raw_billing.invoice_items` (3 TB, not partitioned) with `WHERE EXTRACT(MONTH FROM billed_at) = @month` and runs it for every month in a backfill.
+```sql
+INSERT INTO fct_mrr
+SELECT ds, subscription_id, month, SUM(amount) AS amount
+FROM raw_billing.subscription_changes
+WHERE ds = @ds
+GROUP BY ds, subscription_id, month
+```
 
 ## Access
 
-`fct_mrr` holds no personal data; identifiers are hashed and the dataset is private to the data team.
+Dataset: fct_private. Readers: group:data-team@example.com.
+Columns: ds, subscription_id, month, amount. Identifiers are hashed with SHA256.
 
 ## Rollout
 
-Run in dev first, then prod. Rollback: restore `fct_mrr` from time travel within 7 days, or rebuild the previous ds from `raw_billing.subscriptions` with the same job.
+1. `CREATE SNAPSHOT TABLE fct_mrr_bak CLONE fct_mrr`
+2. Rebuild `fct_mrr` for the ds range.
+3. Check row counts.
+4. To undo: restore from `fct_mrr_bak` or time travel (7 days).
 
 ## Contract
 
-Contract fields: owner (data-platform@example.com), primary_key (subscription_id), classification (internal), freshness_sla (07:00 UTC).
+- owner: data-platform@example.com
+- primary_key: subscription_id, month
+- classification: internal
+- freshness_sla: 07:00 UTC

@@ -4,30 +4,54 @@ Date: 2026-10-12. Author: data team. Status: draft for review.
 
 ## Goal
 
-Build `mart_daily_revenue` from `raw_shop.orders`. Join raw_shop.order_lines to get item totals.
+Build `mart_daily_revenue` from `raw_shop.orders`.
+
+## Source
+
+Delivery: Pub/Sub export, retried when an ack times out.
+
+```sql
+CREATE TABLE raw_shop.orders (ds DATE, order_ts TIMESTAMP, order_id STRING, amount NUMERIC);
+-- about 4 TB
+SELECT * FROM raw_shop.orders WHERE DATE(order_ts) = @ds;
+```
 
 ## Model
 
-`mart_daily_revenue` has one row per order per ds. Step 2 joins `raw_shop.orders` to `raw_shop.order_lines` and selects order columns plus `line_total` without aggregating, so each order repeats once per line.
+Grain: one row per order per ds.
 
-## Steps
+```sql
+SELECT o.ds, o.order_id, o.status, l.line_total
+FROM raw_shop.orders AS o
+JOIN raw_shop.order_lines AS l USING (order_id)
+WHERE o.ds = @ds
+```
 
-1. Appends the day's rows from `raw_shop.orders` with a plain INSERT. The source is an at-least-once Pub/Sub export and the plan says retries re-send messages.
-2. Build the model in dbt as described under Model and write `mart_daily_revenue`.
-3. Add not-null and unique tests on the key.
+## Load
 
-## Cost
-
-Step 1 reads all of `raw_shop.orders` (about 4 TB, not partitioned, no clustering) and filters `WHERE order_date = @ds` on every run, four times a day.
+```sql
+INSERT INTO mart_daily_revenue
+SELECT ds, order_id, SUM(amount) AS amount
+FROM raw_shop.orders
+WHERE ds = @ds
+GROUP BY ds, order_id
+```
 
 ## Access
 
-`mart_daily_revenue` holds no personal data; identifiers are hashed and the dataset is private to the data team.
+Dataset: mart_private. Readers: group:data-team@example.com.
+Columns: ds, order_id, amount. Identifiers are hashed with SHA256.
 
 ## Rollout
 
-Run in dev first, then prod. Rollback: restore `mart_daily_revenue` from time travel within 7 days, or rebuild the previous ds from `raw_shop.orders` with the same job.
+1. `CREATE SNAPSHOT TABLE mart_daily_revenue_bak CLONE mart_daily_revenue`
+2. Rebuild `mart_daily_revenue` for the ds range.
+3. Check row counts.
+4. To undo: restore from `mart_daily_revenue_bak` or time travel (7 days).
 
 ## Contract
 
-Contract fields: owner (data-platform@example.com), primary_key (order_id), classification (internal), freshness_sla (07:00 UTC).
+- owner: data-platform@example.com
+- primary_key: order_id
+- classification: internal
+- freshness_sla: 07:00 UTC

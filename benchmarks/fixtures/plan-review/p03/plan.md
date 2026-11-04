@@ -4,30 +4,52 @@ Date: 2026-10-12. Author: data team. Status: draft for review.
 
 ## Goal
 
-Build `dim_ticket_summary` from `raw_support.tickets`. Summarise ticket volume and time to first reply per team.
+Build `dim_ticket_summary` from `raw_support.ticket_events`.
+
+## Source
+
+Delivery: helpdesk webhook, replayed on failure.
+
+```sql
+CREATE TABLE raw_support.ticket_events (ds DATE, event_ts TIMESTAMP, ticket_id STRING, amount NUMERIC);
+-- about 1.8 TB
+SELECT * FROM raw_support.ticket_events WHERE DATE(event_ts) = @ds;
+```
 
 ## Model
 
-`dim_ticket_summary` is one row per ticket per ds. Step 2 aggregates at exactly that grain and keeps `ticket_id` unique per ds.
+Grain: one row per ticket per ds.
 
-## Steps
+```sql
+SELECT ds, ticket_id, SUM(amount) AS amount
+FROM raw_support.ticket_events
+WHERE ds = @ds
+GROUP BY ds, ticket_id
+```
 
-1. Loads `raw_support.tickets` with MERGE on `ticket_id`, so a replayed or retried row updates rather than repeats.
-2. Build the model in dbt as described under Model and write `dim_ticket_summary`.
-3. Add not-null and unique tests on the key.
+## Load
 
-## Cost
-
-Step 2 computes `time_to_first_reply` by scanning all of `raw_support.ticket_events` (1.8 TB, no partitions) for every ticket on each daily run.
+```sql
+MERGE dim_ticket_summary AS d
+USING (SELECT ds, ticket_id, SUM(amount) AS amount FROM raw_support.ticket_events WHERE ds = @ds GROUP BY ds, ticket_id) AS n
+ON d.ds = n.ds AND d.ticket_id = n.ticket_id
+WHEN MATCHED THEN UPDATE SET amount = n.amount
+WHEN NOT MATCHED THEN INSERT ROW
+```
 
 ## Access
 
-The summary keeps `requester_name`, `requester_email` and `requester_phone` so analysts can follow up. The dataset `open_support_data` is public to everyone on the internet.
+Dataset: open_support_data. Readers: allUsers.
+Columns: ds, ticket_id, requester_name, requester_email, requester_phone, amount.
 
 ## Rollout
 
-Run in dev first, then prod. Step 4 runs `CREATE OR REPLACE TABLE dim_ticket_summary` over the live table. There is no snapshot, no backup and no way back if the new logic is wrong.
+1. `CREATE OR REPLACE TABLE dim_ticket_summary AS SELECT ...`
+2. Check row counts.
 
 ## Contract
 
-Contract fields: owner (data-platform@example.com), primary_key (ticket_id), classification (internal), freshness_sla (07:00 UTC).
+- owner: data-platform@example.com
+- primary_key: ticket_id
+- classification: internal
+- freshness_sla: 07:00 UTC

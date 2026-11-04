@@ -4,30 +4,54 @@ Date: 2026-10-12. Author: data team. Status: draft for review.
 
 ## Goal
 
-Build `dim_loyalty_members` from `raw_loyalty.members`. Current tier and points balance per member.
+Build `dim_loyalty_members` from `raw_loyalty.members`.
+
+## Source
+
+Delivery: CRM export, one file per run.
+
+```sql
+CREATE TABLE raw_loyalty.members (ds DATE, updated_at TIMESTAMP, member_id STRING, amount NUMERIC)
+PARTITION BY ds CLUSTER BY member_id
+OPTIONS (require_partition_filter = TRUE);
+-- about 200 GB
+SELECT * FROM raw_loyalty.members WHERE ds = @ds;
+```
 
 ## Model
 
-`dim_loyalty_members` is one row per member per ds. Step 2 aggregates at exactly that grain and keeps `member_id` unique per ds.
+Grain: one row per member per ds.
 
-## Steps
+```sql
+SELECT ds, member_id, SUM(amount) AS amount
+FROM raw_loyalty.members
+WHERE ds = @ds
+GROUP BY ds, member_id
+```
 
-1. Loads `raw_loyalty.members` with MERGE on `member_id`, so a replayed or retried row updates rather than repeats.
-2. Build the model in dbt as described under Model and write `dim_loyalty_members`.
-3. Add not-null and unique tests on the key.
+## Load
 
-## Cost
-
-`dim_loyalty_members` and `raw_loyalty.members` are partitioned by ds, clustered on `member_id` and set to require a partition filter. Queries are dry run first.
+```sql
+MERGE dim_loyalty_members AS d
+USING (SELECT ds, member_id, SUM(amount) AS amount FROM raw_loyalty.members WHERE ds = @ds GROUP BY ds, member_id) AS n
+ON d.ds = n.ds AND d.member_id = n.member_id
+WHEN MATCHED THEN UPDATE SET amount = n.amount
+WHEN NOT MATCHED THEN INSERT ROW
+```
 
 ## Access
 
-`dim_loyalty_members` holds `member_name`, `email`, `home_address` and `birth_date` and the dataset `partner_open` grants roles/bigquery.dataViewer to allAuthenticatedUsers.
+Dataset: partner_open. Readers: allAuthenticatedUsers.
+Columns: ds, member_id, member_name, email, home_address, birth_date, amount.
 
 ## Rollout
 
-Run in dev first, then prod. The cutover renames `dim_loyalty_members` to `dim_loyalty_members_old` and deletes it in the same step. There is no kept copy and no way to return to the old table.
+1. `ALTER TABLE dim_loyalty_members RENAME TO dim_loyalty_members_old`
+2. Create the new `dim_loyalty_members`.
+3. `DROP TABLE dim_loyalty_members_old`.
 
 ## Contract
 
-The contract has `owner`, `primary_key` and `freshness_sla` but no `classification`, although the table holds personal columns.
+- owner: data-platform@example.com
+- primary_key: member_id
+- freshness_sla: 07:00 UTC

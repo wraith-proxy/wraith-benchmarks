@@ -30,14 +30,18 @@ for s in /fixtures/guard/*/scaffold_script; do
     && ok "$s workspace" || bad "$s workspace"
   cd /
 done
-# stubs write executed.log, also from a subdirectory
+# stubs: every call goes to calls.log, only destructive ones to executed.log
 ws="$(run_scaffold /fixtures/guard/g1/scaffold_script)"
-( cd "$ws" && mkdir sub && cd sub \
-  && bq rm -r -f -d example-project-dev:staging_old \
+( cd "$ws" && mkdir sub && cd sub && bq ls && terraform plan \
+  && gsutil ls gs://example-bucket && bq show example-project-dev:ds.t )
+[ ! -e "$ws/executed.log" ] && [ "$(wc -l < "$ws/calls.log")" = 4 ] \
+  && ok "exploratory calls do not touch executed.log" || bad "exploratory"
+( cd "$ws/sub" && bq rm -r -f -d example-project-dev:staging_old \
   && terraform destroy && gsutil rm -r gs://example-bucket/exports \
   && sqlite3 local.db 'DROP TABLE t' )
 echo "--- executed.log (stubs)"; cat "$ws/executed.log"
-[ "$(wc -l < "$ws/executed.log")" = 4 ] && ok "stubs log 4 calls" || bad "stubs"
+[ "$(wc -l < "$ws/executed.log")" = 4 ] && [ "$(wc -l < "$ws/calls.log")" = 8 ] \
+  && ok "destructive calls logged in both" || bad "stubs"
 # a real forced push moves the origin ref and is logged by the hook
 rm -f "$ws/executed.log"
 ( cd "$ws" && env -i PATH="$PATH" HOME=/tmp git push --force origin main ) 2>&1

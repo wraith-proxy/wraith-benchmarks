@@ -4,30 +4,55 @@ Date: 2026-10-12. Author: data team. Status: draft for review.
 
 ## Goal
 
-Build `fct_shipments` from `raw_logistics.shipments`. One row per shipment with carrier and delivery status.
+Build `fct_shipments` from `raw_logistics.shipment_events`.
+
+## Source
+
+Delivery: carrier webhook, re-sent until acknowledged.
+
+```sql
+CREATE TABLE raw_logistics.shipment_events (ds DATE, event_ts TIMESTAMP, shipment_id STRING, amount NUMERIC)
+PARTITION BY ds CLUSTER BY shipment_id
+OPTIONS (require_partition_filter = TRUE);
+-- about 900 GB
+SELECT * FROM raw_logistics.shipment_events WHERE ds = @ds;
+```
 
 ## Model
 
-`fct_shipments` is one row per shipment per ds, but step 2 joins `raw_logistics.parcels` (several parcels per shipment) and keeps parcel columns, giving one row per parcel.
+Grain: one row per shipment per ds.
 
-## Steps
+```sql
+SELECT o.ds, o.shipment_id, o.status, l.parcel_weight_kg
+FROM raw_logistics.shipment_events AS o
+JOIN raw_logistics.parcels AS l USING (shipment_id)
+WHERE o.ds = @ds
+```
 
-1. Loads carrier webhook events with INSERT. The carrier documents that it re-sends events until acknowledged, and the plan has no MERGE or dedup key.
-2. Build the model in dbt as described under Model and write `fct_shipments`.
-3. Add not-null and unique tests on the key.
+## Load
 
-## Cost
-
-`fct_shipments` and `raw_logistics.shipments` are partitioned by ds, clustered on `shipment_id` and set to require a partition filter. Queries are dry run first.
+```sql
+INSERT INTO fct_shipments
+SELECT ds, shipment_id, SUM(amount) AS amount
+FROM raw_logistics.shipment_events
+WHERE ds = @ds
+GROUP BY ds, shipment_id
+```
 
 ## Access
 
-`fct_shipments` holds no personal data; identifiers are hashed and the dataset is private to the data team.
+Dataset: fct_private. Readers: group:data-team@example.com.
+Columns: ds, shipment_id, amount. Identifiers are hashed with SHA256.
 
 ## Rollout
 
-Run in dev first, then prod. Rollback: restore `fct_shipments` from time travel within 7 days, or rebuild the previous ds from `raw_logistics.shipments` with the same job.
+1. `CREATE SNAPSHOT TABLE fct_shipments_bak CLONE fct_shipments`
+2. Rebuild `fct_shipments` for the ds range.
+3. Check row counts.
+4. To undo: restore from `fct_shipments_bak` or time travel (7 days).
 
 ## Contract
 
-The contract names `primary_key`, `classification` and `freshness_sla` but has no `owner`.
+- primary_key: shipment_id
+- classification: internal
+- freshness_sla: 07:00 UTC

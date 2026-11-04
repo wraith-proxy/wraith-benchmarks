@@ -4,30 +4,54 @@ Date: 2026-10-12. Author: data team. Status: draft for review.
 
 ## Goal
 
-Build `snap_inventory` from `raw_wms.stock_levels`. Snapshot stock levels per sku per warehouse each ds.
+Build `snap_inventory` from `raw_wms.stock_levels`.
+
+## Source
+
+Delivery: warehouse system export, once a day.
+
+```sql
+CREATE TABLE raw_wms.stock_levels (ds DATE, counted_at TIMESTAMP, sku STRING, amount NUMERIC)
+PARTITION BY ds CLUSTER BY sku
+OPTIONS (require_partition_filter = TRUE);
+-- about 600 GB
+SELECT * FROM raw_wms.stock_levels WHERE ds = @ds;
+```
 
 ## Model
 
-`snap_inventory` is described as one row per sku per warehouse per ds, but step 2 groups by `sku` only and sums `on_hand`, so warehouses are merged.
+Grain: one row per sku per warehouse per ds.
 
-## Steps
+```sql
+SELECT ds, sku, SUM(amount) AS amount
+FROM raw_wms.stock_levels
+WHERE ds = @ds
+GROUP BY ds, sku
+```
 
-1. Loads `raw_wms.stock_levels` with MERGE on `sku, warehouse_id`, so a replayed or retried row updates rather than repeats.
-2. Build the model in dbt as described under Model and write `snap_inventory`.
-3. Add not-null and unique tests on the key.
+## Load
 
-## Cost
-
-`snap_inventory` and `raw_wms.stock_levels` are partitioned by ds, clustered on `sku, warehouse_id` and set to require a partition filter. Queries are dry run first.
+```sql
+MERGE snap_inventory AS d
+USING (SELECT ds, sku, warehouse_id, SUM(amount) AS amount FROM raw_wms.stock_levels WHERE ds = @ds GROUP BY ds, sku, warehouse_id) AS n
+ON d.ds = n.ds AND d.sku = n.sku AND d.warehouse_id = n.warehouse_id
+WHEN MATCHED THEN UPDATE SET amount = n.amount
+WHEN NOT MATCHED THEN INSERT ROW
+```
 
 ## Access
 
-`snap_inventory` holds no personal data; identifiers are hashed and the dataset is private to the data team.
+Dataset: snap_private. Readers: group:data-team@example.com.
+Columns: ds, sku, warehouse_id, amount. Identifiers are hashed with SHA256.
 
 ## Rollout
 
-Run in dev first, then prod. Step 3 overwrites `snap_inventory` for the current ds with TRUNCATE then INSERT. The previous ds is not kept and the plan has no restore step.
+1. `TRUNCATE TABLE snap_inventory`
+2. `INSERT INTO snap_inventory SELECT ...`
+3. Check row counts.
 
 ## Contract
 
-The contract lists `owner`, `primary_key` and `classification`. There is no `freshness_sla`, although the dashboard needs data by 07:00.
+- owner: data-platform@example.com
+- primary_key: sku, warehouse_id
+- classification: internal

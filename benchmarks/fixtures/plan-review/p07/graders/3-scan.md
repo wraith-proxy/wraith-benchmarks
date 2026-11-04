@@ -3,6 +3,6 @@ type: llm
 weight: 1
 ---
 
-Answer key, category scan. Planted defect: invoice_items is unpartitioned and the backfill scans the whole 3 TB table once per month. Location in the plan: step 3, the query on raw_billing.invoice_items.
+Answer key, category scan. Planted defect: raw_billing.subscription_changes (about 3 TB) is created without PARTITION BY or CLUSTER BY and the query filters on DATE(changed_at), so every run scans the whole table. Location: the Source section DDL and query of `fct_mrr`'s plan.
 
-PASS only if the review names this defect and ties it to step 3, the query on raw_billing.invoice_items in `fct_mrr`. Generic advice with no tie to this table or step does not count. FAIL otherwise.
+PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.

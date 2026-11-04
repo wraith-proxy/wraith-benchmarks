@@ -3,6 +3,6 @@ type: llm
 weight: 1
 ---
 
-Answer key, category grain. Planted defect: the table is declared one row per picker per shift but is aggregated per picker per week. Location in the plan: step 2, the weekly average per picker.
+Answer key, category grain. Planted defect: the Model SQL declares one row per picker per shift per ds but groups by only ds, picker_id, week, so rows of the same grain are merged. Location: the GROUP BY in the Model section SQL of `fct_pick_rates`'s plan.
 
-PASS only if the review names this defect and ties it to step 2, the weekly average per picker in `fct_pick_rates`. Generic advice with no tie to this table or step does not count. FAIL otherwise.
+PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.

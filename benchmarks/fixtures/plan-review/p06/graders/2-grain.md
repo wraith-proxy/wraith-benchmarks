@@ -3,6 +3,6 @@ type: llm
 weight: 1
 ---
 
-Answer key, category grain. Planted defect: the join to parcels turns the declared one row per shipment into one row per parcel. Location in the plan: step 2, the join to raw_logistics.parcels.
+Answer key, category grain. Planted defect: the Model SQL declares one row per shipment per ds but joins raw_logistics.parcels (many rows per shipment) without aggregating, so rows repeat per raw_logistics.parcels row. Location: the Model section SQL, JOIN raw_logistics.parcels with no GROUP BY of `fct_shipments`'s plan.
 
-PASS only if the review names this defect and ties it to step 2, the join to raw_logistics.parcels in `fct_shipments`. Generic advice with no tie to this table or step does not count. FAIL otherwise.
+PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.

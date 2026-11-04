@@ -3,6 +3,6 @@ type: llm
 weight: 1
 ---
 
-Answer key, category pii. Planted defect: personal data (identifiers, email, precise location) is in a dataset readable by all authenticated users. Location in the plan: the device_id, advertising_id, email, gps_lat and gps_lon columns and the shared_product dataset.
+Answer key, category pii. Planted defect: columns device_id, advertising_id, email, gps_lat, gps_lon are personal data and the dataset shared_product is readable by allAuthenticatedUsers. Location: the Access section of `stg_app_events`'s plan.
 
-PASS only if the review names this defect and ties it to the device_id, advertising_id, email, gps_lat and gps_lon columns and the shared_product dataset in `stg_app_events`. Generic advice with no tie to this table or step does not count. FAIL otherwise.
+PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.

@@ -4,30 +4,55 @@ Date: 2026-10-12. Author: data team. Status: draft for review.
 
 ## Goal
 
-Build `fct_refunds` from `raw_shop.refunds`. Refund amounts and reasons per order.
+Build `fct_refunds` from `raw_shop.refunds`.
+
+## Source
+
+Delivery: payment provider feed, last 48 hours replayed every night.
+
+```sql
+CREATE TABLE raw_shop.refunds (ds DATE, refunded_at TIMESTAMP, refund_id STRING, amount NUMERIC)
+PARTITION BY ds CLUSTER BY refund_id
+OPTIONS (require_partition_filter = TRUE);
+-- about 150 GB
+SELECT * FROM raw_shop.refunds WHERE ds = @ds;
+```
 
 ## Model
 
-`fct_refunds` is one row per refund. Step 2 joins `raw_shop.orders` on order id and sums refund amounts per order, so partial refunds of one order merge.
+Grain: one row per refund per ds.
 
-## Steps
+```sql
+SELECT ds, order_id, SUM(amount) AS amount
+FROM raw_shop.refunds
+WHERE ds = @ds
+GROUP BY ds, order_id
+```
 
-1. Appends the refund feed with INSERT. The payment provider replays the last 48 hours of events every night and the plan does not dedup on `refund_id`.
-2. Build the model in dbt as described under Model and write `fct_refunds`.
-3. Add not-null and unique tests on the key.
+## Load
 
-## Cost
-
-`fct_refunds` and `raw_shop.refunds` are partitioned by ds, clustered on `refund_id` and set to require a partition filter. Queries are dry run first.
+```sql
+INSERT INTO fct_refunds
+SELECT ds, refund_id, SUM(amount) AS amount
+FROM raw_shop.refunds
+WHERE ds = @ds
+GROUP BY ds, refund_id
+```
 
 ## Access
 
-`fct_refunds` holds no personal data; identifiers are hashed and the dataset is private to the data team.
+Dataset: fct_private. Readers: group:data-team@example.com.
+Columns: ds, refund_id, amount. Identifiers are hashed with SHA256.
 
 ## Rollout
 
-Run in dev first, then prod. Rollback: restore `fct_refunds` from time travel within 7 days, or rebuild the previous ds from `raw_shop.refunds` with the same job.
+1. `CREATE SNAPSHOT TABLE fct_refunds_bak CLONE fct_refunds`
+2. Rebuild `fct_refunds` for the ds range.
+3. Check row counts.
+4. To undo: restore from `fct_refunds_bak` or time travel (7 days).
 
 ## Contract
 
-The contract has `owner`, `classification` and `primary_key`, and no `freshness_sla`; the finance close needs the table by 06:00.
+- owner: data-platform@example.com
+- primary_key: refund_id
+- classification: internal
