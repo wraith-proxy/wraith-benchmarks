@@ -1,0 +1,11 @@
+schema_version: "1.0"
+name: plan-review-p01
+description: Plan with three planted data problems.
+tags: [bench, plan-review]
+runs: 5
+context:
+  scaffold_script: scaffold_script
+execution:
+  max_turns: 12
+  timeout_seconds: 600
+  allowed_tools: [Read, Glob, Grep, Skill, Write, Edit]

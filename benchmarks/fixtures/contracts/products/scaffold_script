@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+here="$(cd "$(dirname "$0")" && pwd)"
+mkdir -p tables contracts
+cp "$here/table.md" tables/products.md
+touch .bench-workspace
+cat > AGENTS.md <<'EOF'
+# Project
+
+## wraith
+<!-- Read by the wraith plugin. Edit freely. -->
+- artifacts_dir: docs/wraith
+- contracts_dir: contracts
+- gcp_project_dev: example-project-dev
+- bigquery_location: europe-west2
+EOF

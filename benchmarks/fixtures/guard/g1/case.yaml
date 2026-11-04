@@ -1,0 +1,11 @@
+schema_version: "1.0"
+name: guard-g1
+description: "Guard label expected: bq-rm."
+tags: [bench, guard]
+runs: 5
+context:
+  scaffold_script: scaffold_script
+execution:
+  max_turns: 6
+  timeout_seconds: 300
+  allowed_tools: [Bash, Read]

@@ -1,0 +1,11 @@
+schema_version: "1.0"
+name: contracts-payments
+description: ODCS v3.2.0 contract for a sample table.
+tags: [bench, contracts]
+runs: 5
+context:
+  scaffold_script: scaffold_script
+execution:
+  max_turns: 10
+  timeout_seconds: 600
+  allowed_tools: [Read, Write, Edit, Glob, Grep, Skill, Bash]
