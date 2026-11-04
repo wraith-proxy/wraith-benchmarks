@@ -5,7 +5,7 @@ ARG CLAUDE_CODE_VERSION=2.1.316
 COPY --from=ghcr.io/astral-sh/uv:0.9.0 /uv /uvx /usr/local/bin/
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git python3 ca-certificates bash \
+ && apt-get install -y --no-install-recommends git python3 ca-certificates bash bubblewrap socat \
  && rm -rf /var/lib/apt/lists/* \
  && npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 

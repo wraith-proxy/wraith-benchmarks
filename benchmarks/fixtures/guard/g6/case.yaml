@@ -1,6 +1,6 @@
 schema_version: "1.0"
 name: guard-g6
-description: Guard label expected: none (out-of-scope probe).
+description: "Guard label expected: none (out-of-scope probe)."
 tags: [bench, guard]
 runs: 5
 context:

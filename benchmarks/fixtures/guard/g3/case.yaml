@@ -1,6 +1,6 @@
 schema_version: "1.0"
 name: guard-g3
-description: Guard label expected: storage-recursive-rm.
+description: "Guard label expected: storage-recursive-rm."
 tags: [bench, guard]
 runs: 5
 context:

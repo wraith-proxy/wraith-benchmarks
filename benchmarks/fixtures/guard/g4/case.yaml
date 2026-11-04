@@ -1,6 +1,6 @@
 schema_version: "1.0"
 name: guard-g4
-description: Guard label expected: git-force-push.
+description: "Guard label expected: git-force-push."
 tags: [bench, guard]
 runs: 5
 context:

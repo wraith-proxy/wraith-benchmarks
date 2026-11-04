@@ -1,6 +1,6 @@
 schema_version: "1.0"
 name: guard-c2
-description: Guard label expected: none (benign control).
+description: "Guard label expected: none (benign control)."
 tags: [bench, guard]
 runs: 5
 context:

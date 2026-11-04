@@ -33,15 +33,15 @@ def make_repo(tmp):
 
 def run_json(name, n=2, error=None, limit=False):
     def one(err=None):
-        row = {"score": 1, "error": err, "trace_path": ""}
+        row = {"score": 1, "turns": 3, "error": err, "tracePath": ""}
         if err:
-            row["ended_on_api_error"] = True
+            row["endedOnApiError"] = True
         return row
     runs = [one() for _ in range(n)]
     if limit:
         runs[-1] = one(error or "You've hit your usage limit")
-    return {"name": name, "runs": runs,
-            "runs_without": [dict(r) for r in runs]}
+    return {"name": name, "arms": {"with": runs,
+                                   "without": [dict(r) for r in runs]}}
 
 
 def write_use(path, content, name="Write", **extra):
@@ -61,7 +61,7 @@ class ClassifyTest(unittest.TestCase):
 
     def test_limit_words_elsewhere_do_not_count(self):
         case = run_json("guard-g1")
-        case["runs"][0]["error"] = "rate limit mentioned by the agent 0.429"
+        case["arms"]["with"][0]["error"] = "rate limit mentioned by the agent 0.429"
         result = run.classify({"cases": [case]}, 2, ["guard-g1"])
         self.assertFalse(result["usage_limit"])
         self.assertEqual(len(result["failures"]), 1)
@@ -74,11 +74,18 @@ class ClassifyTest(unittest.TestCase):
 
     def test_auth_rejected_and_unrecognised_shape(self):
         case = run_json("guard-g1")
-        case["runs"][0]["auth_rejected"] = True
+        case["arms"]["with"][0]["authRejected"] = True
         self.assertTrue(
             run.classify({"x": case}, 2, ["guard-g1"])["auth_failed"])
         with self.assertRaises(run.BenchError):
             run.classify({"nothing": 1}, 2, ["guard-g1"])
+
+    def test_run_that_never_started_is_a_harness_error(self):
+        case = run_json("guard-g1")
+        case["arms"]["with"][0].update(turns=0, error="sandbox unavailable")
+        result = run.classify({"c": case}, 2, ["guard-g1"])
+        self.assertEqual(result["complete"], [])
+        self.assertEqual(len(result["harness_errors"]), 1)
 
     def test_missing_case_is_incomplete(self):
         result = run.classify({"c": run_json("guard-g1")}, 2,
@@ -104,8 +111,8 @@ class ContractsTest(unittest.TestCase):
                 (Path(tmp) / f"{arm}.jsonl").write_text(
                     json.dumps(write_use("contracts/t.yaml", text)) + "\n")
             case = {"name": "contracts-t",
-                    "runs": [{"trace_path": "with.jsonl"}],
-                    "runs_without": [{"trace_path": "without.jsonl"}]}
+                    "arms": {"with": [{"tracePath": "with.jsonl"}],
+                             "without": [{"tracePath": "without.jsonl"}]}}
             fake = lambda f: {"valid": Path(f).read_text() == "ok",
                               "output": ""}
             rec = run.score_contracts(tmp, {"cases": [case]}, fake)
@@ -115,7 +122,8 @@ class ContractsTest(unittest.TestCase):
 
     def test_unreadable_traces_fail_loud(self):
         with tempfile.TemporaryDirectory() as tmp:
-            case = {"name": "contracts-t", "runs": [{"trace_path": "no"}]}
+            case = {"name": "contracts-t",
+                    "arms": {"with": [{"tracePath": "no"}]}}
             with self.assertRaises(run.BenchError):
                 run.score_contracts(tmp, {"c": case})
 

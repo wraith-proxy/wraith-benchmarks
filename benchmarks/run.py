@@ -55,7 +55,11 @@ def sha256_file(path):
 def case_names(task, pattern=None):
     names = sorted(f"{task}-{d.name}" for d in
                    (HERE / "fixtures" / task).iterdir() if d.is_dir())
-    return [n for n in names if not pattern or fnmatch.fnmatch(n, pattern)]
+    if not pattern:
+        return names
+    # eval matches --case against the full name, so accept a short id too
+    return [n for n in names if fnmatch.fnmatch(n, pattern)
+            or fnmatch.fnmatch(n, f"{task}-{pattern}")]
 
 
 def check_task(task):
@@ -113,14 +117,24 @@ def run_container(full):
 
 # ---- eval JSON
 
+def arms_of(report):
+    """(with, without) run lists. Real shape: report["arms"]["with"|"without"]
+    (seen in a 2.1.316 eval JSON); the older in-memory shape is accepted."""
+    if isinstance(report.get("arms"), dict):
+        return (report["arms"].get("with", []),
+                report["arms"].get("without", []))
+    return report["runs"], report.get("runs_without", [])
+
+
 def find_case_reports(data):
-    """Case reports: dicts with a str "name" and a list "runs"."""
+    """Case reports: dicts with a str "name" and "arms" (or "runs")."""
     found = []
 
     def walk(node):
         if isinstance(node, dict):
-            if isinstance(node.get("name"), str) and isinstance(
-                    node.get("runs"), list):
+            if isinstance(node.get("name"), str) and (
+                    isinstance(node.get("arms"), dict)
+                    or isinstance(node.get("runs"), list)):
                 found.append(node)
             else:
                 for value in node.values():
@@ -135,34 +149,46 @@ def find_case_reports(data):
     return found
 
 
+def flag(run, name):
+    camel = re.sub(r"_(\w)", lambda m: m.group(1).upper(), name)
+    return run.get(name) or run.get(camel)
+
+
 def classify(data, expected_runs, expected_cases):
-    """Split cases into complete and incomplete, flag limit and auth."""
+    """Split cases into complete and incomplete, flag limit and auth.
+
+    A run with an error and no turns never started (for example the
+    sandbox was unavailable). eval still scores it, so it is reported as a
+    harness error and its case is not complete.
+    """
     reports = {r["name"]: r for r in find_case_reports(data)}
     limit = auth = False
-    complete, failures = [], []
+    complete, failures, harness = [], [], []
     for name in expected_cases:
         report = reports.get(name)
         if report is None:
             continue
-        arms = {"with": report["runs"],
-                "without": report.get("runs_without", [])}
+        arms = dict(zip(("with", "without"), arms_of(report)))
         clean = all(len(runs) == expected_runs for runs in arms.values())
         for arm, runs in arms.items():
             for run in runs:
                 if not isinstance(run, dict):
                     raise BenchError("unrecognised eval JSON: run not a dict")
-                if run.get("auth_rejected"):
+                err = str(run.get("error") or "")
+                if flag(run, "auth_rejected"):
                     auth, clean = True, False
-                elif run.get("ended_on_api_error") and USAGE_LIMIT.search(
-                        str(run.get("error") or "")):
+                elif flag(run, "ended_on_api_error") and USAGE_LIMIT.search(
+                        err):
                     limit, clean = True, False
-                elif run.get("error"):
-                    failures.append({"case": name, "arm": arm,
-                                     "error": run["error"]})
+                elif err and not run.get("turns"):
+                    harness.append({"case": name, "arm": arm, "error": err})
+                    clean = False
+                elif err:
+                    failures.append({"case": name, "arm": arm, "error": err})
         if clean:
             complete.append(name)
-    return {"complete": complete, "usage_limit": limit,
-            "auth_failed": auth, "failures": failures}
+    return {"complete": complete, "usage_limit": limit, "auth_failed": auth,
+            "failures": failures, "harness_errors": harness}
 
 
 # ---- transcripts and contracts
@@ -257,8 +283,7 @@ def score_contracts(attempt_dir, data, validator=validate_contract):
     for report in find_case_reports(data):
         table = report["name"].removeprefix("contracts-")
         path = f"contracts/{table}.yaml"
-        arms = {"with": report["runs"],
-                "without": report.get("runs_without", [])}
+        arms = dict(zip(("with", "without"), arms_of(report)))
         cases[report["name"]] = {}
         for arm, runs in arms.items():
             tally = summary.setdefault(arm, {"runs": 0, "first_write_valid": 0,
@@ -268,7 +293,8 @@ def score_contracts(attempt_dir, data, validator=validate_contract):
                 tally["runs"] += 1
                 try:
                     events = load_trace(resolve_trace(
-                        run.get("trace_path") or "", attempt_dir, "contracts"))
+                        run.get("tracePath") or run.get("trace_path") or "",
+                        attempt_dir, "contracts"))
                 except (OSError, BenchError) as err:
                     unavailable += 1
                     rows.append({"error": f"trace unavailable: {err}"})
@@ -324,6 +350,8 @@ def scan_for_secrets(directory, secrets):
 
 def run_task(args, task, tmp, out, state):
     names = case_names(task, args.case)
+    if not names:
+        raise BenchError(f"--case {args.case!r} matches no {task} case")
     prior = state.get(task, {"attempts": [], "complete": {}})
     remaining = [n for n in names if n not in prior["complete"]]
     attempt = len(prior["attempts"]) + 1
@@ -350,6 +378,8 @@ def run_task(args, task, tmp, out, state):
             case_cap = ("<cap>" if cap is None
                         else round(cap * (1 / len(names) if per_case
                                           else 1), 2))
+            if case and len(names) == 1:
+                case = names[0]
             cmd = eval_command(task, args.runs, case_cap, case, json_name=jname)
             full = docker_command(args.image, clone, args.credentials, cmd,
                                   os.getuid(), os.getgid())
@@ -366,9 +396,18 @@ def run_task(args, task, tmp, out, state):
                 raise BenchError(
                     f"no eval JSON for {jname} (exit {code}); see "
                     f"{jname}.log in the results, nothing is scored")
-            result = classify(json.loads(jf.read_text()), args.runs, names)
+            try:
+                result = classify(json.loads(jf.read_text()), args.runs, names)
+            except BenchError as err:
+                scan_for_secrets(results, credential_secrets(args.credentials))
+                shutil.copytree(results, out / task / f"failed-{attempt}")
+                tail = " | ".join(text.strip().splitlines()[-4:])
+                raise BenchError(f"{err} (exit {code}; eval said: {tail})")
             complete += result["complete"]
             failures += result["failures"]
+            if result["harness_errors"]:
+                flags.append("harness_error")
+                failures += result["harness_errors"]
             if result["auth_failed"]:
                 flags.append("auth_failed")
             if result["usage_limit"]:
@@ -389,7 +428,8 @@ def run_task(args, task, tmp, out, state):
                  "failures": failures}
         merged = dict(prior["complete"])
         merged.update({c: rel for c in complete})
-        status = ("auth_failed" if "auth_failed" in flags else
+        status = ("harness_error" if "harness_error" in flags else
+                  "auth_failed" if "auth_failed" in flags else
                   "usage_limit" if "usage_limit" in flags else
                   "done" if set(names) <= set(merged) else "incomplete")
         return {"status": status, "wraith_sha": sha, "complete": merged,
