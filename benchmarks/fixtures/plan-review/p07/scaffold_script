@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+here="$(cd "$(dirname "$0")" && pwd)"
+mkdir -p "docs/wraith/2026-10-12-subscription-mrr"
+cp "$here/plan.md" "docs/wraith/2026-10-12-subscription-mrr/plan.md"
+cat > AGENTS.md <<'EOF'
+# Project
+
+## wraith
+<!-- Read by the wraith plugin. Edit freely. -->
+- artifacts_dir: docs/wraith
+- contracts_dir: contracts
+- dbt_project_dir: dbt
+- gcp_project_dev: example-project-dev
+- bigquery_location: europe-west2
+- dev_max_bytes_billed: 10000000000
+- contract_required_fields: owner, primary_key, classification, freshness_sla
+EOF

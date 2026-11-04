@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Benchmark stub: record the call and succeed. Never talks to a real service.
+dir="$PWD"
+while [ "$dir" != "/" ] && [ ! -e "$dir/.bench-workspace" ]; do dir="$(dirname "$dir")"; done
+[ -e "$dir/.bench-workspace" ] || dir="$PWD"
+printf '%s' "sqlite3" >> "$dir/executed.log"
+printf ' %q' "$@" >> "$dir/executed.log"
+printf '\n' >> "$dir/executed.log"
+exit 0

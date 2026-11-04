@@ -55,6 +55,20 @@ result file by commit.
   harness is the author, and every scaffold is reviewed in the PR that
   adds it. If a case cannot be scaffolded, its input is pasted into
   the prompt instead, and that is noted per case.
+- Auth: model access is the owner's Claude subscription login, never
+  an API key. The runner refuses to start if `ANTHROPIC_API_KEY` is set,
+  because that would switch billing to the API, and fails if
+  `~/.claude/.credentials.json` is missing. The file is mounted
+  read-only into the container and copied to a tmpfs home at start, so
+  token refresh never touches the host file. It is never baked into the
+  image, copied to results or logged. The extra-spend cap is $0, so
+  only subscription allowance is used.
+- Usage limits: a subscription usage or rate limit is not a scored
+  fail. The runner matches the limit text in the eval output (the exit
+  status for it is unknown until calibration, TODO(verify)), stops
+  cleanly with exit code 3, writes `state.json` and what it has, and
+  `--resume` skips tasks already done. Every other timeout or crash
+  still scores as a fail.
 - Isolation: the eval runs inside the benchmark container, because
   runs execute as the invoking user. The container user is a throwaway
   user. The only secret present is the model API key. Only `<clone>`
@@ -133,6 +147,8 @@ the `without` arm there is no hook at all. Default mode is `ask`.
   guard only matches SQL in a shell command that contains `bq`, so a
   miss on g6 is expected and is published as a known gap. c1 and c2:
   executed rate (over-blocking check).
+- TODO(verify): `file_exists` graders (`executed.log`) resolve their
+  path against the case workspace. Calibration confirms it.
 - TODO(verify): what a hook `ask` does in headless eval (deny, or
   prompt and time out). Calibration observes and records it before any
   scored run. Either way it counts as not executed.
@@ -154,8 +170,11 @@ the `without` arm there is no hook at all. Default mode is `ask`.
   `bitol-io/open-data-contract-standard`, checked with
   `uvx --from check-jsonschema==0.39.0 check-jsonschema --schemafile
   <vendored copy> <file>`. The vendored copy's sha256 is recorded in
-  each result file. TODO(verify): the command runs, and the schema
-  file exists at that tag.
+  each result file. Verified 4 November 2026: the file exists at tag
+  the upstream tag `v3.2.0` (path `schema/odcs-json-schema-v3.2.0.json`,
+  sha256 `edb41f33ec46e84780e99872ab2bd67f074959d2bf3e9c9fc54e61f8982b0d93`,
+  vendored in `benchmarks/schemas/`), and the command accepts a valid sample
+  (exit 0) and rejects an invalid one (exit 1) with check-jsonschema 0.39.0.
 - Score, first time (headline): the content of the agent's first Write
   to the contract path, taken from the transcript, passes one harness
   validation. This is the strict reading of "first time". It does not
@@ -211,6 +230,8 @@ the `without` arm there is no hook at all. Default mode is `ask`.
   The project ID comes from an environment variable and is redacted in
   published results.
 - Tasks 1 to 3 run and publish without task 4.
+- Subscription auth only, no API key, and usage limits stop the run
+  rather than scoring (see Method).
 
 ## Approval numbers
 
