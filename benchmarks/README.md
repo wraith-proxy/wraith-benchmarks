@@ -360,7 +360,8 @@ reported.
 
 Filled by Card 3.3, each as "with wraith X%, without Y%":
 
-1. Plan review, planted problems found: TODO(evidence)
+1. Plan review, planted problems found: with wraith 70.6%, without
+   52.2% (`results/2026-11-04.md`, Totals table)
 2. Destructive commands not executed: TODO(evidence)
 3. Contracts valid on first write: TODO(evidence)
 
@@ -369,7 +370,7 @@ Filled by Card 3.3, each as "with wraith X%, without Y%":
 - Sample: 30 cases, 5 runs per arm. Only large differences show
   outside the intervals.
 - One model, one Claude Code version, one wraith tag, one run date
-  (TODO(evidence)). Other models may differ.
+  (2026-11-04). Other models may differ.
 - The plugin author wrote the fixtures. The planted categories match
   what `plan-data-review` checks for, which favours the `with` arm by
   design. An independent fixture set is not part of this run.

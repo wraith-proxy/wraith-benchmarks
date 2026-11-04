@@ -1,0 +1,647 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.316",
+  "startedAt": "2026-11-04T15:42:40.766Z",
+  "durationSeconds": 496,
+  "costUsd": 0.8482938,
+  "partial": false,
+  "suite": {
+    "root": "/work",
+    "ablation": "with-without",
+    "modelOverride": "claude-sonnet-5-5",
+    "judgeModel": "claude-haiku-5-5",
+    "caseFilter": "plan-review-p09",
+    "threshold": 1,
+    "concurrency": 1,
+    "plugins": [
+      {
+        "name": "wraith",
+        "version": "0.5.10",
+        "path": "/work"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "plan-review-p09",
+      "dir": "bench-plan-review/p09",
+      "source": "mixed",
+      "promptMarkdown": "The plan for the payments reconciliation is at docs/wraith/2026-10-12-payments-recon/plan.md. Review it before we build it.",
+      "runsPerCase": 5,
+      "timeoutSeconds": 600,
+      "maxTurns": 12,
+      "graders": [
+        {
+          "name": "1-scan",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category scan. Planted defect: raw_pay.settlements (about 5 TB) is created without PARTITION BY or CLUSTER BY and the query filters on DATE(settled_at), so every run scans the whole table. Location: the Source section DDL and query of `fct_payment_recon`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category scan. Planted defect: raw_pay.settlements (about 5 TB) is created without PARTITION BY or CLUSTER BY and the query filters on DATE(settled_at), so every run scans the whole table. Location: the Source section DDL and query of `fct_payment_recon`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "2-pii",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category pii. Planted defect: columns card_holder_name, card_number, billing_address are personal data and the dataset public_finance_share is readable by allUsers. Location: the Access section of `fct_payment_recon`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category pii. Planted defect: columns card_holder_name, card_number, billing_address are personal data and the dataset public_finance_share is readable by allUsers. Location: the Access section of `fct_payment_recon`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "3-rollback",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category rollback. Planted defect: the Rollout changes the live table (DELETE then INSERT) with no snapshot, clone or restore step, so there is no way back. Location: the Rollout section (DELETE then INSERT) of `fct_payment_recon`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category rollback. Planted defect: the Rollout changes the live table (DELETE then INSERT) with no snapshot, clone or restore step, so there is no way back. Location: the Rollout section (DELETE then INSERT) of `fct_payment_recon`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 11,
+            "costUsd": 0.14497200000000002,
+            "judgeCostUsd": 0.0012774000000000001,
+            "durationSeconds": 61,
+            "startedAt": "2026-11-04T15:42:40.802Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-MMTxgN/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  true
+                ],
+                "evidence": "I've appended a data review and an infra review to `plan.md`. Both verdicts are **NOT READY**. I didn't touch the rest of the plan, so the fixes are yours to make.\n\n**Blockers**\n1. **Public card data.** Access grants `allUsers` on a dataset containing `card_number`, `card_holder_name` and `billing_address`, while the contract says `classification: internal`. Drop `allUsers` and `card_number`, name groups as readers, and run `wraith:security-audit`.\n2. **Columns with no source.** Those three columns aren't in the source table or the model.\n3. **Rollout isn't safe to rerun.**\n   - It deletes by `month`, a column that doesn't exist, while the grain is per `ds`.\n   - Delete then insert isn't atomic.\n   - There's no backfill path.\n4. **Full scan of 5 TB.** The source query filters on `DATE(settled_at)` and the model filters on `ds`, and the plan states no partitioning. If nothing prunes, a run scans about 5e12 bytes against the dev cap of 1e10, which is 500 times over.\n\n**Should-fix**\n- The MERGE never deletes rows that vanish from a corrected bank file, so rerunning a `ds` can give different output. It also scans the whole target.\n- Redelivered files would double count in `SUM(amount)`.\n- The contract key should be `(ds, transaction_id)`, and the contract has no schema or quality rules.\n- The plan names no consumer, rollback, runner identity or alerts.\n\n**Caveats**\n- I didn't run any dry runs. `raw_pay.settlements` isn't reachable here, so the cost figure comes from the plan's own \"about 5 TB\", not a measurement.\n- The repo has no existing model that already does this, so Step 0 found no premise blocker.\n- AGENTS.md is missing `region`, `gcp_project_prod`, `deploy_method` and `terraform_dir`, so I couldn't check region against the BigQuery location. Please give me those values, or run `wraith:setup`.\n\nDo you want me to grill the revised plan once you've fixed the blockers? I haven't done that yet."
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I've appended a data review and an infra review to `plan.md`. Both verdicts are **NOT READY**. I didn't touch the rest of the plan, so the fixes are yours to make.\n\n**Blockers**\n1. **Public card data.** Access grants `allUsers` on a dataset containing `card_number`, `card_holder_name` and `billing_address`, while the contract says `classification: internal`. Drop `allUsers` and `card_number`, name groups as readers, and run `wraith:security-audit`.\n2. **Columns with no source.** Those three columns aren't in the source table or the model.\n3. **Rollout isn't safe to rerun.**\n   - It deletes by `month`, a column that doesn't exist, while the grain is per `ds`.\n   - Delete then insert isn't atomic.\n   - There's no backfill path.\n4. **Full scan of 5 TB.** The source query filters on `DATE(settled_at)` and the model filters on `ds`, and the plan states no partitioning. If nothing prunes, a run scans about 5e12 bytes against the dev cap of 1e10, which is 500 times over.\n\n**Should-fix**\n- The MERGE never deletes rows that vanish from a corrected bank file, so rerunning a `ds` can give different output. It also scans the whole target.\n- Redelivered files would double count in `SUM(amount)`.\n- The contract key should be `(ds, transaction_id)`, and the contract has no schema or quality rules.\n- The plan names no consumer, rollback, runner identity or alerts.\n\n**Caveats**\n- I didn't run any dry runs. `raw_pay.settlements` isn't reachable here, so the cost figure comes from the plan's own \"about 5 TB\", not a measurement.\n- The repo has no existing model that already does this, so Step 0 found no premise blocker.\n- AGENTS.md is missing `region`, `gcp_project_prod`, `deploy_method` and `terraform_dir`, so I couldn't check region against the BigQuery location. Please give me those values, or run `wraith:setup`.\n\nDo you want me to grill the revised plan once you've fixed the blockers? I haven't done that yet."
+              },
+              {
+                "name": "3-rollback",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I've appended a data review and an infra review to `plan.md`. Both verdicts are **NOT READY**. I didn't touch the rest of the plan, so the fixes are yours to make.\n\n**Blockers**\n1. **Public card data.** Access grants `allUsers` on a dataset containing `card_number`, `card_holder_name` and `billing_address`, while the contract says `classification: internal`. Drop `allUsers` and `card_number`, name groups as readers, and run `wraith:security-audit`.\n2. **Columns with no source.** Those three columns aren't in the source table or the model.\n3. **Rollout isn't safe to rerun.**\n   - It deletes by `month`, a column that doesn't exist, while the grain is per `ds`.\n   - Delete then insert isn't atomic.\n   - There's no backfill path.\n4. **Full scan of 5 TB.** The source query filters on `DATE(settled_at)` and the model filters on `ds`, and the plan states no partitioning. If nothing prunes, a run scans about 5e12 bytes against the dev cap of 1e10, which is 500 times over.\n\n**Should-fix**\n- The MERGE never deletes rows that vanish from a corrected bank file, so rerunning a `ds` can give different output. It also scans the whole target.\n- Redelivered files would double count in `SUM(amount)`.\n- The contract key should be `(ds, transaction_id)`, and the contract has no schema or quality rules.\n- The plan names no consumer, rollback, runner identity or alerts.\n\n**Caveats**\n- I didn't run any dry runs. `raw_pay.settlements` isn't reachable here, so the cost figure comes from the plan's own \"about 5 TB\", not a measurement.\n- The repo has no existing model that already does this, so Step 0 found no premise blocker.\n- AGENTS.md is missing `region`, `gcp_project_prod`, `deploy_method` and `terraform_dir`, so I couldn't check region against the BigQuery location. Please give me those values, or run `wraith:setup`.\n\nDo you want me to grill the revised plan once you've fixed the blockers? I haven't done that yet."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 7,
+            "costUsd": 0.118841,
+            "judgeCostUsd": 0.0015106999999999994,
+            "durationSeconds": 50,
+            "startedAt": "2026-11-04T15:43:42.274Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-K9Rnp5/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-04)` section to `plan.md`. The verdict is **NOT READY**, with four blockers.\n\n**Blockers**\n1. **Personal data is public.** The Access section gives `allUsers` read access to `public_finance_share`. That dataset includes `card_number`, `card_holder_name` and `billing_address`. The model SQL doesn't select those columns, so the Access section and the Model section also contradict each other. I'd also run `wraith:security-audit` on this.\n2. **The contract is wrong.**\n   - It says `classification: internal` for card data.\n   - It lives inline in the plan, not as a file in `contracts/`.\n   - Its `primary_key: transaction_id` doesn't match the grain `(ds, transaction_id)`.\n3. **The rollout isn't safe to rerun.**\n   - Step 1 deletes `WHERE month = @month`, but the table has no `month` column.\n   - Delete then insert isn't atomic.\n   - The plan has no backfill path and no rollback.\n4. **Cost is unbounded.**\n   - The 5 TB source has no stated partitioning, clustering or `require_partition_filter`.\n   - The Source query filters `DATE(settled_at)` and the model filters `ds`. The function on `settled_at` won't prune a `ds` partition.\n   - If the table is unpartitioned, each run scans all 5 TB. That is about 500 times the 10 GB `dev_max_bytes_billed`.\n\n**Should-fix items**\n- The plan names no consumer, and it doesn't say what the payments are reconciled against.\n- `ds` and `settled_at` are never related, and late or re-delivered rows aren't handled. `SUM(amount)` would hide a re-delivered file by double counting.\n- The MERGE never removes rows that disappear on a rerun.\n- There are no tests and no source freshness check.\n- Downstream consumers aren't listed.\n\n**What I didn't do**\n- **No dry-run.** The table and queries don't exist in `example-project-dev`, so the 5 TB cost figure is an estimate from the plan's \"about 5 TB\", not measured bytes.\n- **No existing model found.** A repo search for `settlements` and `payment_recon` found only this plan.\n- **No vendor second pass.** I didn't run the optional Google vendor skills.\n\nI changed only the appended section. The plan's author needs to resolve the blockers, and then I can re-review."
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-04)` section to `plan.md`. The verdict is **NOT READY**, with four blockers.\n\n**Blockers**\n1. **Personal data is public.** The Access section gives `allUsers` read access to `public_finance_share`. That dataset includes `card_number`, `card_holder_name` and `billing_address`. The model SQL doesn't select those columns, so the Access section and the Model section also contradict each other. I'd also run `wraith:security-audit` on this.\n2. **The contract is wrong.**\n   - It says `classification: internal` for card data.\n   - It lives inline in the plan, not as a file in `contracts/`.\n   - Its `primary_key: transaction_id` doesn't match the grain `(ds, transaction_id)`.\n3. **The rollout isn't safe to rerun.**\n   - Step 1 deletes `WHERE month = @month`, but the table has no `month` column.\n   - Delete then insert isn't atomic.\n   - The plan has no backfill path and no rollback.\n4. **Cost is unbounded.**\n   - The 5 TB source has no stated partitioning, clustering or `require_partition_filter`.\n   - The Source query filters `DATE(settled_at)` and the model filters `ds`. The function on `settled_at` won't prune a `ds` partition.\n   - If the table is unpartitioned, each run scans all 5 TB. That is about 500 times the 10 GB `dev_max_bytes_billed`.\n\n**Should-fix items**\n- The plan names no consumer, and it doesn't say what the payments are reconciled against.\n- `ds` and `settled_at` are never related, and late or re-delivered rows aren't handled. `SUM(amount)` would hide a re-delivered file by double counting.\n- The MERGE never removes rows that disappear on a rerun.\n- There are no tests and no source freshness check.\n- Downstream consumers aren't listed.\n\n**What I didn't do**\n- **No dry-run.** The table and queries don't exist in `example-project-dev`, so the 5 TB cost figure is an estimate from the plan's \"about 5 TB\", not measured bytes.\n- **No existing model found.** A repo search for `settlements` and `payment_recon` found only this plan.\n- **No vendor second pass.** I didn't run the optional Google vendor skills.\n\nI changed only the appended section. The plan's author needs to resolve the blockers, and then I can re-review."
+              },
+              {
+                "name": "3-rollback",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-04)` section to `plan.md`. The verdict is **NOT READY**, with four blockers.\n\n**Blockers**\n1. **Personal data is public.** The Access section gives `allUsers` read access to `public_finance_share`. That dataset includes `card_number`, `card_holder_name` and `billing_address`. The model SQL doesn't select those columns, so the Access section and the Model section also contradict each other. I'd also run `wraith:security-audit` on this.\n2. **The contract is wrong.**\n   - It says `classification: internal` for card data.\n   - It lives inline in the plan, not as a file in `contracts/`.\n   - Its `primary_key: transaction_id` doesn't match the grain `(ds, transaction_id)`.\n3. **The rollout isn't safe to rerun.**\n   - Step 1 deletes `WHERE month = @month`, but the table has no `month` column.\n   - Delete then insert isn't atomic.\n   - The plan has no backfill path and no rollback.\n4. **Cost is unbounded.**\n   - The 5 TB source has no stated partitioning, clustering or `require_partition_filter`.\n   - The Source query filters `DATE(settled_at)` and the model filters `ds`. The function on `settled_at` won't prune a `ds` partition.\n   - If the table is unpartitioned, each run scans all 5 TB. That is about 500 times the 10 GB `dev_max_bytes_billed`.\n\n**Should-fix items**\n- The plan names no consumer, and it doesn't say what the payments are reconciled against.\n- `ds` and `settled_at` are never related, and late or re-delivered rows aren't handled. `SUM(amount)` would hide a re-delivered file by double counting.\n- The MERGE never removes rows that disappear on a rerun.\n- There are no tests and no source freshness check.\n- Downstream consumers aren't listed.\n\n**What I didn't do**\n- **No dry-run.** The table and queries don't exist in `example-project-dev`, so the 5 TB cost figure is an estimate from the plan's \"about 5 TB\", not measured bytes.\n- **No existing model found.** A repo search for `settlements` and `payment_recon` found only this plan.\n- **No vendor second pass.** I didn't run the optional Google vendor skills.\n\nI changed only the appended section. The plan's author needs to resolve the blockers, and then I can re-review."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 0.1266604,
+            "judgeCostUsd": 0.0017098000000000005,
+            "durationSeconds": 62,
+            "startedAt": "2026-11-04T15:44:32.486Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-864JxP/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I appended a `## Data review (2026-11-04)` section to `plan.md`. The verdict is **NOT READY**, because of five blockers.\n\n**Blockers**\n1. **Public access to card data.** The plan grants `allUsers` read on `public_finance_share`. The column list includes `card_number`, `card_holder_name` and `billing_address`. Neither the source nor the model SQL contains those columns, so they look like a mistake or scope creep.\n2. **Wrong classification.** The contract says `internal`, but those columns are cardholder data. The plan has no policy tags and no erasure path.\n3. **Broken rollout.** Step 1 runs `DELETE ... WHERE month = @month`, but the table has no `month` column. Delete then insert is not atomic, so a failure between them leaves the table empty. The plan also has no rollback, and the rollout contradicts the MERGE in the Load section.\n4. **Cost.** The plan gives no partitioning, clustering or `require_partition_filter` for a roughly 5 TB table. The source query filters on `DATE(settled_at)`, which won't prune a `ds` partition. If the table is unpartitioned, each run costs about $31, assuming on-demand pricing of about $6.25/TB. That is arithmetic on the plan's \"about 5 TB\", not a dry run. The table isn't reachable from here, so I couldn't do one. 5 TB is also 500 times the 10 GB dev limit.\n5. **Key mismatch.** The grain is one row per transaction per `ds`, but the contract's primary key is `transaction_id` alone. It should be `(ds, transaction_id)`.\n\n**Should-fix**\n- Summing `amount` double counts if a bank file is delivered twice, and nothing catches it.\n- The MERGE doesn't prune the target by partition, and it never deletes stale rows for a `ds`.\n- The plan doesn't say how late-arriving rows are handled.\n- No consumer is named, and the contract has no schema or quality rules.\n- The plan never says what is reconciled against what, and it lists no downstream models.\n\nThe repo has no dbt project, contracts directory or existing `fct_payment_recon`, so there is no premise blocker. For the same reason I couldn't run `dbt ls`.\n\nItem 1 is the one to settle first, since the other fixes depend on whether card data stays in the table. Do you want me to draft a revised plan, or grill you on the open design questions?"
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I appended a `## Data review (2026-11-04)` section to `plan.md`. The verdict is **NOT READY**, because of five blockers.\n\n**Blockers**\n1. **Public access to card data.** The plan grants `allUsers` read on `public_finance_share`. The column list includes `card_number`, `card_holder_name` and `billing_address`. Neither the source nor the model SQL contains those columns, so they look like a mistake or scope creep.\n2. **Wrong classification.** The contract says `internal`, but those columns are cardholder data. The plan has no policy tags and no erasure path.\n3. **Broken rollout.** Step 1 runs `DELETE ... WHERE month = @month`, but the table has no `month` column. Delete then insert is not atomic, so a failure between them leaves the table empty. The plan also has no rollback, and the rollout contradicts the MERGE in the Load section.\n4. **Cost.** The plan gives no partitioning, clustering or `require_partition_filter` for a roughly 5 TB table. The source query filters on `DATE(settled_at)`, which won't prune a `ds` partition. If the table is unpartitioned, each run costs about $31, assuming on-demand pricing of about $6.25/TB. That is arithmetic on the plan's \"about 5 TB\", not a dry run. The table isn't reachable from here, so I couldn't do one. 5 TB is also 500 times the 10 GB dev limit.\n5. **Key mismatch.** The grain is one row per transaction per `ds`, but the contract's primary key is `transaction_id` alone. It should be `(ds, transaction_id)`.\n\n**Should-fix**\n- Summing `amount` double counts if a bank file is delivered twice, and nothing catches it.\n- The MERGE doesn't prune the target by partition, and it never deletes stale rows for a `ds`.\n- The plan doesn't say how late-arriving rows are handled.\n- No consumer is named, and the contract has no schema or quality rules.\n- The plan never says what is reconciled against what, and it lists no downstream models.\n\nThe repo has no dbt project, contracts directory or existing `fct_payment_recon`, so there is no premise blocker. For the same reason I couldn't run `dbt ls`.\n\nItem 1 is the one to settle first, since the other fixes depend on whether card data stays in the table. Do you want me to draft a revised plan, or grill you on the open design questions?"
+              },
+              {
+                "name": "3-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I appended a `## Data review (2026-11-04)` section to `plan.md`. The verdict is **NOT READY**, because of five blockers.\n\n**Blockers**\n1. **Public access to card data.** The plan grants `allUsers` read on `public_finance_share`. The column list includes `card_number`, `card_holder_name` and `billing_address`. Neither the source nor the model SQL contains those columns, so they look like a mistake or scope creep.\n2. **Wrong classification.** The contract says `internal`, but those columns are cardholder data. The plan has no policy tags and no erasure path.\n3. **Broken rollout.** Step 1 runs `DELETE ... WHERE month = @month`, but the table has no `month` column. Delete then insert is not atomic, so a failure between them leaves the table empty. The plan also has no rollback, and the rollout contradicts the MERGE in the Load section.\n4. **Cost.** The plan gives no partitioning, clustering or `require_partition_filter` for a roughly 5 TB table. The source query filters on `DATE(settled_at)`, which won't prune a `ds` partition. If the table is unpartitioned, each run costs about $31, assuming on-demand pricing of about $6.25/TB. That is arithmetic on the plan's \"about 5 TB\", not a dry run. The table isn't reachable from here, so I couldn't do one. 5 TB is also 500 times the 10 GB dev limit.\n5. **Key mismatch.** The grain is one row per transaction per `ds`, but the contract's primary key is `transaction_id` alone. It should be `(ds, transaction_id)`.\n\n**Should-fix**\n- Summing `amount` double counts if a bank file is delivered twice, and nothing catches it.\n- The MERGE doesn't prune the target by partition, and it never deletes stale rows for a `ds`.\n- The plan doesn't say how late-arriving rows are handled.\n- No consumer is named, and the contract has no schema or quality rules.\n- The plan never says what is reconciled against what, and it lists no downstream models.\n\nThe repo has no dbt project, contracts directory or existing `fct_payment_recon`, so there is no premise blocker. For the same reason I couldn't run `dbt ls`.\n\nItem 1 is the one to settle first, since the other fixes depend on whether card data stays in the table. Do you want me to draft a revised plan, or grill you on the open design questions?"
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.1139023,
+            "judgeCostUsd": 0.0022196000000000004,
+            "durationSeconds": 88,
+            "startedAt": "2026-11-04T15:45:34.788Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-ACrM1h/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Verdict: NOT READY.** I appended a `## Data review (2026-11-04)` section to `plan.md`. I didn't change the rest of the plan. I didn't run a dry run, so the cost figures are arithmetic from the plan's \"about 5 TB\", not measured.\n\n**Blockers**\n1. **Public card data (checklist item 7).** `public_finance_share` is readable by `allUsers` and lists `card_number`, `card_holder_name` and `billing_address`. The contract says `classification: internal`. Those columns also don't appear in the source table or the model.\n2. **Rollout (item 10).**\n   - `DELETE ... WHERE month = @month` references a column that doesn't exist. It also works per month, while the MERGE works per `ds`.\n   - The rollout steps don't match the load.\n   - No rollback is written.\n3. **Cost (item 6).**\n   - The source table has no partitioning or clustering, so every run scans about 5 TB. That is roughly 500 times the dev limit of 10 GB.\n   - `DATE(settled_at) = @ds` doesn't prune partitions either.\n\n**Should fix**\n- **Key:** The contract's primary key is `transaction_id` alone, but the grain is per `ds`. `SUM(amount)` would double count if the bank redelivers a file.\n- **Reruns:** The MERGE never removes rows that disappear from a rerun, so reruns can differ.\n- **Contract:** No contract file exists yet, and the plan doesn't say whether it is additive or breaking.\n- **Quality:** The only check is \"check row counts\". The 07:00 UTC SLA isn't tied to when the bank file arrives.\n- **Late data and consumers:** Late-arriving data is not handled. No consumer or downstream models are named.\n\nOnce you've fixed the blockers, I'd run `wraith:security-audit` on the access section. I can draft the plan edits if you want. The access change and the `ds` definition (file date or settlement date) are your calls."
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  false
+                ],
+                "evidence": "**Verdict: NOT READY.** I appended a `## Data review (2026-11-04)` section to `plan.md`. I didn't change the rest of the plan. I didn't run a dry run, so the cost figures are arithmetic from the plan's \"about 5 TB\", not measured.\n\n**Blockers**\n1. **Public card data (checklist item 7).** `public_finance_share` is readable by `allUsers` and lists `card_number`, `card_holder_name` and `billing_address`. The contract says `classification: internal`. Those columns also don't appear in the source table or the model.\n2. **Rollout (item 10).**\n   - `DELETE ... WHERE month = @month` references a column that doesn't exist. It also works per month, while the MERGE works per `ds`.\n   - The rollout steps don't match the load.\n   - No rollback is written.\n3. **Cost (item 6).**\n   - The source table has no partitioning or clustering, so every run scans about 5 TB. That is roughly 500 times the dev limit of 10 GB.\n   - `DATE(settled_at) = @ds` doesn't prune partitions either.\n\n**Should fix**\n- **Key:** The contract's primary key is `transaction_id` alone, but the grain is per `ds`. `SUM(amount)` would double count if the bank redelivers a file.\n- **Reruns:** The MERGE never removes rows that disappear from a rerun, so reruns can differ.\n- **Contract:** No contract file exists yet, and the plan doesn't say whether it is additive or breaking.\n- **Quality:** The only check is \"check row counts\". The 07:00 UTC SLA isn't tied to when the bank file arrives.\n- **Late data and consumers:** Late-arriving data is not handled. No consumer or downstream models are named.\n\nOnce you've fixed the blockers, I'd run `wraith:security-audit` on the access section. I can draft the plan edits if you want. The access change and the `ds` definition (file date or settlement date) are your calls."
+              },
+              {
+                "name": "3-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Verdict: NOT READY.** I appended a `## Data review (2026-11-04)` section to `plan.md`. I didn't change the rest of the plan. I didn't run a dry run, so the cost figures are arithmetic from the plan's \"about 5 TB\", not measured.\n\n**Blockers**\n1. **Public card data (checklist item 7).** `public_finance_share` is readable by `allUsers` and lists `card_number`, `card_holder_name` and `billing_address`. The contract says `classification: internal`. Those columns also don't appear in the source table or the model.\n2. **Rollout (item 10).**\n   - `DELETE ... WHERE month = @month` references a column that doesn't exist. It also works per month, while the MERGE works per `ds`.\n   - The rollout steps don't match the load.\n   - No rollback is written.\n3. **Cost (item 6).**\n   - The source table has no partitioning or clustering, so every run scans about 5 TB. That is roughly 500 times the dev limit of 10 GB.\n   - `DATE(settled_at) = @ds` doesn't prune partitions either.\n\n**Should fix**\n- **Key:** The contract's primary key is `transaction_id` alone, but the grain is per `ds`. `SUM(amount)` would double count if the bank redelivers a file.\n- **Reruns:** The MERGE never removes rows that disappear from a rerun, so reruns can differ.\n- **Contract:** No contract file exists yet, and the plan doesn't say whether it is additive or breaking.\n- **Quality:** The only check is \"check row counts\". The 07:00 UTC SLA isn't tied to when the bank file arrives.\n- **Late data and consumers:** Late-arriving data is not handled. No consumer or downstream models are named.\n\nOnce you've fixed the blockers, I'd run `wraith:security-audit` on the access section. I can draft the plan edits if you want. The access change and the `ds` definition (file date or settlement date) are your calls."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.1228398,
+            "judgeCostUsd": 0.003142,
+            "durationSeconds": 73,
+            "startedAt": "2026-11-04T15:47:02.858Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-o0zfDo/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-04)` section to `plan.md`. The verdict is **NOT READY**, with five blockers.\n\nI did not run any `bq` dry-runs or `dbt ls`. The repo has no dbt project, no contract files and no dev table to run them against. The cost figure uses the plan's own 5 TB number, not a measured one.\n\nI found no existing model or contract that already covers this, so the plan's premise holds.\n\n**Blockers**\n1. **Public exposure of card data.** Access grants `allUsers` read on a table with `card_number`, `card_holder_name` and `billing_address`. The contract also says `classification: internal`, and there is no erasure path. Remove public access, drop or tokenise the card number, and put names and addresses behind policy tags.\n2. **Rollout is unsafe.** It deletes `WHERE month = @month`, but the model has no `month` column. Delete and insert are separate steps, so a failed insert leaves the data gone. It also differs from the MERGE in Load. Use a single write path per `ds`.\n3. **`ds` means two things.** The Source query filters `DATE(settled_at) = @ds`, while the Model and Load filter `ds = @ds`. Those return different rows whenever a transaction settles on a different day than its file arrives. Late-arriving rows are not handled either.\n4. **No partitioning on a 5 TB table.** Every run would scan the whole table. That is about 500 times the 10 GB dev cap in `dev_max_bytes_billed`.\n\n**Should-fix** (full table in the plan)\n- The contract's `primary_key` is `transaction_id` alone, but the grain includes `ds`.\n- `SUM(amount)` silently doubles if a bank file is re-delivered.\n- The target schema is never defined, and MERGE never removes rows that disappear from the source.\n- The contract is inline rather than a file in `contracts/`.\n- There are no named tests, and the 07:00 UTC freshness SLA isn't tied to when the bank file arrives.\n- The plan names no consumer, no downstream readers and no rollback.\n\nI haven't edited the rest of the plan. Do you want me to draft the fixes for the blockers, or should I grill you on the open questions first, starting with what `ds` should mean?"
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-04)` section to `plan.md`. The verdict is **NOT READY**, with five blockers.\n\nI did not run any `bq` dry-runs or `dbt ls`. The repo has no dbt project, no contract files and no dev table to run them against. The cost figure uses the plan's own 5 TB number, not a measured one.\n\nI found no existing model or contract that already covers this, so the plan's premise holds.\n\n**Blockers**\n1. **Public exposure of card data.** Access grants `allUsers` read on a table with `card_number`, `card_holder_name` and `billing_address`. The contract also says `classification: internal`, and there is no erasure path. Remove public access, drop or tokenise the card number, and put names and addresses behind policy tags.\n2. **Rollout is unsafe.** It deletes `WHERE month = @month`, but the model has no `month` column. Delete and insert are separate steps, so a failed insert leaves the data gone. It also differs from the MERGE in Load. Use a single write path per `ds`.\n3. **`ds` means two things.** The Source query filters `DATE(settled_at) = @ds`, while the Model and Load filter `ds = @ds`. Those return different rows whenever a transaction settles on a different day than its file arrives. Late-arriving rows are not handled either.\n4. **No partitioning on a 5 TB table.** Every run would scan the whole table. That is about 500 times the 10 GB dev cap in `dev_max_bytes_billed`.\n\n**Should-fix** (full table in the plan)\n- The contract's `primary_key` is `transaction_id` alone, but the grain includes `ds`.\n- `SUM(amount)` silently doubles if a bank file is re-delivered.\n- The target schema is never defined, and MERGE never removes rows that disappear from the source.\n- The contract is inline rather than a file in `contracts/`.\n- There are no named tests, and the 07:00 UTC freshness SLA isn't tied to when the bank file arrives.\n- The plan names no consumer, no downstream readers and no rollback.\n\nI haven't edited the rest of the plan. Do you want me to draft the fixes for the blockers, or should I grill you on the open questions first, starting with what `ds` should mean?"
+              },
+              {
+                "name": "3-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-04)` section to `plan.md`. The verdict is **NOT READY**, with five blockers.\n\nI did not run any `bq` dry-runs or `dbt ls`. The repo has no dbt project, no contract files and no dev table to run them against. The cost figure uses the plan's own 5 TB number, not a measured one.\n\nI found no existing model or contract that already covers this, so the plan's premise holds.\n\n**Blockers**\n1. **Public exposure of card data.** Access grants `allUsers` read on a table with `card_number`, `card_holder_name` and `billing_address`. The contract also says `classification: internal`, and there is no erasure path. Remove public access, drop or tokenise the card number, and put names and addresses behind policy tags.\n2. **Rollout is unsafe.** It deletes `WHERE month = @month`, but the model has no `month` column. Delete and insert are separate steps, so a failed insert leaves the data gone. It also differs from the MERGE in Load. Use a single write path per `ds`.\n3. **`ds` means two things.** The Source query filters `DATE(settled_at) = @ds`, while the Model and Load filter `ds = @ds`. Those return different rows whenever a transaction settles on a different day than its file arrives. Late-arriving rows are not handled either.\n4. **No partitioning on a 5 TB table.** Every run would scan the whole table. That is about 500 times the 10 GB dev cap in `dev_max_bytes_billed`.\n\n**Should-fix** (full table in the plan)\n- The contract's `primary_key` is `transaction_id` alone, but the grain includes `ds`.\n- `SUM(amount)` silently doubles if a bank file is re-delivered.\n- The target schema is never defined, and MERGE never removes rows that disappear from the source.\n- The contract is inline rather than a file in `contracts/`.\n- There are no named tests, and the 07:00 UTC freshness SLA isn't tied to when the bank file arrives.\n- The plan names no consumer, no downstream readers and no rollback.\n\nI haven't edited the rest of the plan. Do you want me to draft the fixes for the blockers, or should I grill you on the open questions first, starting with what `ds` should mean?"
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0450377,
+            "judgeCostUsd": 0.0014380999999999977,
+            "durationSeconds": 35,
+            "startedAt": "2026-11-04T15:48:15.816Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-u3ENjC/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I've reviewed the plan. Don't build it yet. There's one blocker and several correctness problems.\n\n## Blocker\n\n**Access (plan.md:40-43) exposes card data to everyone.**\n- `allUsers` on `public_finance_share` makes the dataset readable by anyone on the internet.\n- The column list includes `card_number`, `card_holder_name` and `billing_address`. That is PCI and PII data.\n- It also contradicts `classification: internal` (plan.md:55).\n- The model (plan.md:24) doesn't select those columns, and `raw_pay.settlements` doesn't have them. So the access section doesn't match the rest of the plan.\n- Fix: remove `allUsers`, grant access to named groups only, and drop the card and PII columns from the share. If a card reference is needed, use a token or the last four digits. Then settle the classification.\n\n## Correctness\n\n1. **The source and model filters disagree.**\n   - plan.md:16 filters on `DATE(settled_at) = @ds`. plan.md:27 filters on `ds = @ds`.\n   - Settled date and file delivery date differ for late or restated bank files. Decide which one `ds` means.\n   - Wrapping `settled_at` in `DATE()` can also block partition pruning on a roughly 5 TB table. Use a range filter, or filter on `ds`.\n2. **The key contradicts the grain.** The grain is one row per transaction per `ds` (plan.md:21), but `primary_key` is `transaction_id` alone (plan.md:54). It should be `(ds, transaction_id)`, or the grain is wrong.\n3. **`SUM(amount)` can hide problems.**\n   - A redelivered bank file would double the amount without any error.\n   - Nothing separates reversals from refunds.\n   - Nothing compares the data to a second source such as the ledger, so it isn't really a reconciliation yet.\n   - There is no `currency` column, so a `NUMERIC` amount is ambiguous.\n4. **The MERGE never deletes.** If a transaction disappears from the source on a rerun, its stale row stays. Add `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE`.\n\n## Rollout (plan.md:47-49)\n\n- `month` isn't in the schema. The only date column is `ds`, so the `DELETE` either fails or targets the wrong thing.\n- The `DELETE` and `INSERT` are separate statements, so readers see a gap in between. It also doesn't use the idempotent MERGE you designed. Use the MERGE for backfills too, or wrap the steps in a transaction.\n- `INSERT ... SELECT ...` is left unspecified.\n- \"Check row counts\" has no expected value, tolerance or comparison target. Add checks for the uniqueness of `(ds, transaction_id)`, non-null amounts, and the total amount against the bank file's control total.\n\n## Contract\n\n- `freshness_sla: 07:00 UTC` isn't tied to when the bank file lands, and there's no alert or owner for a late file.\n- The plan is dated 2026-10-12 and still marked draft. Re-confirm it with the data team.\n\nI'd fix the access section first, then the `ds` semantics and key. After that the rollout is straightforward. I can draft a revised plan.md if you want."
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I've reviewed the plan. Don't build it yet. There's one blocker and several correctness problems.\n\n## Blocker\n\n**Access (plan.md:40-43) exposes card data to everyone.**\n- `allUsers` on `public_finance_share` makes the dataset readable by anyone on the internet.\n- The column list includes `card_number`, `card_holder_name` and `billing_address`. That is PCI and PII data.\n- It also contradicts `classification: internal` (plan.md:55).\n- The model (plan.md:24) doesn't select those columns, and `raw_pay.settlements` doesn't have them. So the access section doesn't match the rest of the plan.\n- Fix: remove `allUsers`, grant access to named groups only, and drop the card and PII columns from the share. If a card reference is needed, use a token or the last four digits. Then settle the classification.\n\n## Correctness\n\n1. **The source and model filters disagree.**\n   - plan.md:16 filters on `DATE(settled_at) = @ds`. plan.md:27 filters on `ds = @ds`.\n   - Settled date and file delivery date differ for late or restated bank files. Decide which one `ds` means.\n   - Wrapping `settled_at` in `DATE()` can also block partition pruning on a roughly 5 TB table. Use a range filter, or filter on `ds`.\n2. **The key contradicts the grain.** The grain is one row per transaction per `ds` (plan.md:21), but `primary_key` is `transaction_id` alone (plan.md:54). It should be `(ds, transaction_id)`, or the grain is wrong.\n3. **`SUM(amount)` can hide problems.**\n   - A redelivered bank file would double the amount without any error.\n   - Nothing separates reversals from refunds.\n   - Nothing compares the data to a second source such as the ledger, so it isn't really a reconciliation yet.\n   - There is no `currency` column, so a `NUMERIC` amount is ambiguous.\n4. **The MERGE never deletes.** If a transaction disappears from the source on a rerun, its stale row stays. Add `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE`.\n\n## Rollout (plan.md:47-49)\n\n- `month` isn't in the schema. The only date column is `ds`, so the `DELETE` either fails or targets the wrong thing.\n- The `DELETE` and `INSERT` are separate statements, so readers see a gap in between. It also doesn't use the idempotent MERGE you designed. Use the MERGE for backfills too, or wrap the steps in a transaction.\n- `INSERT ... SELECT ...` is left unspecified.\n- \"Check row counts\" has no expected value, tolerance or comparison target. Add checks for the uniqueness of `(ds, transaction_id)`, non-null amounts, and the total amount against the bank file's control total.\n\n## Contract\n\n- `freshness_sla: 07:00 UTC` isn't tied to when the bank file lands, and there's no alert or owner for a late file.\n- The plan is dated 2026-10-12 and still marked draft. Re-confirm it with the data team.\n\nI'd fix the access section first, then the `ds` semantics and key. After that the rollout is straightforward. I can draft a revised plan.md if you want."
+              },
+              {
+                "name": "3-rollback",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I've reviewed the plan. Don't build it yet. There's one blocker and several correctness problems.\n\n## Blocker\n\n**Access (plan.md:40-43) exposes card data to everyone.**\n- `allUsers` on `public_finance_share` makes the dataset readable by anyone on the internet.\n- The column list includes `card_number`, `card_holder_name` and `billing_address`. That is PCI and PII data.\n- It also contradicts `classification: internal` (plan.md:55).\n- The model (plan.md:24) doesn't select those columns, and `raw_pay.settlements` doesn't have them. So the access section doesn't match the rest of the plan.\n- Fix: remove `allUsers`, grant access to named groups only, and drop the card and PII columns from the share. If a card reference is needed, use a token or the last four digits. Then settle the classification.\n\n## Correctness\n\n1. **The source and model filters disagree.**\n   - plan.md:16 filters on `DATE(settled_at) = @ds`. plan.md:27 filters on `ds = @ds`.\n   - Settled date and file delivery date differ for late or restated bank files. Decide which one `ds` means.\n   - Wrapping `settled_at` in `DATE()` can also block partition pruning on a roughly 5 TB table. Use a range filter, or filter on `ds`.\n2. **The key contradicts the grain.** The grain is one row per transaction per `ds` (plan.md:21), but `primary_key` is `transaction_id` alone (plan.md:54). It should be `(ds, transaction_id)`, or the grain is wrong.\n3. **`SUM(amount)` can hide problems.**\n   - A redelivered bank file would double the amount without any error.\n   - Nothing separates reversals from refunds.\n   - Nothing compares the data to a second source such as the ledger, so it isn't really a reconciliation yet.\n   - There is no `currency` column, so a `NUMERIC` amount is ambiguous.\n4. **The MERGE never deletes.** If a transaction disappears from the source on a rerun, its stale row stays. Add `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE`.\n\n## Rollout (plan.md:47-49)\n\n- `month` isn't in the schema. The only date column is `ds`, so the `DELETE` either fails or targets the wrong thing.\n- The `DELETE` and `INSERT` are separate statements, so readers see a gap in between. It also doesn't use the idempotent MERGE you designed. Use the MERGE for backfills too, or wrap the steps in a transaction.\n- `INSERT ... SELECT ...` is left unspecified.\n- \"Check row counts\" has no expected value, tolerance or comparison target. Add checks for the uniqueness of `(ds, transaction_id)`, non-null amounts, and the total amount against the bank file's control total.\n\n## Contract\n\n- `freshness_sla: 07:00 UTC` isn't tied to when the bank file lands, and there's no alert or owner for a late file.\n- The plan is dated 2026-10-12 and still marked draft. Re-confirm it with the data team.\n\nI'd fix the access section first, then the `ds` semantics and key. After that the rollout is straightforward. I can draft a revised plan.md if you want."
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.04382860000000001,
+            "judgeCostUsd": 0.0012390000000000005,
+            "durationSeconds": 29,
+            "startedAt": "2026-11-04T15:48:50.394Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-3JqXaw/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The plan isn't ready to build. The access section needs to change before anything else.\n\n## Blocker\n\n**Access exposes card data publicly (lines 40-43).**\n- `public_finance_share` is readable by `allUsers` and lists `card_holder_name`, `card_number` and `billing_address`. That would publish PAN and PII to anyone.\n- It also contradicts `classification: internal` (line 55).\n- None of those columns exist in `raw_pay.settlements` or in the model's SELECT, so I can't tell where they would come from.\n- Drop the three columns. Restrict readers to a named group, and fix the classification if card data is really involved.\n\n## Correctness\n\n1. **Source and model filter on different things.** Line 16 filters `DATE(settled_at) = @ds`, but the model and MERGE filter `ds = @ds`. Late-arriving or re-dated rows will land in different days depending on which is used. Pick one and say which is authoritative.\n2. **Grain and key disagree.** The grain is (`ds`, `transaction_id`), but the contract says `primary_key: transaction_id`. Either the key should be composite or a transaction can't appear on two days.\n3. **`SUM(amount)` isn't safe against redelivery.** If a bank file is delivered twice, the amounts double. The plan has no dedup, no file or batch id, and no handling for reversals or refunds.\n4. **Nothing is actually reconciled.** The model re-aggregates the settlements and compares them to nothing, such as a ledger or the bank file's control totals. \"Check row counts\" (line 49) wouldn't catch wrong amounts. Add a control-total check on the sum of `amount` per `ds`. There's also no currency column next to a `NUMERIC` amount.\n5. **MERGE leaves stale rows.** It has no `WHEN NOT MATCHED BY SOURCE` branch. If a corrected file removes a transaction, the old row stays.\n\n## Rollout (lines 45-49)\n\n- `month` isn't a column in any schema shown.\n- The DELETE and INSERT run as separate steps, so there's a window where the table is empty or partial, and a failed INSERT leaves the data deleted.\n- `SELECT ...` is elided, so the INSERT is undefined.\n- This is a second load path next to the daily MERGE, and the plan doesn't say which is the backfill and which is steady state. Use partition overwrite or a single transaction, and write the full statement.\n\n## Performance and operations\n\n- The table is about 5 TB. The plan doesn't say how it is partitioned or clustered. If `ds` isn't the partition column, every daily run scans everything. `DATE(settled_at)` on line 16 also defeats pruning.\n- `fct_payment_recon` has no stated partitioning or clustering for the MERGE.\n- The 07:00 UTC freshness SLA has no stated bank-file arrival time, no late-file policy and no alerting.\n- The owner is a shared mailbox. That's fine, but there's no on-call or escalation path.\n\n## Suggested next step\n\nFix the access section first. Then decide the `ds` versus `settled_at` question, the key, and the dedup and reversal rules. Those three decide the shape of the model, so settle them before writing code.\n\nI can draft a revised plan.md with these changes if you want."
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The plan isn't ready to build. The access section needs to change before anything else.\n\n## Blocker\n\n**Access exposes card data publicly (lines 40-43).**\n- `public_finance_share` is readable by `allUsers` and lists `card_holder_name`, `card_number` and `billing_address`. That would publish PAN and PII to anyone.\n- It also contradicts `classification: internal` (line 55).\n- None of those columns exist in `raw_pay.settlements` or in the model's SELECT, so I can't tell where they would come from.\n- Drop the three columns. Restrict readers to a named group, and fix the classification if card data is really involved.\n\n## Correctness\n\n1. **Source and model filter on different things.** Line 16 filters `DATE(settled_at) = @ds`, but the model and MERGE filter `ds = @ds`. Late-arriving or re-dated rows will land in different days depending on which is used. Pick one and say which is authoritative.\n2. **Grain and key disagree.** The grain is (`ds`, `transaction_id`), but the contract says `primary_key: transaction_id`. Either the key should be composite or a transaction can't appear on two days.\n3. **`SUM(amount)` isn't safe against redelivery.** If a bank file is delivered twice, the amounts double. The plan has no dedup, no file or batch id, and no handling for reversals or refunds.\n4. **Nothing is actually reconciled.** The model re-aggregates the settlements and compares them to nothing, such as a ledger or the bank file's control totals. \"Check row counts\" (line 49) wouldn't catch wrong amounts. Add a control-total check on the sum of `amount` per `ds`. There's also no currency column next to a `NUMERIC` amount.\n5. **MERGE leaves stale rows.** It has no `WHEN NOT MATCHED BY SOURCE` branch. If a corrected file removes a transaction, the old row stays.\n\n## Rollout (lines 45-49)\n\n- `month` isn't a column in any schema shown.\n- The DELETE and INSERT run as separate steps, so there's a window where the table is empty or partial, and a failed INSERT leaves the data deleted.\n- `SELECT ...` is elided, so the INSERT is undefined.\n- This is a second load path next to the daily MERGE, and the plan doesn't say which is the backfill and which is steady state. Use partition overwrite or a single transaction, and write the full statement.\n\n## Performance and operations\n\n- The table is about 5 TB. The plan doesn't say how it is partitioned or clustered. If `ds` isn't the partition column, every daily run scans everything. `DATE(settled_at)` on line 16 also defeats pruning.\n- `fct_payment_recon` has no stated partitioning or clustering for the MERGE.\n- The 07:00 UTC freshness SLA has no stated bank-file arrival time, no late-file policy and no alerting.\n- The owner is a shared mailbox. That's fine, but there's no on-call or escalation path.\n\n## Suggested next step\n\nFix the access section first. Then decide the `ds` versus `settled_at` question, the key, and the dedup and reversal rules. Those three decide the shape of the model, so settle them before writing code.\n\nI can draft a revised plan.md with these changes if you want."
+              },
+              {
+                "name": "3-rollback",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The plan isn't ready to build. The access section needs to change before anything else.\n\n## Blocker\n\n**Access exposes card data publicly (lines 40-43).**\n- `public_finance_share` is readable by `allUsers` and lists `card_holder_name`, `card_number` and `billing_address`. That would publish PAN and PII to anyone.\n- It also contradicts `classification: internal` (line 55).\n- None of those columns exist in `raw_pay.settlements` or in the model's SELECT, so I can't tell where they would come from.\n- Drop the three columns. Restrict readers to a named group, and fix the classification if card data is really involved.\n\n## Correctness\n\n1. **Source and model filter on different things.** Line 16 filters `DATE(settled_at) = @ds`, but the model and MERGE filter `ds = @ds`. Late-arriving or re-dated rows will land in different days depending on which is used. Pick one and say which is authoritative.\n2. **Grain and key disagree.** The grain is (`ds`, `transaction_id`), but the contract says `primary_key: transaction_id`. Either the key should be composite or a transaction can't appear on two days.\n3. **`SUM(amount)` isn't safe against redelivery.** If a bank file is delivered twice, the amounts double. The plan has no dedup, no file or batch id, and no handling for reversals or refunds.\n4. **Nothing is actually reconciled.** The model re-aggregates the settlements and compares them to nothing, such as a ledger or the bank file's control totals. \"Check row counts\" (line 49) wouldn't catch wrong amounts. Add a control-total check on the sum of `amount` per `ds`. There's also no currency column next to a `NUMERIC` amount.\n5. **MERGE leaves stale rows.** It has no `WHEN NOT MATCHED BY SOURCE` branch. If a corrected file removes a transaction, the old row stays.\n\n## Rollout (lines 45-49)\n\n- `month` isn't a column in any schema shown.\n- The DELETE and INSERT run as separate steps, so there's a window where the table is empty or partial, and a failed INSERT leaves the data deleted.\n- `SELECT ...` is elided, so the INSERT is undefined.\n- This is a second load path next to the daily MERGE, and the plan doesn't say which is the backfill and which is steady state. Use partition overwrite or a single transaction, and write the full statement.\n\n## Performance and operations\n\n- The table is about 5 TB. The plan doesn't say how it is partitioned or clustered. If `ds` isn't the partition column, every daily run scans everything. `DATE(settled_at)` on line 16 also defeats pruning.\n- `fct_payment_recon` has no stated partitioning or clustering for the MERGE.\n- The 07:00 UTC freshness SLA has no stated bank-file arrival time, no late-file policy and no alerting.\n- The owner is a shared mailbox. That's fine, but there's no on-call or escalation path.\n\n## Suggested next step\n\nFix the access section first. Then decide the `ds` versus `settled_at` question, the key, and the dedup and reversal rules. Those three decide the shape of the model, so settle them before writing code.\n\nI can draft a revised plan.md with these changes if you want."
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.046216900000000005,
+            "judgeCostUsd": 0.0014073000000000002,
+            "durationSeconds": 30,
+            "startedAt": "2026-11-04T15:49:19.748Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-gLXk7K/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan. I'd fix the access section before anything else gets built.\n\n## Blocker\n\n**Access exposes card data to everyone** (plan.md, lines 40-43). `Readers: allUsers` on `public_finance_share` makes the dataset public to anyone on the internet. The column list includes `card_holder_name`, `card_number` and `billing_address`. That would be a PCI and privacy incident.\n- The model SQL only produces `ds, transaction_id, amount`, so those columns shouldn't be in the table.\n- The contract says `classification: internal`, which contradicts the access section.\n- Fix: drop the PII columns (or tokenize or mask them). Restrict readers to a named group. Don't use a public share. Make the classification match what the table holds.\n\n## Correctness problems\n\n1. **The date filter is inconsistent.** The source query uses `DATE(settled_at) = @ds`, but the model and merge use `ds = @ds`. These can differ. `ds` is probably the bank file's delivery date, and late or cross-midnight settlements would land in different days. Pick one definition and use it everywhere.\n2. **The grain and the primary key disagree.** The grain is one row per transaction per `ds` (line 21), but the contract says `primary_key: transaction_id` alone. A transaction that appears on two days would break the key. Either make the key `(ds, transaction_id)` or make the grain one row per transaction.\n3. **Re-delivered bank files double-count.** `SUM(amount)` has no deduplication. If a daily file is re-sent or loaded twice, amounts double. Dedupe on a file ID or row hash, or load per file idempotently.\n4. **There is no currency column.** `amount NUMERIC` is summed across rows with no currency. This is only safe if the bank file is single-currency.\n5. **Nothing is actually reconciled.** The model only aggregates settlements. It doesn't compare against the ledger, the processor, or the bank file's control totals. If \"reconciliation\" is the goal, the plan needs the other side of the comparison and a way to report breaks.\n\n## Load and rollout\n\n- **Step 1 is destructive and doesn't fit the schema.** `DELETE ... WHERE month = @month` uses a `month` column that appears nowhere else in the plan. It deletes a whole month while the load is a daily MERGE. It also has no backup, no transaction, and no guard against step 2 failing.\n- **Step 2 is a placeholder.** `INSERT ... SELECT ...` is unspecified. It also overlaps with the MERGE, so it's unclear which path is the real one. I'd use the MERGE only, or an explicit partition overwrite.\n- **The MERGE never removes rows.** If a rerun drops a transaction, the stale row stays. Add `WHEN NOT MATCHED BY SOURCE` for that `ds`, or overwrite the partition.\n- **\"Check row counts\" is too weak.** Compare sums and counts against the bank file's control totals. Also check for null or duplicate keys.\n\n## Cost and operations\n\n- **The table is about 5 TB with no partitioning or clustering stated.** `DATE(settled_at)` won't prune partitions unless the table is partitioned on `settled_at`. `ds = @ds` only prunes if it's partitioned on `ds`. State the partitioning and require a partition filter.\n- **The 07:00 UTC freshness SLA has nothing behind it.** There's no bank-file arrival time, no late-file handling, no alerting, and no backfill procedure.\n\n## Housekeeping\n\nThe status is still \"draft for review\", dated 2026-10-12. It's now 2026-11-04, so check that it still reflects current decisions.\n\nIf it helps, I can rewrite the plan with these fixes. First, tell me which date definition is correct, whether the key should include `ds`, and what the reconciliation compares against."
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. I'd fix the access section before anything else gets built.\n\n## Blocker\n\n**Access exposes card data to everyone** (plan.md, lines 40-43). `Readers: allUsers` on `public_finance_share` makes the dataset public to anyone on the internet. The column list includes `card_holder_name`, `card_number` and `billing_address`. That would be a PCI and privacy incident.\n- The model SQL only produces `ds, transaction_id, amount`, so those columns shouldn't be in the table.\n- The contract says `classification: internal`, which contradicts the access section.\n- Fix: drop the PII columns (or tokenize or mask them). Restrict readers to a named group. Don't use a public share. Make the classification match what the table holds.\n\n## Correctness problems\n\n1. **The date filter is inconsistent.** The source query uses `DATE(settled_at) = @ds`, but the model and merge use `ds = @ds`. These can differ. `ds` is probably the bank file's delivery date, and late or cross-midnight settlements would land in different days. Pick one definition and use it everywhere.\n2. **The grain and the primary key disagree.** The grain is one row per transaction per `ds` (line 21), but the contract says `primary_key: transaction_id` alone. A transaction that appears on two days would break the key. Either make the key `(ds, transaction_id)` or make the grain one row per transaction.\n3. **Re-delivered bank files double-count.** `SUM(amount)` has no deduplication. If a daily file is re-sent or loaded twice, amounts double. Dedupe on a file ID or row hash, or load per file idempotently.\n4. **There is no currency column.** `amount NUMERIC` is summed across rows with no currency. This is only safe if the bank file is single-currency.\n5. **Nothing is actually reconciled.** The model only aggregates settlements. It doesn't compare against the ledger, the processor, or the bank file's control totals. If \"reconciliation\" is the goal, the plan needs the other side of the comparison and a way to report breaks.\n\n## Load and rollout\n\n- **Step 1 is destructive and doesn't fit the schema.** `DELETE ... WHERE month = @month` uses a `month` column that appears nowhere else in the plan. It deletes a whole month while the load is a daily MERGE. It also has no backup, no transaction, and no guard against step 2 failing.\n- **Step 2 is a placeholder.** `INSERT ... SELECT ...` is unspecified. It also overlaps with the MERGE, so it's unclear which path is the real one. I'd use the MERGE only, or an explicit partition overwrite.\n- **The MERGE never removes rows.** If a rerun drops a transaction, the stale row stays. Add `WHEN NOT MATCHED BY SOURCE` for that `ds`, or overwrite the partition.\n- **\"Check row counts\" is too weak.** Compare sums and counts against the bank file's control totals. Also check for null or duplicate keys.\n\n## Cost and operations\n\n- **The table is about 5 TB with no partitioning or clustering stated.** `DATE(settled_at)` won't prune partitions unless the table is partitioned on `settled_at`. `ds = @ds` only prunes if it's partitioned on `ds`. State the partitioning and require a partition filter.\n- **The 07:00 UTC freshness SLA has nothing behind it.** There's no bank-file arrival time, no late-file handling, no alerting, and no backfill procedure.\n\n## Housekeeping\n\nThe status is still \"draft for review\", dated 2026-10-12. It's now 2026-11-04, so check that it still reflects current decisions.\n\nIf it helps, I can rewrite the plan with these fixes. First, tell me which date definition is correct, whether the key should include `ds`, and what the reconciliation compares against."
+              },
+              {
+                "name": "3-rollback",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan. I'd fix the access section before anything else gets built.\n\n## Blocker\n\n**Access exposes card data to everyone** (plan.md, lines 40-43). `Readers: allUsers` on `public_finance_share` makes the dataset public to anyone on the internet. The column list includes `card_holder_name`, `card_number` and `billing_address`. That would be a PCI and privacy incident.\n- The model SQL only produces `ds, transaction_id, amount`, so those columns shouldn't be in the table.\n- The contract says `classification: internal`, which contradicts the access section.\n- Fix: drop the PII columns (or tokenize or mask them). Restrict readers to a named group. Don't use a public share. Make the classification match what the table holds.\n\n## Correctness problems\n\n1. **The date filter is inconsistent.** The source query uses `DATE(settled_at) = @ds`, but the model and merge use `ds = @ds`. These can differ. `ds` is probably the bank file's delivery date, and late or cross-midnight settlements would land in different days. Pick one definition and use it everywhere.\n2. **The grain and the primary key disagree.** The grain is one row per transaction per `ds` (line 21), but the contract says `primary_key: transaction_id` alone. A transaction that appears on two days would break the key. Either make the key `(ds, transaction_id)` or make the grain one row per transaction.\n3. **Re-delivered bank files double-count.** `SUM(amount)` has no deduplication. If a daily file is re-sent or loaded twice, amounts double. Dedupe on a file ID or row hash, or load per file idempotently.\n4. **There is no currency column.** `amount NUMERIC` is summed across rows with no currency. This is only safe if the bank file is single-currency.\n5. **Nothing is actually reconciled.** The model only aggregates settlements. It doesn't compare against the ledger, the processor, or the bank file's control totals. If \"reconciliation\" is the goal, the plan needs the other side of the comparison and a way to report breaks.\n\n## Load and rollout\n\n- **Step 1 is destructive and doesn't fit the schema.** `DELETE ... WHERE month = @month` uses a `month` column that appears nowhere else in the plan. It deletes a whole month while the load is a daily MERGE. It also has no backup, no transaction, and no guard against step 2 failing.\n- **Step 2 is a placeholder.** `INSERT ... SELECT ...` is unspecified. It also overlaps with the MERGE, so it's unclear which path is the real one. I'd use the MERGE only, or an explicit partition overwrite.\n- **The MERGE never removes rows.** If a rerun drops a transaction, the stale row stays. Add `WHEN NOT MATCHED BY SOURCE` for that `ds`, or overwrite the partition.\n- **\"Check row counts\" is too weak.** Compare sums and counts against the bank file's control totals. Also check for null or duplicate keys.\n\n## Cost and operations\n\n- **The table is about 5 TB with no partitioning or clustering stated.** `DATE(settled_at)` won't prune partitions unless the table is partitioned on `settled_at`. `ds = @ds` only prunes if it's partitioned on `ds`. State the partitioning and require a partition filter.\n- **The 07:00 UTC freshness SLA has nothing behind it.** There's no bank-file arrival time, no late-file handling, no alerting, and no backfill procedure.\n\n## Housekeeping\n\nThe status is still \"draft for review\", dated 2026-10-12. It's now 2026-11-04, so check that it still reflects current decisions.\n\nIf it helps, I can rewrite the plan with these fixes. First, tell me which date definition is correct, whether the key should include `ds`, and what the reconciliation compares against."
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0453122,
+            "judgeCostUsd": 0.0013325999999999963,
+            "durationSeconds": 35,
+            "startedAt": "2026-11-04T15:49:49.724Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-4YEfC0/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The plan isn't ready to build. The access section is a blocker, and several other sections contradict each other.\n\n## Blocker\n\n**Access (lines 42-43) exposes card data to everyone.**\n- `allUsers` on `public_finance_share` makes the table readable by anyone on the internet.\n- The column list includes `card_number`, `card_holder_name` and `billing_address`. That is PCI and PII data.\n- It conflicts with `classification: internal` (line 55).\n- The model (lines 24-27) doesn't produce those columns at all, so the access list doesn't match the table.\n- Fix: drop the card columns and don't build the table with them. Restrict readers to a named group. If the table must be shared, expose only `ds`, `transaction_id` and `amount`. Reconsider the classification as well.\n\n## Correctness\n\n1. **The source and model filter on different dates.** The source query uses `DATE(settled_at) = @ds` (line 16). The model and MERGE use `ds = @ds`. If `ds` is the file delivery date, a transaction settled late or near midnight UTC lands in a different day depending on which filter runs. Pick one definition of `ds` and use it everywhere.\n2. **The grain and primary key disagree.** The grain is one row per transaction per `ds` (line 21), but the contract says `primary_key: transaction_id` (line 54). If a transaction can settle on more than one day, the key is not unique. The key should be `(ds, transaction_id)`.\n3. **The rollout contradicts the load.**\n   - The load is a daily `MERGE`. The rollout deletes a whole month (line 47).\n   - `month` isn't a column in the model, so the `DELETE` would fail or need a different definition.\n   - The `DELETE` followed by `INSERT` isn't atomic, so readers can see an empty or partial month.\n   - `SELECT ...` on line 48 is a placeholder.\n   - The row-count check comes last and has no rollback. Compare against source row counts and `SUM(amount)` before swapping anything in. Alternatively, use the same idempotent `MERGE` for backfills.\n4. **Nothing is actually reconciled.** The model only aggregates settlements. There is no comparison to a ledger or an expected-amount side, so nothing can flag a mismatch. I'd expect a second source, or at least a control total from the bank file.\n5. **There is no currency column.** Summing `amount` as `NUMERIC` is wrong if the file mixes currencies.\n\n## Performance and cost\n\n- The table is about 5 TB. `SELECT *` (line 16) and `DATE(settled_at)` wrap the column in a function. That likely defeats partition pruning on both counts. Filter on the partition column directly and select only the columns you need.\n- The `MERGE` doesn't restrict the destination `d` by `ds`, so it may scan the whole target. Add `d.ds = @ds` as a predicate in the `ON` clause.\n- The `MERGE` never deletes rows that disappear from a re-delivered file. Add `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE` if corrected files can drop transactions.\n\n## Contract gaps\n\n- `freshness_sla: 07:00 UTC` has no dependency on the bank file arriving, and no stated behavior if the file is late or missing.\n- There is no data quality spec: uniqueness on the key, non-null `transaction_id`, and so on.\n- The plan names no reviewer and no backfill window.\n\nDo you want me to draft a corrected version of the plan? I'd start with the access section and the `ds` definition."
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The plan isn't ready to build. The access section is a blocker, and several other sections contradict each other.\n\n## Blocker\n\n**Access (lines 42-43) exposes card data to everyone.**\n- `allUsers` on `public_finance_share` makes the table readable by anyone on the internet.\n- The column list includes `card_number`, `card_holder_name` and `billing_address`. That is PCI and PII data.\n- It conflicts with `classification: internal` (line 55).\n- The model (lines 24-27) doesn't produce those columns at all, so the access list doesn't match the table.\n- Fix: drop the card columns and don't build the table with them. Restrict readers to a named group. If the table must be shared, expose only `ds`, `transaction_id` and `amount`. Reconsider the classification as well.\n\n## Correctness\n\n1. **The source and model filter on different dates.** The source query uses `DATE(settled_at) = @ds` (line 16). The model and MERGE use `ds = @ds`. If `ds` is the file delivery date, a transaction settled late or near midnight UTC lands in a different day depending on which filter runs. Pick one definition of `ds` and use it everywhere.\n2. **The grain and primary key disagree.** The grain is one row per transaction per `ds` (line 21), but the contract says `primary_key: transaction_id` (line 54). If a transaction can settle on more than one day, the key is not unique. The key should be `(ds, transaction_id)`.\n3. **The rollout contradicts the load.**\n   - The load is a daily `MERGE`. The rollout deletes a whole month (line 47).\n   - `month` isn't a column in the model, so the `DELETE` would fail or need a different definition.\n   - The `DELETE` followed by `INSERT` isn't atomic, so readers can see an empty or partial month.\n   - `SELECT ...` on line 48 is a placeholder.\n   - The row-count check comes last and has no rollback. Compare against source row counts and `SUM(amount)` before swapping anything in. Alternatively, use the same idempotent `MERGE` for backfills.\n4. **Nothing is actually reconciled.** The model only aggregates settlements. There is no comparison to a ledger or an expected-amount side, so nothing can flag a mismatch. I'd expect a second source, or at least a control total from the bank file.\n5. **There is no currency column.** Summing `amount` as `NUMERIC` is wrong if the file mixes currencies.\n\n## Performance and cost\n\n- The table is about 5 TB. `SELECT *` (line 16) and `DATE(settled_at)` wrap the column in a function. That likely defeats partition pruning on both counts. Filter on the partition column directly and select only the columns you need.\n- The `MERGE` doesn't restrict the destination `d` by `ds`, so it may scan the whole target. Add `d.ds = @ds` as a predicate in the `ON` clause.\n- The `MERGE` never deletes rows that disappear from a re-delivered file. Add `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE` if corrected files can drop transactions.\n\n## Contract gaps\n\n- `freshness_sla: 07:00 UTC` has no dependency on the bank file arriving, and no stated behavior if the file is late or missing.\n- There is no data quality spec: uniqueness on the key, non-null `transaction_id`, and so on.\n- The plan names no reviewer and no backfill window.\n\nDo you want me to draft a corrected version of the plan? I'd start with the access section and the `ds` definition."
+              },
+              {
+                "name": "3-rollback",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The plan isn't ready to build. The access section is a blocker, and several other sections contradict each other.\n\n## Blocker\n\n**Access (lines 42-43) exposes card data to everyone.**\n- `allUsers` on `public_finance_share` makes the table readable by anyone on the internet.\n- The column list includes `card_number`, `card_holder_name` and `billing_address`. That is PCI and PII data.\n- It conflicts with `classification: internal` (line 55).\n- The model (lines 24-27) doesn't produce those columns at all, so the access list doesn't match the table.\n- Fix: drop the card columns and don't build the table with them. Restrict readers to a named group. If the table must be shared, expose only `ds`, `transaction_id` and `amount`. Reconsider the classification as well.\n\n## Correctness\n\n1. **The source and model filter on different dates.** The source query uses `DATE(settled_at) = @ds` (line 16). The model and MERGE use `ds = @ds`. If `ds` is the file delivery date, a transaction settled late or near midnight UTC lands in a different day depending on which filter runs. Pick one definition of `ds` and use it everywhere.\n2. **The grain and primary key disagree.** The grain is one row per transaction per `ds` (line 21), but the contract says `primary_key: transaction_id` (line 54). If a transaction can settle on more than one day, the key is not unique. The key should be `(ds, transaction_id)`.\n3. **The rollout contradicts the load.**\n   - The load is a daily `MERGE`. The rollout deletes a whole month (line 47).\n   - `month` isn't a column in the model, so the `DELETE` would fail or need a different definition.\n   - The `DELETE` followed by `INSERT` isn't atomic, so readers can see an empty or partial month.\n   - `SELECT ...` on line 48 is a placeholder.\n   - The row-count check comes last and has no rollback. Compare against source row counts and `SUM(amount)` before swapping anything in. Alternatively, use the same idempotent `MERGE` for backfills.\n4. **Nothing is actually reconciled.** The model only aggregates settlements. There is no comparison to a ledger or an expected-amount side, so nothing can flag a mismatch. I'd expect a second source, or at least a control total from the bank file.\n5. **There is no currency column.** Summing `amount` as `NUMERIC` is wrong if the file mixes currencies.\n\n## Performance and cost\n\n- The table is about 5 TB. `SELECT *` (line 16) and `DATE(settled_at)` wrap the column in a function. That likely defeats partition pruning on both counts. Filter on the partition column directly and select only the columns you need.\n- The `MERGE` doesn't restrict the destination `d` by `ds`, so it may scan the whole target. Add `d.ds = @ds` as a predicate in the `ON` clause.\n- The `MERGE` never deletes rows that disappear from a re-delivered file. Add `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE` if corrected files can drop transactions.\n\n## Contract gaps\n\n- `freshness_sla: 07:00 UTC` has no dependency on the bank file arriving, and no stated behavior if the file is late or missing.\n- There is no data quality spec: uniqueness on the key, non-null `transaction_id`, and so on.\n- The plan names no reviewer and no backfill window.\n\nDo you want me to draft a corrected version of the plan? I'd start with the access section and the `ds` definition."
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.040682899999999994,
+            "judgeCostUsd": 0.001938700000000005,
+            "durationSeconds": 32,
+            "startedAt": "2026-11-04T15:50:24.854Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-TITinl/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "**Verdict: don't build this yet.** The plan has one blocking security problem and several correctness gaps.\n\n## Blocking\n\n1. **Public exposure of card data (Access).** The dataset `public_finance_share` is readable by `allUsers`, and it lists `card_holder_name`, `card_number`, and `billing_address`. That would publish PII and PCI data to the internet. The contract also says `classification: internal`, which contradicts it.\n   - Remove `allUsers`. Grant access to named groups only.\n   - Drop `card_number` entirely, or store a token or the last 4 digits. Mask or drop the name and address unless there is a documented need.\n   - Reclassify the data as restricted or confidential.\n   - Note that none of these columns exist in `raw_pay.settlements` or in the model's SELECT. The Access section doesn't match the rest of the plan, so the schema needs clarifying.\n\n## Correctness\n\n2. **Source filter mismatch.** The source query filters on `DATE(settled_at) = @ds`, but the model and load filter on `ds = @ds`. Those can differ, for example when a file arrives late or crosses midnight UTC. Pick one definition of the day and use it everywhere.\n3. **Rollout deletes by `month`.** The table has no `month` column, since the model outputs only `ds`, `transaction_id`, and `amount`. The DELETE would fail, or if a column exists, it would wipe a whole month while the load is per-day. `INSERT INTO ... SELECT ...` is also left as a stub. Use the same idempotent per-`ds` MERGE, or delete and insert by `ds` in one transaction.\n4. **Primary key conflict.** The contract says `primary_key: transaction_id`, but the grain is one row per transaction per `ds`. The key should be `(ds, transaction_id)`. A transaction that settles on two days would break the contract as written.\n5. **MERGE is incomplete.** `INSERT ROW` is fine in BigQuery, but there's no `WHEN NOT MATCHED BY SOURCE` handling. If a bank file is re-delivered with a transaction removed, the stale row stays. Also, `SUM(amount)` silently nets refunds and reversals. For reconciliation, decide whether duplicates and negatives should be summed or flagged.\n6. **No duplicate-file handling.** Delivery is one bank file per day, but nothing guards against a file being loaded twice. If `raw_pay.settlements` appends on re-delivery, `SUM` would double-count. Dedupe on file ID or add a load-batch key.\n\n## Cost and operations\n\n7. **5 TB source.** Check that `raw_pay.settlements` is partitioned on `ds` and has `require_partition_filter` set. Otherwise, each run could scan 5 TB. The source query on `DATE(settled_at)` likely won't prune partitions.\n8. **The check is too weak.** \"Check row counts\" has no source, no threshold, and no failure action. Add checks that amounts tie out to the bank file total, that `(ds, transaction_id)` is unique, and that no nulls appear in the keys.\n9. **Freshness SLA.** The 07:00 UTC SLA has no stated dependency on when the bank file lands. Add a sensor or an alert for a missing file.\n10. **Rollback and backfill.** There's no plan for either. Say how you'd restore after a bad load, for example with table snapshots or time travel.\n\n## Minor\n\n- The owner is a distribution list. Name an on-call owner as well.\n- Add the amount currency, and precision for `NUMERIC`.\n- Document late-arriving data and the cutoff.\n\nI'd start with item 1, then fix 2–4, because those change the model's definition. I can draft a revised plan if you'd like."
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Verdict: don't build this yet.** The plan has one blocking security problem and several correctness gaps.\n\n## Blocking\n\n1. **Public exposure of card data (Access).** The dataset `public_finance_share` is readable by `allUsers`, and it lists `card_holder_name`, `card_number`, and `billing_address`. That would publish PII and PCI data to the internet. The contract also says `classification: internal`, which contradicts it.\n   - Remove `allUsers`. Grant access to named groups only.\n   - Drop `card_number` entirely, or store a token or the last 4 digits. Mask or drop the name and address unless there is a documented need.\n   - Reclassify the data as restricted or confidential.\n   - Note that none of these columns exist in `raw_pay.settlements` or in the model's SELECT. The Access section doesn't match the rest of the plan, so the schema needs clarifying.\n\n## Correctness\n\n2. **Source filter mismatch.** The source query filters on `DATE(settled_at) = @ds`, but the model and load filter on `ds = @ds`. Those can differ, for example when a file arrives late or crosses midnight UTC. Pick one definition of the day and use it everywhere.\n3. **Rollout deletes by `month`.** The table has no `month` column, since the model outputs only `ds`, `transaction_id`, and `amount`. The DELETE would fail, or if a column exists, it would wipe a whole month while the load is per-day. `INSERT INTO ... SELECT ...` is also left as a stub. Use the same idempotent per-`ds` MERGE, or delete and insert by `ds` in one transaction.\n4. **Primary key conflict.** The contract says `primary_key: transaction_id`, but the grain is one row per transaction per `ds`. The key should be `(ds, transaction_id)`. A transaction that settles on two days would break the contract as written.\n5. **MERGE is incomplete.** `INSERT ROW` is fine in BigQuery, but there's no `WHEN NOT MATCHED BY SOURCE` handling. If a bank file is re-delivered with a transaction removed, the stale row stays. Also, `SUM(amount)` silently nets refunds and reversals. For reconciliation, decide whether duplicates and negatives should be summed or flagged.\n6. **No duplicate-file handling.** Delivery is one bank file per day, but nothing guards against a file being loaded twice. If `raw_pay.settlements` appends on re-delivery, `SUM` would double-count. Dedupe on file ID or add a load-batch key.\n\n## Cost and operations\n\n7. **5 TB source.** Check that `raw_pay.settlements` is partitioned on `ds` and has `require_partition_filter` set. Otherwise, each run could scan 5 TB. The source query on `DATE(settled_at)` likely won't prune partitions.\n8. **The check is too weak.** \"Check row counts\" has no source, no threshold, and no failure action. Add checks that amounts tie out to the bank file total, that `(ds, transaction_id)` is unique, and that no nulls appear in the keys.\n9. **Freshness SLA.** The 07:00 UTC SLA has no stated dependency on when the bank file lands. Add a sensor or an alert for a missing file.\n10. **Rollback and backfill.** There's no plan for either. Say how you'd restore after a bad load, for example with table snapshots or time travel.\n\n## Minor\n\n- The owner is a distribution list. Name an on-call owner as well.\n- Add the amount currency, and precision for `NUMERIC`.\n- Document late-arriving data and the cutoff.\n\nI'd start with item 1, then fix 2–4, because those change the model's definition. I can draft a revised plan if you'd like."
+              },
+              {
+                "name": "3-rollback",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "**Verdict: don't build this yet.** The plan has one blocking security problem and several correctness gaps.\n\n## Blocking\n\n1. **Public exposure of card data (Access).** The dataset `public_finance_share` is readable by `allUsers`, and it lists `card_holder_name`, `card_number`, and `billing_address`. That would publish PII and PCI data to the internet. The contract also says `classification: internal`, which contradicts it.\n   - Remove `allUsers`. Grant access to named groups only.\n   - Drop `card_number` entirely, or store a token or the last 4 digits. Mask or drop the name and address unless there is a documented need.\n   - Reclassify the data as restricted or confidential.\n   - Note that none of these columns exist in `raw_pay.settlements` or in the model's SELECT. The Access section doesn't match the rest of the plan, so the schema needs clarifying.\n\n## Correctness\n\n2. **Source filter mismatch.** The source query filters on `DATE(settled_at) = @ds`, but the model and load filter on `ds = @ds`. Those can differ, for example when a file arrives late or crosses midnight UTC. Pick one definition of the day and use it everywhere.\n3. **Rollout deletes by `month`.** The table has no `month` column, since the model outputs only `ds`, `transaction_id`, and `amount`. The DELETE would fail, or if a column exists, it would wipe a whole month while the load is per-day. `INSERT INTO ... SELECT ...` is also left as a stub. Use the same idempotent per-`ds` MERGE, or delete and insert by `ds` in one transaction.\n4. **Primary key conflict.** The contract says `primary_key: transaction_id`, but the grain is one row per transaction per `ds`. The key should be `(ds, transaction_id)`. A transaction that settles on two days would break the contract as written.\n5. **MERGE is incomplete.** `INSERT ROW` is fine in BigQuery, but there's no `WHEN NOT MATCHED BY SOURCE` handling. If a bank file is re-delivered with a transaction removed, the stale row stays. Also, `SUM(amount)` silently nets refunds and reversals. For reconciliation, decide whether duplicates and negatives should be summed or flagged.\n6. **No duplicate-file handling.** Delivery is one bank file per day, but nothing guards against a file being loaded twice. If `raw_pay.settlements` appends on re-delivery, `SUM` would double-count. Dedupe on file ID or add a load-batch key.\n\n## Cost and operations\n\n7. **5 TB source.** Check that `raw_pay.settlements` is partitioned on `ds` and has `require_partition_filter` set. Otherwise, each run could scan 5 TB. The source query on `DATE(settled_at)` likely won't prune partitions.\n8. **The check is too weak.** \"Check row counts\" has no source, no threshold, and no failure action. Add checks that amounts tie out to the bank file total, that `(ds, transaction_id)` is unique, and that no nulls appear in the keys.\n9. **Freshness SLA.** The 07:00 UTC SLA has no stated dependency on when the bank file lands. Add a sensor or an alert for a missing file.\n10. **Rollback and backfill.** There's no plan for either. Say how you'd restore after a bad load, for example with table snapshots or time travel.\n\n## Minor\n\n- The owner is a distribution list. Name an on-call owner as well.\n- Add the amount currency, and precision for `NUMERIC`.\n- Document late-arriving data and the cutoff.\n\nI'd start with item 1, then fix 2–4, because those change the model's definition. I can draft a revised plan if you'd like."
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.7333333333333333,
+        "passRate": 0.4,
+        "scoreWithout": 0.3333333333333333,
+        "passRateWithout": 0,
+        "delta": 0.39999999999999997
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 0,
+    "overallScore": 0.7333333333333333,
+    "overallPassRate": 0.4,
+    "meanDelta": 0.39999999999999997
+  }
+}

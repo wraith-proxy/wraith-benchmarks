@@ -1,0 +1,112 @@
+[
+  {
+    "case": "plan-review-p12",
+    "arm": "with",
+    "run": 0,
+    "score": 0.6666666666666666,
+    "turns": 9,
+    "seconds": 79,
+    "cost_usd": 0.12917599999999999,
+    "judge_cost_usd": 0.0028777,
+    "tokens": null
+  },
+  {
+    "case": "plan-review-p12",
+    "arm": "with",
+    "run": 1,
+    "score": 1,
+    "turns": 9,
+    "seconds": 74,
+    "cost_usd": 0.127025,
+    "judge_cost_usd": 0.0022009,
+    "tokens": null
+  },
+  {
+    "case": "plan-review-p12",
+    "arm": "with",
+    "run": 2,
+    "score": 0.6666666666666666,
+    "turns": 9,
+    "seconds": 72,
+    "cost_usd": 0.164791,
+    "judge_cost_usd": 0.0019477000000000001,
+    "tokens": null
+  },
+  {
+    "case": "plan-review-p12",
+    "arm": "with",
+    "run": 3,
+    "score": 0.6666666666666666,
+    "turns": 8,
+    "seconds": 73,
+    "cost_usd": 0.1255335,
+    "judge_cost_usd": 0.0026894000000000024,
+    "tokens": null
+  },
+  {
+    "case": "plan-review-p12",
+    "arm": "with",
+    "run": 4,
+    "score": 0.3333333333333333,
+    "turns": 9,
+    "seconds": 63,
+    "cost_usd": 0.1255163,
+    "judge_cost_usd": 0.002273500000000001,
+    "tokens": null
+  },
+  {
+    "case": "plan-review-p12",
+    "arm": "without",
+    "run": 0,
+    "score": 0.6666666666666666,
+    "turns": 2,
+    "seconds": 44,
+    "cost_usd": 0.0459447,
+    "judge_cost_usd": 0.002617399999999997,
+    "tokens": null
+  },
+  {
+    "case": "plan-review-p12",
+    "arm": "without",
+    "run": 1,
+    "score": 0.6666666666666666,
+    "turns": 2,
+    "seconds": 33,
+    "cost_usd": 0.046859000000000005,
+    "judge_cost_usd": 0.0019154000000000046,
+    "tokens": null
+  },
+  {
+    "case": "plan-review-p12",
+    "arm": "without",
+    "run": 2,
+    "score": 0.3333333333333333,
+    "turns": 2,
+    "seconds": 46,
+    "cost_usd": 0.046375299999999994,
+    "judge_cost_usd": 0.001931699999999991,
+    "tokens": null
+  },
+  {
+    "case": "plan-review-p12",
+    "arm": "without",
+    "run": 3,
+    "score": 0.6666666666666666,
+    "turns": 2,
+    "seconds": 46,
+    "cost_usd": 0.04705060000000001,
+    "judge_cost_usd": 0.002553300000000005,
+    "tokens": null
+  },
+  {
+    "case": "plan-review-p12",
+    "arm": "without",
+    "run": 4,
+    "score": 0.6666666666666666,
+    "turns": 2,
+    "seconds": 49,
+    "cost_usd": 0.0498326,
+    "judge_cost_usd": 0.0032353000000000035,
+    "tokens": null
+  }
+]
