@@ -82,7 +82,8 @@ def check_auth(env, credentials, dry_run):
         raise BenchError(f"credentials file not found: {credentials}")
 
 
-def eval_command(task, runs, cap, case=None, root="/work", json_name=None):
+def eval_command(task, runs, cap, case=None, root="/work", json_name=None,
+                 keep_temp=False):
     cmd = [
         "claude", "plugin", "eval", root, "--trust-plugin", "--scaffold",
         "--eval-dir", f"bench-{task}",
@@ -94,16 +95,18 @@ def eval_command(task, runs, cap, case=None, root="/work", json_name=None):
     ]
     if case:
         cmd += ["--case", case]
+    if keep_temp:
+        cmd.append("--keep-temp")
     return cmd
 
 
-def docker_command(image, clone, credentials, cmd, uid, gid):
+def docker_command(image, clone, credentials, cmd, uid, gid, tmpdir=None):
     return [
         "docker", "run", "--rm", "--cap-drop", "ALL",
         "--security-opt", "no-new-privileges",
         "--user", f"{uid}:{gid}",
         "--tmpfs", f"/home/bench:rw,uid={uid},gid={gid},mode=0700,size=256m",
-        "--tmpfs", "/tmp",
+        *(["-v", f"{tmpdir}:/tmp"] if tmpdir else ["--tmpfs", "/tmp"]),
         "-v", f"{clone}:/work",
         "-v", f"{credentials}:/run/bench/credentials.json:ro",
         image, *cmd,
@@ -252,10 +255,55 @@ def load_trace(path):
 
 
 def resolve_trace(trace_path, attempt_dir, task):
-    prefix = f"/work/bench-{task}/results/"
-    if trace_path.startswith(prefix):
-        return Path(attempt_dir) / trace_path[len(prefix):]
+    """Traces are written under /tmp/claude-eval-X/out in the container;
+    collect_traces copies them to <attempt>/traces/claude-eval-X/."""
+    m = re.match(r"/tmp/(claude-eval-[^/]+)/out/(.+)$", trace_path)
+    if m:
+        return Path(attempt_dir) / "traces" / m.group(1) / m.group(2)
     return Path(attempt_dir) / trace_path
+
+
+def collect_traces(tmpdir, results):
+    for trace in Path(tmpdir).glob("claude-eval-*/out/trace.jsonl"):
+        dest = Path(results) / "traces" / trace.parent.parent.name
+        dest.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(trace, dest / trace.name)
+
+
+def trace_usage(events):
+    """Token usage from the trace's final `result` event (seen in a real
+    trace: usage.input_tokens, cache_creation_input_tokens,
+    cache_read_input_tokens, output_tokens). None if there is no result."""
+    for event in reversed(events if isinstance(events, list) else []):
+        if isinstance(event, dict) and event.get("type") == "result":
+            usage = event.get("usage") or {}
+            keys = ("input_tokens", "cache_creation_input_tokens",
+                    "cache_read_input_tokens", "output_tokens")
+            return {k: usage.get(k, 0) for k in keys} | {
+                "duration_ms": event.get("duration_ms"),
+                "cost_usd": event.get("total_cost_usd")}
+    return None
+
+
+def summarise_usage(attempt_dir, data, task):
+    rows = []
+    for report in find_case_reports(data):
+        for arm, runs in zip(("with", "without"), arms_of(report)):
+            for i, run in enumerate(runs):
+                row = {"case": report["name"], "arm": arm, "run": i,
+                       "score": run.get("score"), "turns": run.get("turns"),
+                       "seconds": run.get("durationSeconds"),
+                       "cost_usd": run.get("costUsd"),
+                       "judge_cost_usd": run.get("judgeCostUsd")}
+                try:
+                    events = load_trace(resolve_trace(
+                        run.get("tracePath") or "", attempt_dir, task))
+                    row["tokens"] = trace_usage(events)
+                except (OSError, BenchError):
+                    row["tokens"] = None
+                rows.append(row)
+    (Path(attempt_dir) / "usage.json").write_text(json.dumps(rows, indent=2))
+    return rows
 
 
 def validate_contract(path, schema=SCHEMA):
@@ -371,6 +419,8 @@ def run_task(args, task, tmp, out, state):
         shutil.copytree(HERE / "fixtures" / task, clone / f"bench-{task}")
         results = clone / f"bench-{task}" / "results"
         results.mkdir(exist_ok=True)
+        tmpdir = Path(tmp) / f"tmp-{task}"
+        tmpdir.mkdir()
         print(f"[{task}] wraith {args.wraith_ref} = {sha}, attempt {attempt}")
         complete, flags, failures, ran = [], [], [], 0
         for case, exact in jobs:
@@ -380,9 +430,10 @@ def run_task(args, task, tmp, out, state):
                                           else 1), 2))
             if case and len(names) == 1:
                 case = names[0]
-            cmd = eval_command(task, args.runs, case_cap, case, json_name=jname)
+            cmd = eval_command(task, args.runs, case_cap, case, json_name=jname,
+                               keep_temp=args.keep_temp)
             full = docker_command(args.image, clone, args.credentials, cmd,
-                                  os.getuid(), os.getgid())
+                                  os.getuid(), os.getgid(), tmpdir)
             print(f"[{task}] eval command: {' '.join(cmd)}")
             print(f"[{task}] container command: {' '.join(full)}")
             if args.dry_run:
@@ -390,6 +441,7 @@ def run_task(args, task, tmp, out, state):
                 continue
             code, text = run_container(full)
             ran += 1
+            collect_traces(tmpdir, results)
             (results / f"{jname}.log").write_text(text)
             jf = results / f"{jname}.json"
             if not jf.is_file():
@@ -421,6 +473,8 @@ def run_task(args, task, tmp, out, state):
         scan_for_secrets(results, credential_secrets(args.credentials))
         rel = f"{task}/attempt-{attempt}"
         shutil.copytree(results, out / rel)
+        for jf in sorted(results.glob("*.json")):
+            summarise_usage(out / rel, json.loads(jf.read_text()), task)
         if task == "contracts":
             for jf in sorted(results.glob("*.json")):
                 score_contracts(out / rel, json.loads(jf.read_text()))
@@ -453,6 +507,8 @@ def main(argv=None, env=None):
                     default=str(Path.home() / ".claude/.credentials.json"))
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--resume", action="store_true")
+    ap.add_argument("--keep-temp", action="store_true",
+                    help="eval keeps its temp dirs so traces can be collected")
     args = ap.parse_args(argv)
     try:
         tasks = list(TASKS) if args.task == "all" else [args.task]

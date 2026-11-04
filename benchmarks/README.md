@@ -80,9 +80,9 @@ result file by commit.
   user. The only secret present is the subscription login, and the runner scans results for its values before copying them. Only `<clone>`
   and the results directory are mounted, never the host home.
   Per-task egress is listed under each task.
-- Runs per arm: TODO(verify). Check: the calibration `--json` must show
-  5 runs per arm for each case. If it shows 5 split across arms, set
-  `--runs 10` and re-check.
+- Runs per arm: `--runs N` gives N runs per arm. Verified 4 November
+  2026: with `--runs 1` the JSON has one run in `arms.with` and one in
+  `arms.without`. So `--runs 5` is 5 per arm.
 - Prompts read like a real user wrote them. They never name a wraith
   skill and never hint at the defect categories.
 - Every run counts. A timeout, crash or turn-limit stop scores as a
@@ -196,8 +196,9 @@ the `without` arm there is no hook at all. Default mode is `ask`.
   a fail. The runner replays the Write and Edit calls in the trace;
   a Bash command that names the file marks the result approximate.
 - Both scores are computed per case, arm and run into `validation.json`
-  after a contracts attempt, from the trace files. TODO(verify): the
-  trace path and format; unreadable traces stop the run.
+  after a contracts attempt, from the trace files. The trace path and
+  format are verified on plan-review (see Calibration); a real `Write`
+  is not yet seen, TODO(verify). Unreadable traces stop the run.
 - Secondary: a judge check, reusing `evals/quality-odcs-pii` criteria,
   for primary key and personal-data classification. Schema validity is
   not contract quality.
@@ -301,6 +302,37 @@ file:
   cost), with `--case` and `--runs 1`. Replace the guessed tokens per
   run and the cache split with measured values from the `--json`
   output, then recompute Total USD.
+- Calibration done so far (4 November 2026, plan-review p01 only,
+  3 pairs of runs, Claude Code 2.1.316 in the container): per run, the
+  `with` arm used 8 to 9 turns, 66 to 97 s, about $0.13 list-price
+  equivalent and about 107k input-side tokens (12 uncached, 17.8k cache
+  write, 84.3k cache read) plus 4.6k output; the `without` arm used 2
+  turns, 40 to 52 s, about $0.05, 22.9k input-side tokens and 2.2k
+  output. Judge cost was $0.002 to $0.004 per run (tokens not reported).
+  Measured input per plan-review run is far below the guess in the table
+  above (240k). Scores were noisy and flipped between arms across the
+  three pairs (p01 `with` 0.67, 0.67, 1.0; `without` 1.0, 1.0, 0.67),
+  so the 5 runs per case matter.
+- Calibration facts: the eval JSON is `cases[].arms.{with,without}[]`
+  with `score, turns, costUsd, judgeCostUsd, durationSeconds, error,
+  tracePath, graders`. Token counts are not in that JSON. They are in
+  the trace's last `result` event (`usage`). Traces live under
+  `/tmp/claude-eval-*/out/` in the container and are deleted unless the
+  run passes `--keep-temp` with `/tmp` mounted from the host, which the
+  runner does. Traces are JSONL events (`system`, `assistant`, `user`,
+  `rate_limit_event`, `result`) with `tool_use` blocks in assistant
+  messages. The account's five-hour and seven-day utilization appears in
+  `rate_limit_event`. A run that fails to start is scored by eval as if
+  it ran, so the runner treats error plus zero turns as a harness error.
+- Blocked: guard and contracts cannot run in the container as built.
+  eval refuses a Bash grant without its bubblewrap sandbox, and
+  bubblewrap fails in a non-root container on this host (Ubuntu with
+  `kernel.apparmor_restrict_unprivileged_userns=1`; with a non-root
+  user it fails even with seccomp unconfined). It starts only as root
+  with `SYS_ADMIN` and no seccomp or AppArmor profile, which was not
+  applied. Open until the owner decides. Unverified for those tasks:
+  `file_exists` path, hook `ask` in headless eval, first-write detection
+  on a real `Write`, the usage-limit message.
 - Cap rule: each task invocation gets `--max-cost-usd` = 1.5 x that
   task's calibration projection, rounded up to the next $5. If the
   projected total is over 1.5x the pre-calibration estimate, stop for

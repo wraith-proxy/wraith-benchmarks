@@ -128,6 +128,23 @@ class ContractsTest(unittest.TestCase):
                 run.score_contracts(tmp, {"c": case})
 
 
+class UsageTest(unittest.TestCase):
+    def test_trace_usage_reads_result_event(self):
+        events = [{"type": "assistant"},
+                  {"type": "result", "duration_ms": 5, "total_cost_usd": 0.1,
+                   "usage": {"input_tokens": 1, "output_tokens": 2,
+                             "cache_read_input_tokens": 3}}]
+        got = run.trace_usage(events)
+        self.assertEqual(got["cache_read_input_tokens"], 3)
+        self.assertEqual(got["cache_creation_input_tokens"], 0)
+        self.assertIsNone(run.trace_usage([{"type": "assistant"}]))
+
+    def test_trace_paths_map_to_collected_copy(self):
+        self.assertEqual(
+            run.resolve_trace("/tmp/claude-eval-X/out/trace.jsonl", "/a", "t"),
+            Path("/a/traces/claude-eval-X/trace.jsonl"))
+
+
 class SecretsTest(unittest.TestCase):
     def test_scan_finds_token(self):
         with tempfile.TemporaryDirectory() as tmp:
