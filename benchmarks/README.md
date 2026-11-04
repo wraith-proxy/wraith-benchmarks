@@ -304,11 +304,11 @@ file:
   output, then recompute Total USD.
 - Calibration done so far (4 November 2026, plan-review p01 only,
   3 pairs of runs, Claude Code 2.1.316 in the container): per run, the
-  `with` arm used 8 to 9 turns, 66 to 97 s, about $0.13 list-price
-  equivalent and about 107k input-side tokens (12 uncached, 17.8k cache
+  `with` arm used 8 to 9 turns, 56 to 97 s, about $0.13 list-price
+  equivalent and about 102k (one run) input-side tokens (12 uncached, 17.8k cache
   write, 84.3k cache read) plus 4.6k output; the `without` arm used 2
   turns, 40 to 52 s, about $0.05, 22.9k input-side tokens and 2.2k
-  output. Judge cost was $0.002 to $0.004 per run (tokens not reported).
+  output. Judge cost was $0.001 to $0.004 per run (tokens not reported).
   Measured input per plan-review run is far below the guess in the table
   above (240k). Scores were noisy and flipped between arms across the
   three pairs (p01 `with` 0.67, 0.67, 1.0; `without` 1.0, 1.0, 0.67),
