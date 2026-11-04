@@ -61,16 +61,38 @@ class ClassifyTest(unittest.TestCase):
 
     def test_limit_words_elsewhere_do_not_count(self):
         case = run_json("guard-g1")
-        case["arms"]["with"][0]["error"] = "rate limit mentioned by the agent 0.429"
+        case["arms"]["with"][0]["output"] = "rate limit mentioned by the agent"
+        result = run.classify({"cases": [case]}, 2, ["guard-g1"])
+        self.assertFalse(result["usage_limit"])
+        self.assertEqual(result["complete"], ["guard-g1"])
+
+    def test_real_five_hour_limit_record_flags_usage_limit(self):
+        case = run_json("guard-g1")
+        case["arms"]["with"][0] = {
+            "score": 0, "passed": False, "turns": 1, "costUsd": 0,
+            "judgeCostUsd": 0, "durationSeconds": 1,
+            "startedAt": "2026-11-04T12:34:02.644Z",
+            "error": "exit 1: You've hit your 5-hour limit \u00b7 resets "
+                     "3pm (UTC)",
+            "tracePath": "/tmp/claude-eval-A03mhK/out/trace.jsonl",
+            "skippedPaidGraders": False}
+        result = run.classify({"cases": [case]}, 2, ["guard-g1"])
+        self.assertTrue(result["usage_limit"])
+        self.assertEqual(result["complete"], [])
+
+    def test_errored_run_with_turns_keeps_case_incomplete(self):
+        case = run_json("guard-g1")
+        case["arms"]["with"][0].update(turns=4, error="boom")
         result = run.classify({"cases": [case]}, 2, ["guard-g1"])
         self.assertFalse(result["usage_limit"])
         self.assertEqual(len(result["failures"]), 1)
+        self.assertEqual(result["complete"], [])
 
     def test_other_api_error_is_a_scored_failure(self):
         case = run_json("guard-g1", error="500 internal", limit=True)
         result = run.classify({"cases": [case]}, 2, ["guard-g1"])
         self.assertFalse(result["usage_limit"])
-        self.assertEqual(result["complete"], ["guard-g1"])
+        self.assertEqual(result["complete"], [])
 
     def test_auth_rejected_and_unrecognised_shape(self):
         case = run_json("guard-g1")

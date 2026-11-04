@@ -33,11 +33,11 @@ TASKS = {
     "guard": ["Bash", "Read"],
     "contracts": ["Read", "Write", "Edit", "Glob", "Grep", "Skill", "Bash"],
 }
-# Applied only to the error text of a run flagged ended_on_api_error, never
-# to agent output. TODO(verify): narrow to the CLI's exact message once a
-# real subscription limit has been seen.
+# Applied only to the error text of a run, never to agent output. The real
+# message was seen: "exit 1: You've hit your 5-hour limit · resets 3pm (UTC)".
+# TODO(verify): narrow further if other limit wordings appear.
 USAGE_LIMIT = re.compile(
-    r"usage limit|hit your limit|rate limit|limit reached|"
+    r"usage limit|hit your (?:[\w-]+ )?limit|rate limit|limit reached|"
     r"out of (extra )?usage|too many requests",
     re.IGNORECASE,
 )
@@ -180,14 +180,14 @@ def classify(data, expected_runs, expected_cases):
                 err = str(run.get("error") or "")
                 if flag(run, "auth_rejected"):
                     auth, clean = True, False
-                elif flag(run, "ended_on_api_error") and USAGE_LIMIT.search(
-                        err):
+                elif USAGE_LIMIT.search(err):
                     limit, clean = True, False
                 elif err and not run.get("turns"):
                     harness.append({"case": name, "arm": arm, "error": err})
                     clean = False
                 elif err:
                     failures.append({"case": name, "arm": arm, "error": err})
+                    clean = False
         if clean:
             complete.append(name)
     return {"complete": complete, "usage_limit": limit, "auth_failed": auth,
