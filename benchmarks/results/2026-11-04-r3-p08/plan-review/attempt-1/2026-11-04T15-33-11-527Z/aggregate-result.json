@@ -1,0 +1,647 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.316",
+  "startedAt": "2026-11-04T15:33:11.527Z",
+  "durationSeconds": 567,
+  "costUsd": 0.8112716999999999,
+  "partial": false,
+  "suite": {
+    "root": "/work",
+    "ablation": "with-without",
+    "modelOverride": "claude-sonnet-5-5",
+    "judgeModel": "claude-haiku-5-5",
+    "caseFilter": "plan-review-p08",
+    "threshold": 1,
+    "concurrency": 1,
+    "plugins": [
+      {
+        "name": "wraith",
+        "version": "0.5.10",
+        "path": "/work"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "plan-review-p08",
+      "dir": "bench-plan-review/p08",
+      "source": "mixed",
+      "promptMarkdown": "The plan for the app events model is at docs/wraith/2026-10-12-app-events/plan.md. Review it before we build it.",
+      "runsPerCase": 5,
+      "timeoutSeconds": 600,
+      "maxTurns": 12,
+      "graders": [
+        {
+          "name": "1-dedup",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category dedup. Planted defect: the source delivers at least once (mobile SDK upload, retried on bad networks) and the Load section uses a plain INSERT with no MERGE or dedup on event_id, so redelivered rows are duplicated. Location: the Load section, INSERT INTO ... SELECT of `stg_app_events`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category dedup. Planted defect: the source delivers at least once (mobile SDK upload, retried on bad networks) and the Load section uses a plain INSERT with no MERGE or dedup on event_id, so redelivered rows are duplicated. Location: the Load section, INSERT INTO ... SELECT of `stg_app_events`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "2-scan",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category scan. Planted defect: raw_app.events (about 900 GB) is created without PARTITION BY or CLUSTER BY and the query filters on DATE(event_ts), so every run scans the whole table. Location: the Source section DDL and query of `stg_app_events`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category scan. Planted defect: raw_app.events (about 900 GB) is created without PARTITION BY or CLUSTER BY and the query filters on DATE(event_ts), so every run scans the whole table. Location: the Source section DDL and query of `stg_app_events`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "3-pii",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category pii. Planted defect: columns device_id, advertising_id, email, gps_lat, gps_lon are personal data and the dataset shared_product is readable by allAuthenticatedUsers. Location: the Access section of `stg_app_events`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category pii. Planted defect: columns device_id, advertising_id, email, gps_lat, gps_lon are personal data and the dataset shared_product is readable by allAuthenticatedUsers. Location: the Access section of `stg_app_events`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 7,
+            "costUsd": 0.11303969999999999,
+            "judgeCostUsd": 0.0024304,
+            "durationSeconds": 73,
+            "startedAt": "2026-11-04T15:33:11.566Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-ZqiqOx/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-04)` section to `plan.md`. **Verdict: NOT READY.** There are six blockers.\n\n**Blockers**\n1. **Access:** `allAuthenticatedUsers` can read a table with `email`, `advertising_id`, `device_id` and GPS columns, and the contract classifies it as `internal`. It needs a personal-data classification, named readers, policy tags and an erasure path.\n2. **Rerun safety:** The Load is a plain `INSERT`, so rerunning a `ds` appends duplicates. It needs a replace-the-partition load and a written backfill path.\n3. **Retry inflation:** The SDK retries uploads, so the same `event_id` can arrive more than once. `SUM(amount)` adds those copies together and inflates `amount`. It should keep one row per `event_id` instead.\n4. **Schema and key mismatch:** The Access section lists columns that appear in neither the source schema nor the model. The contract key is `event_id`, but the grain is per event per `ds`. The key should be `(ds, event_id)`.\n5. **Late data:** The plan never defines `ds`. The source query filters `DATE(event_ts)` and the model filters `ds`. Late retries have no stated handling.\n6. **Cost:** The plan gives no partitioning, clustering or `require_partition_filter`. A full scan is about 900 GB, roughly 90 times the 10 GB dev cap.\n\n**Should-fix:** The review also lists several smaller gaps. They are the missing consumer and decision, the missing ODCS file, thin quality tests, no downstream lineage, and a snapshot step that breaks on rerun.\n\nI did not run a dry run, because `raw_app.events` isn't defined in the repo and I didn't check table access. The cost figure is arithmetic from the plan's \"about 900 GB\". The repo has no existing models or contracts, so nothing already covers this.\n\nI left the rest of the plan unedited, so the author can resolve the findings. I can draft the fixes if you want."
+              },
+              {
+                "name": "2-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-04)` section to `plan.md`. **Verdict: NOT READY.** There are six blockers.\n\n**Blockers**\n1. **Access:** `allAuthenticatedUsers` can read a table with `email`, `advertising_id`, `device_id` and GPS columns, and the contract classifies it as `internal`. It needs a personal-data classification, named readers, policy tags and an erasure path.\n2. **Rerun safety:** The Load is a plain `INSERT`, so rerunning a `ds` appends duplicates. It needs a replace-the-partition load and a written backfill path.\n3. **Retry inflation:** The SDK retries uploads, so the same `event_id` can arrive more than once. `SUM(amount)` adds those copies together and inflates `amount`. It should keep one row per `event_id` instead.\n4. **Schema and key mismatch:** The Access section lists columns that appear in neither the source schema nor the model. The contract key is `event_id`, but the grain is per event per `ds`. The key should be `(ds, event_id)`.\n5. **Late data:** The plan never defines `ds`. The source query filters `DATE(event_ts)` and the model filters `ds`. Late retries have no stated handling.\n6. **Cost:** The plan gives no partitioning, clustering or `require_partition_filter`. A full scan is about 900 GB, roughly 90 times the 10 GB dev cap.\n\n**Should-fix:** The review also lists several smaller gaps. They are the missing consumer and decision, the missing ODCS file, thin quality tests, no downstream lineage, and a snapshot step that breaks on rerun.\n\nI did not run a dry run, because `raw_app.events` isn't defined in the repo and I didn't check table access. The cost figure is arithmetic from the plan's \"about 900 GB\". The repo has no existing models or contracts, so nothing already covers this.\n\nI left the rest of the plan unedited, so the author can resolve the findings. I can draft the fixes if you want."
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-04)` section to `plan.md`. **Verdict: NOT READY.** There are six blockers.\n\n**Blockers**\n1. **Access:** `allAuthenticatedUsers` can read a table with `email`, `advertising_id`, `device_id` and GPS columns, and the contract classifies it as `internal`. It needs a personal-data classification, named readers, policy tags and an erasure path.\n2. **Rerun safety:** The Load is a plain `INSERT`, so rerunning a `ds` appends duplicates. It needs a replace-the-partition load and a written backfill path.\n3. **Retry inflation:** The SDK retries uploads, so the same `event_id` can arrive more than once. `SUM(amount)` adds those copies together and inflates `amount`. It should keep one row per `event_id` instead.\n4. **Schema and key mismatch:** The Access section lists columns that appear in neither the source schema nor the model. The contract key is `event_id`, but the grain is per event per `ds`. The key should be `(ds, event_id)`.\n5. **Late data:** The plan never defines `ds`. The source query filters `DATE(event_ts)` and the model filters `ds`. Late retries have no stated handling.\n6. **Cost:** The plan gives no partitioning, clustering or `require_partition_filter`. A full scan is about 900 GB, roughly 90 times the 10 GB dev cap.\n\n**Should-fix:** The review also lists several smaller gaps. They are the missing consumer and decision, the missing ODCS file, thin quality tests, no downstream lineage, and a snapshot step that breaks on rerun.\n\nI did not run a dry run, because `raw_app.events` isn't defined in the repo and I didn't check table access. The cost figure is arithmetic from the plan's \"about 900 GB\". The repo has no existing models or contracts, so nothing already covers this.\n\nI left the rest of the plan unedited, so the author can resolve the findings. I can draft the fixes if you want."
+              }
+            ]
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.11802050000000001,
+            "judgeCostUsd": 0.0026903000000000005,
+            "durationSeconds": 64,
+            "startedAt": "2026-11-04T15:34:24.937Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-ql8Tp6/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-04)` section to `plan.md`. The verdict is **NOT READY**, because it has four blockers.\n\nI found no existing model, table or contract that already answers this. The repo has no dbt project or contracts yet, so I couldn't dry-run the queries or list downstream models.\n\n**Blockers**\n1. **Personal data is exposed.** `shared_product` is readable by `allAuthenticatedUsers`, and it includes `email`, `advertising_id`, `device_id` and GPS columns. The contract still says `classification: internal`.\n2. **Duplicates inflate `amount`.** SDK retries can send the same `event_id` twice, and `SUM(amount)` adds the copies together. The model should dedupe on `event_id` instead.\n3. **A rerun is not safe.** `INSERT INTO` doubles the rows if you run a `ds` again, and the backfill path isn't written.\n4. **`ds` and `event_ts` can disagree.** The source query filters on `DATE(event_ts)` while the model filters on `ds`. The plan also doesn't say how late-arriving retried uploads are handled.\n\n**Should-fix**\n- The contract isn't in `contracts/`. Its `primary_key: event_id` contradicts the grain of `ds` plus `event_id`, and its columns don't match the model SQL.\n- Partitioning isn't stated. If the source isn't partitioned on `ds`, each run scans the full ~900 GB (the plan's figure, not one I measured), against a 10 GB dev limit.\n- No consumer or cost of wrong, late or down is named.\n- The only quality check is row counts, with nothing backing the 07:00 UTC freshness SLA.\n- Downstream consumers aren't listed.\n- The `_bak` snapshot fails on a second run, and the restore steps and row-count pass criterion aren't written.\n\nThere is also a nit: the plan should say it uses a `ds` snapshot, not SCD2.\n\nI didn't change the rest of the plan. The author resolves the findings. I can help fix the blockers or run `wraith:grilling` on it next."
+              },
+              {
+                "name": "2-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-04)` section to `plan.md`. The verdict is **NOT READY**, because it has four blockers.\n\nI found no existing model, table or contract that already answers this. The repo has no dbt project or contracts yet, so I couldn't dry-run the queries or list downstream models.\n\n**Blockers**\n1. **Personal data is exposed.** `shared_product` is readable by `allAuthenticatedUsers`, and it includes `email`, `advertising_id`, `device_id` and GPS columns. The contract still says `classification: internal`.\n2. **Duplicates inflate `amount`.** SDK retries can send the same `event_id` twice, and `SUM(amount)` adds the copies together. The model should dedupe on `event_id` instead.\n3. **A rerun is not safe.** `INSERT INTO` doubles the rows if you run a `ds` again, and the backfill path isn't written.\n4. **`ds` and `event_ts` can disagree.** The source query filters on `DATE(event_ts)` while the model filters on `ds`. The plan also doesn't say how late-arriving retried uploads are handled.\n\n**Should-fix**\n- The contract isn't in `contracts/`. Its `primary_key: event_id` contradicts the grain of `ds` plus `event_id`, and its columns don't match the model SQL.\n- Partitioning isn't stated. If the source isn't partitioned on `ds`, each run scans the full ~900 GB (the plan's figure, not one I measured), against a 10 GB dev limit.\n- No consumer or cost of wrong, late or down is named.\n- The only quality check is row counts, with nothing backing the 07:00 UTC freshness SLA.\n- Downstream consumers aren't listed.\n- The `_bak` snapshot fails on a second run, and the restore steps and row-count pass criterion aren't written.\n\nThere is also a nit: the plan should say it uses a `ds` snapshot, not SCD2.\n\nI didn't change the rest of the plan. The author resolves the findings. I can help fix the blockers or run `wraith:grilling` on it next."
+              },
+              {
+                "name": "3-pii",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  true,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-04)` section to `plan.md`. The verdict is **NOT READY**, because it has four blockers.\n\nI found no existing model, table or contract that already answers this. The repo has no dbt project or contracts yet, so I couldn't dry-run the queries or list downstream models.\n\n**Blockers**\n1. **Personal data is exposed.** `shared_product` is readable by `allAuthenticatedUsers`, and it includes `email`, `advertising_id`, `device_id` and GPS columns. The contract still says `classification: internal`.\n2. **Duplicates inflate `amount`.** SDK retries can send the same `event_id` twice, and `SUM(amount)` adds the copies together. The model should dedupe on `event_id` instead.\n3. **A rerun is not safe.** `INSERT INTO` doubles the rows if you run a `ds` again, and the backfill path isn't written.\n4. **`ds` and `event_ts` can disagree.** The source query filters on `DATE(event_ts)` while the model filters on `ds`. The plan also doesn't say how late-arriving retried uploads are handled.\n\n**Should-fix**\n- The contract isn't in `contracts/`. Its `primary_key: event_id` contradicts the grain of `ds` plus `event_id`, and its columns don't match the model SQL.\n- Partitioning isn't stated. If the source isn't partitioned on `ds`, each run scans the full ~900 GB (the plan's figure, not one I measured), against a 10 GB dev limit.\n- No consumer or cost of wrong, late or down is named.\n- The only quality check is row counts, with nothing backing the 07:00 UTC freshness SLA.\n- Downstream consumers aren't listed.\n- The `_bak` snapshot fails on a second run, and the restore steps and row-count pass criterion aren't written.\n\nThere is also a nit: the plan should say it uses a `ds` snapshot, not SCD2.\n\nI didn't change the rest of the plan. The author resolves the findings. I can help fix the blockers or run `wraith:grilling` on it next."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.12114929999999999,
+            "judgeCostUsd": 0.0029698999999999993,
+            "durationSeconds": 65,
+            "startedAt": "2026-11-04T15:35:28.984Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-kucxAJ/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-04)` section to `docs/wraith/2026-10-12-app-events/plan.md`. **The verdict is NOT READY**, with four blockers. I didn't edit the rest of the plan.\n\n**Blockers**\n1. **Personal data is open to everyone.**\n   - The `allAuthenticatedUsers` reader means any Google account can read the dataset. The columns include `email`, `advertising_id`, `device_id` and GPS coordinates.\n   - The contract classifies the data as `internal`.\n   - Those columns also appear in the Access list but not in the model output or the raw DDL.\n2. **The load isn't rerunnable.** A plain `INSERT` doubles the rows for a `ds` on every rerun, and \"rebuild for the ds range\" has no mechanism.\n3. **The sums will be wrong.**\n   - The source is retried SDK uploads, so duplicate rows are expected, and `SUM(amount)` double-counts them.\n   - The contract key is `event_id`, but the grain is per `ds`.\n4. **The scan is probably full-table.** The source is about 900 GB with no partitioning or clustering. The `DATE(event_ts) = @ds` filter prunes nothing, and the dev cap is 10 GB.\n\n**Should fix**\n- `ds` means two different things in the plan.\n- There is no late-arrival handling, even though retries make late rows likely.\n- No consumer or decision is named.\n- The contract has no schema or quality rules.\n- There are no tests or source freshness check.\n- The snapshot step breaks on a first run and on a rerun, and the backup copies personal data.\n\n**Nit**\n- No downstream models are listed.\n\n**What I didn't run:** I didn't run a `bq` dry-run or `dbt ls`. The table isn't confirmed to exist in `example-project-dev`, and the repo has no dbt project. The cost finding is reasoned from the plan text, not measured. The repo has no existing model, contract or reference to these tables, so the premise check found nothing to reuse.\n\nResolve the blockers, especially the access and dedupe decisions, before we build. Do you want to work through them now, or should I redraft the plan?"
+              },
+              {
+                "name": "2-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-04)` section to `docs/wraith/2026-10-12-app-events/plan.md`. **The verdict is NOT READY**, with four blockers. I didn't edit the rest of the plan.\n\n**Blockers**\n1. **Personal data is open to everyone.**\n   - The `allAuthenticatedUsers` reader means any Google account can read the dataset. The columns include `email`, `advertising_id`, `device_id` and GPS coordinates.\n   - The contract classifies the data as `internal`.\n   - Those columns also appear in the Access list but not in the model output or the raw DDL.\n2. **The load isn't rerunnable.** A plain `INSERT` doubles the rows for a `ds` on every rerun, and \"rebuild for the ds range\" has no mechanism.\n3. **The sums will be wrong.**\n   - The source is retried SDK uploads, so duplicate rows are expected, and `SUM(amount)` double-counts them.\n   - The contract key is `event_id`, but the grain is per `ds`.\n4. **The scan is probably full-table.** The source is about 900 GB with no partitioning or clustering. The `DATE(event_ts) = @ds` filter prunes nothing, and the dev cap is 10 GB.\n\n**Should fix**\n- `ds` means two different things in the plan.\n- There is no late-arrival handling, even though retries make late rows likely.\n- No consumer or decision is named.\n- The contract has no schema or quality rules.\n- There are no tests or source freshness check.\n- The snapshot step breaks on a first run and on a rerun, and the backup copies personal data.\n\n**Nit**\n- No downstream models are listed.\n\n**What I didn't run:** I didn't run a `bq` dry-run or `dbt ls`. The table isn't confirmed to exist in `example-project-dev`, and the repo has no dbt project. The cost finding is reasoned from the plan text, not measured. The repo has no existing model, contract or reference to these tables, so the premise check found nothing to reuse.\n\nResolve the blockers, especially the access and dedupe decisions, before we build. Do you want to work through them now, or should I redraft the plan?"
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-04)` section to `docs/wraith/2026-10-12-app-events/plan.md`. **The verdict is NOT READY**, with four blockers. I didn't edit the rest of the plan.\n\n**Blockers**\n1. **Personal data is open to everyone.**\n   - The `allAuthenticatedUsers` reader means any Google account can read the dataset. The columns include `email`, `advertising_id`, `device_id` and GPS coordinates.\n   - The contract classifies the data as `internal`.\n   - Those columns also appear in the Access list but not in the model output or the raw DDL.\n2. **The load isn't rerunnable.** A plain `INSERT` doubles the rows for a `ds` on every rerun, and \"rebuild for the ds range\" has no mechanism.\n3. **The sums will be wrong.**\n   - The source is retried SDK uploads, so duplicate rows are expected, and `SUM(amount)` double-counts them.\n   - The contract key is `event_id`, but the grain is per `ds`.\n4. **The scan is probably full-table.** The source is about 900 GB with no partitioning or clustering. The `DATE(event_ts) = @ds` filter prunes nothing, and the dev cap is 10 GB.\n\n**Should fix**\n- `ds` means two different things in the plan.\n- There is no late-arrival handling, even though retries make late rows likely.\n- No consumer or decision is named.\n- The contract has no schema or quality rules.\n- There are no tests or source freshness check.\n- The snapshot step breaks on a first run and on a rerun, and the backup copies personal data.\n\n**Nit**\n- No downstream models are listed.\n\n**What I didn't run:** I didn't run a `bq` dry-run or `dbt ls`. The table isn't confirmed to exist in `example-project-dev`, and the repo has no dbt project. The cost finding is reasoned from the plan text, not measured. The repo has no existing model, contract or reference to these tables, so the premise check found nothing to reuse.\n\nResolve the blockers, especially the access and dedupe decisions, before we build. Do you want to work through them now, or should I redraft the plan?"
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 0.1221586,
+            "judgeCostUsd": 0.0019042999999999994,
+            "durationSeconds": 69,
+            "startedAt": "2026-11-04T15:36:34.429Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-PqOjwC/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended the findings to the end of `plan.md` as `## Data review (2026-11-04)`. **The verdict is NOT READY**, because of four blockers.\n\n**Blockers**\n1. **Retries overcount `amount`.** Delivery is retried on bad networks, so `event_id` can repeat in the source. `SUM(amount)` adds the duplicates together. The plan should keep one row per `(ds, event_id)` instead of summing.\n2. **The load can't be rerun safely.** It's a plain `INSERT`, so rerunning a `ds` appends a second copy. Use a `MERGE` or a partition overwrite, and write the backfill as a loop over `ds`.\n3. **The access section exposes personal data.** The table is readable by `allAuthenticatedUsers` and lists `email`, `advertising_id`, `device_id` and GPS columns. The contract calls it `internal`, and the model SQL doesn't even select those columns. Restrict access to named groups, reclassify it as personal data, and either drop those columns or say how they're protected and erased.\n4. **Late data is undefined.** The source query filters on `DATE(event_ts)` and the model filters on `ds`, and these can differ. The plan doesn't say which one defines `ds` or how late-arriving rows are handled.\n\n**Should-fix items**\n- **Partitioning and cost:** the source DDL has no partitioning or clustering on a table of about 900 GB.\n- **Contract:** it is inline rather than in `contracts/`, has no columns, and uses `event_id` as the key when the grain is `(ds, event_id)`.\n- **Missing sections:** the consumer, tests, freshness checking and downstream consumers are not covered.\n- **Rollback:** it clones the whole table instead of the affected `ds` range, and the restore statement isn't written.\n\n**Not checked**\n- **No cost number:** I didn't dry-run the queries, since there's no table to run them against here. The cost finding has no measured figure.\n- **Existing models:** I only checked the repo for an existing model that already serves this need, and found none. I didn't search the warehouse.\n- **Vendor skills:** I didn't run the second pass with the Google vendor skills, and I haven't confirmed they're installed.\n\nI didn't edit the rest of the plan. The author needs to resolve the findings first. After that I can re-review, or run `wraith:plan-infra-review` for the access and rollout changes."
+              },
+              {
+                "name": "2-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended the findings to the end of `plan.md` as `## Data review (2026-11-04)`. **The verdict is NOT READY**, because of four blockers.\n\n**Blockers**\n1. **Retries overcount `amount`.** Delivery is retried on bad networks, so `event_id` can repeat in the source. `SUM(amount)` adds the duplicates together. The plan should keep one row per `(ds, event_id)` instead of summing.\n2. **The load can't be rerun safely.** It's a plain `INSERT`, so rerunning a `ds` appends a second copy. Use a `MERGE` or a partition overwrite, and write the backfill as a loop over `ds`.\n3. **The access section exposes personal data.** The table is readable by `allAuthenticatedUsers` and lists `email`, `advertising_id`, `device_id` and GPS columns. The contract calls it `internal`, and the model SQL doesn't even select those columns. Restrict access to named groups, reclassify it as personal data, and either drop those columns or say how they're protected and erased.\n4. **Late data is undefined.** The source query filters on `DATE(event_ts)` and the model filters on `ds`, and these can differ. The plan doesn't say which one defines `ds` or how late-arriving rows are handled.\n\n**Should-fix items**\n- **Partitioning and cost:** the source DDL has no partitioning or clustering on a table of about 900 GB.\n- **Contract:** it is inline rather than in `contracts/`, has no columns, and uses `event_id` as the key when the grain is `(ds, event_id)`.\n- **Missing sections:** the consumer, tests, freshness checking and downstream consumers are not covered.\n- **Rollback:** it clones the whole table instead of the affected `ds` range, and the restore statement isn't written.\n\n**Not checked**\n- **No cost number:** I didn't dry-run the queries, since there's no table to run them against here. The cost finding has no measured figure.\n- **Existing models:** I only checked the repo for an existing model that already serves this need, and found none. I didn't search the warehouse.\n- **Vendor skills:** I didn't run the second pass with the Google vendor skills, and I haven't confirmed they're installed.\n\nI didn't edit the rest of the plan. The author needs to resolve the findings first. After that I can re-review, or run `wraith:plan-infra-review` for the access and rollout changes."
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended the findings to the end of `plan.md` as `## Data review (2026-11-04)`. **The verdict is NOT READY**, because of four blockers.\n\n**Blockers**\n1. **Retries overcount `amount`.** Delivery is retried on bad networks, so `event_id` can repeat in the source. `SUM(amount)` adds the duplicates together. The plan should keep one row per `(ds, event_id)` instead of summing.\n2. **The load can't be rerun safely.** It's a plain `INSERT`, so rerunning a `ds` appends a second copy. Use a `MERGE` or a partition overwrite, and write the backfill as a loop over `ds`.\n3. **The access section exposes personal data.** The table is readable by `allAuthenticatedUsers` and lists `email`, `advertising_id`, `device_id` and GPS columns. The contract calls it `internal`, and the model SQL doesn't even select those columns. Restrict access to named groups, reclassify it as personal data, and either drop those columns or say how they're protected and erased.\n4. **Late data is undefined.** The source query filters on `DATE(event_ts)` and the model filters on `ds`, and these can differ. The plan doesn't say which one defines `ds` or how late-arriving rows are handled.\n\n**Should-fix items**\n- **Partitioning and cost:** the source DDL has no partitioning or clustering on a table of about 900 GB.\n- **Contract:** it is inline rather than in `contracts/`, has no columns, and uses `event_id` as the key when the grain is `(ds, event_id)`.\n- **Missing sections:** the consumer, tests, freshness checking and downstream consumers are not covered.\n- **Rollback:** it clones the whole table instead of the affected `ds` range, and the restore statement isn't written.\n\n**Not checked**\n- **No cost number:** I didn't dry-run the queries, since there's no table to run them against here. The cost finding has no measured figure.\n- **Existing models:** I only checked the repo for an existing model that already serves this need, and found none. I didn't search the warehouse.\n- **Vendor skills:** I didn't run the second pass with the Google vendor skills, and I haven't confirmed they're installed.\n\nI didn't edit the rest of the plan. The author needs to resolve the findings first. After that I can re-review, or run `wraith:plan-infra-review` for the access and rollout changes."
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.1259614,
+            "judgeCostUsd": 0.002694099999999998,
+            "durationSeconds": 78,
+            "startedAt": "2026-11-04T15:37:43.502Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-BRgQEY/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-04)` section to `plan.md`. The verdict is **NOT READY**. I didn't edit the rest of the plan.\n\nI didn't run a BigQuery dry run. The repo has no `raw_app.events` table or dbt project to run it against, so the 900 GB figure is the plan's own, unmeasured. I also didn't run the optional Google companion skills.\n\nThe review found no existing model or contract for app events, so the premise stands. It found four blockers:\n\n1. **Personal data is exposed.**\n   - The dataset is readable by `allAuthenticatedUsers`, which is any Google account.\n   - It lists `email`, `advertising_id`, `device_id` and `gps_*`, yet the contract says `classification: internal`.\n   - There is no erasure path.\n2. **The load isn't idempotent.** `INSERT INTO` doubles the rows whenever a `ds` is rerun, and the plan has no backfill mechanism. Use a `MERGE` or delete-then-insert per `ds`.\n3. **Retried uploads inflate `amount`.** The SDK retries uploads, so `event_id` can repeat, and `SUM(amount)` adds the duplicates. The model should deduplicate by `event_id` rather than sum, with a uniqueness test.\n4. **The contract is incomplete.** There is no contract file in `contracts/`, and no schema, quality rules, or additive/breaking classification. `primary_key: event_id` also conflicts with the grain of one row per event per `ds`.\n\nThe other findings are marked \"should\":\n- **Cost:** no partitioning or clustering, and the 10 GB dev limit is far below 900 GB.\n- **Column lists:** the Access, source and model column lists disagree.\n- **Late data:** no rule for events that arrive after their `ds`.\n- **Tests:** no tests beyond a row count.\n- **Rollback:** the snapshot step fails on the first build, and the snapshot carries the same personal data.\n- **Consumer and lineage:** no consumer or lineage is named.\n\nI'd start with the personal-data and idempotency blockers, since they change what the model selects and how it loads. Want me to draft the plan edits, or grill you on the open decisions first (the definition of `ds`, and whether to keep the personal columns at all)?"
+              },
+              {
+                "name": "2-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-04)` section to `plan.md`. The verdict is **NOT READY**. I didn't edit the rest of the plan.\n\nI didn't run a BigQuery dry run. The repo has no `raw_app.events` table or dbt project to run it against, so the 900 GB figure is the plan's own, unmeasured. I also didn't run the optional Google companion skills.\n\nThe review found no existing model or contract for app events, so the premise stands. It found four blockers:\n\n1. **Personal data is exposed.**\n   - The dataset is readable by `allAuthenticatedUsers`, which is any Google account.\n   - It lists `email`, `advertising_id`, `device_id` and `gps_*`, yet the contract says `classification: internal`.\n   - There is no erasure path.\n2. **The load isn't idempotent.** `INSERT INTO` doubles the rows whenever a `ds` is rerun, and the plan has no backfill mechanism. Use a `MERGE` or delete-then-insert per `ds`.\n3. **Retried uploads inflate `amount`.** The SDK retries uploads, so `event_id` can repeat, and `SUM(amount)` adds the duplicates. The model should deduplicate by `event_id` rather than sum, with a uniqueness test.\n4. **The contract is incomplete.** There is no contract file in `contracts/`, and no schema, quality rules, or additive/breaking classification. `primary_key: event_id` also conflicts with the grain of one row per event per `ds`.\n\nThe other findings are marked \"should\":\n- **Cost:** no partitioning or clustering, and the 10 GB dev limit is far below 900 GB.\n- **Column lists:** the Access, source and model column lists disagree.\n- **Late data:** no rule for events that arrive after their `ds`.\n- **Tests:** no tests beyond a row count.\n- **Rollback:** the snapshot step fails on the first build, and the snapshot carries the same personal data.\n- **Consumer and lineage:** no consumer or lineage is named.\n\nI'd start with the personal-data and idempotency blockers, since they change what the model selects and how it loads. Want me to draft the plan edits, or grill you on the open decisions first (the definition of `ds`, and whether to keep the personal columns at all)?"
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-04)` section to `plan.md`. The verdict is **NOT READY**. I didn't edit the rest of the plan.\n\nI didn't run a BigQuery dry run. The repo has no `raw_app.events` table or dbt project to run it against, so the 900 GB figure is the plan's own, unmeasured. I also didn't run the optional Google companion skills.\n\nThe review found no existing model or contract for app events, so the premise stands. It found four blockers:\n\n1. **Personal data is exposed.**\n   - The dataset is readable by `allAuthenticatedUsers`, which is any Google account.\n   - It lists `email`, `advertising_id`, `device_id` and `gps_*`, yet the contract says `classification: internal`.\n   - There is no erasure path.\n2. **The load isn't idempotent.** `INSERT INTO` doubles the rows whenever a `ds` is rerun, and the plan has no backfill mechanism. Use a `MERGE` or delete-then-insert per `ds`.\n3. **Retried uploads inflate `amount`.** The SDK retries uploads, so `event_id` can repeat, and `SUM(amount)` adds the duplicates. The model should deduplicate by `event_id` rather than sum, with a uniqueness test.\n4. **The contract is incomplete.** There is no contract file in `contracts/`, and no schema, quality rules, or additive/breaking classification. `primary_key: event_id` also conflicts with the grain of one row per event per `ds`.\n\nThe other findings are marked \"should\":\n- **Cost:** no partitioning or clustering, and the 10 GB dev limit is far below 900 GB.\n- **Column lists:** the Access, source and model column lists disagree.\n- **Late data:** no rule for events that arrive after their `ds`.\n- **Tests:** no tests beyond a row count.\n- **Rollback:** the snapshot step fails on the first build, and the snapshot carries the same personal data.\n- **Consumer and lineage:** no consumer or lineage is named.\n\nI'd start with the personal-data and idempotency blockers, since they change what the model selects and how it loads. Want me to draft the plan edits, or grill you on the open decisions first (the definition of `ds`, and whether to keep the personal columns at all)?"
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0407559,
+            "judgeCostUsd": 0.003362600000000002,
+            "durationSeconds": 53,
+            "startedAt": "2026-11-04T15:39:01.255Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-2tg0Ps/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. It has several problems that I'd fix before building.\n\n**Correctness**\n\n1. **Duplicates are summed.** The SDK retries uploads, so `raw_app.events` will contain duplicate rows for the same `event_id`. `SUM(amount)` adds each duplicate again and inflates revenue. Dedupe instead, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`. Then the amount comes from one row and isn't summed.\n2. **`ds` and `event_ts` disagree.** The source query filters on `DATE(event_ts) = @ds`, but the model and load filter on `ds = @ds`. Late or retried uploads can have a `ds` that differs from the event's date. Pick one definition and use it everywhere. Also confirm which column the table is partitioned on. If it's `ds`, `DATE(event_ts)` forces a scan of a roughly 900 GB table.\n3. **The grain and the key don't match.** The grain is \"one row per event per ds\", but the contract says `primary_key: event_id`. If an event can show up under more than one `ds`, `event_id` alone isn't unique. Decide which is true, and add a uniqueness test.\n4. **The load isn't idempotent.** A plain `INSERT` duplicates rows when a ds is re-run, and the rollout rebuilds a range. Use `MERGE`, or delete and insert by partition (`ds`), or `INSERT OVERWRITE`.\n5. **The model and load are the same query.** The doc repeats it verbatim, so the two copies can drift apart. Keep one definition.\n\n**Privacy and access (the most serious problem)**\n\n6. **Too broad, with sensitive columns.** The plan grants `allAuthenticatedUsers` read access on `shared_product`. That is anyone with a Google account, not just your organization. The columns include `email`, `advertising_id`, `device_id`, `gps_lat` and `gps_lon`, which are PII and precise location. The contract labels the table `classification: internal`, which contradicts this. Do the following:\n   - Restrict readers to a specific group.\n   - Drop the PII columns from staging, or hash or coarsen them.\n   - Use column-level policy tags for anything you keep.\n   - Reclassify the table to match what it actually holds.\n\n**Rollout**\n\n7. **Backup and rollback gaps.**\n   - Step 1 clones `stg_app_events`, which doesn't exist on the first run. Add a first-run case.\n   - A single `_bak` name gets overwritten on the next run. Date-stamp it.\n   - Snapshots have no expiry. Set one, or they will accumulate.\n   - Time travel only covers 7 days, so say that the undo window is 7 days.\n8. **Row counts alone won't catch the problems above.** Add checks for the following:\n   - `event_id` is unique.\n   - `amount` is not null.\n   - The sum of `amount` is reconciled against a deduplicated source.\n   - The count compared with the previous day is within a set tolerance.\n\n**Smaller points**\n\n- Use `NUMERIC` consistently, and say how nulls in `amount` are handled.\n- `freshness_sla: 07:00 UTC` needs a stated dependency on when the SDK uploads land. Late-arriving events need a lookback window.\n- The plan doesn't mention partitioning or clustering for the new table.\n\nItems 1, 4 and 6 should block the build. Do you want me to draft a revised plan with these changes?"
+              },
+              {
+                "name": "2-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan. It has several problems that I'd fix before building.\n\n**Correctness**\n\n1. **Duplicates are summed.** The SDK retries uploads, so `raw_app.events` will contain duplicate rows for the same `event_id`. `SUM(amount)` adds each duplicate again and inflates revenue. Dedupe instead, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`. Then the amount comes from one row and isn't summed.\n2. **`ds` and `event_ts` disagree.** The source query filters on `DATE(event_ts) = @ds`, but the model and load filter on `ds = @ds`. Late or retried uploads can have a `ds` that differs from the event's date. Pick one definition and use it everywhere. Also confirm which column the table is partitioned on. If it's `ds`, `DATE(event_ts)` forces a scan of a roughly 900 GB table.\n3. **The grain and the key don't match.** The grain is \"one row per event per ds\", but the contract says `primary_key: event_id`. If an event can show up under more than one `ds`, `event_id` alone isn't unique. Decide which is true, and add a uniqueness test.\n4. **The load isn't idempotent.** A plain `INSERT` duplicates rows when a ds is re-run, and the rollout rebuilds a range. Use `MERGE`, or delete and insert by partition (`ds`), or `INSERT OVERWRITE`.\n5. **The model and load are the same query.** The doc repeats it verbatim, so the two copies can drift apart. Keep one definition.\n\n**Privacy and access (the most serious problem)**\n\n6. **Too broad, with sensitive columns.** The plan grants `allAuthenticatedUsers` read access on `shared_product`. That is anyone with a Google account, not just your organization. The columns include `email`, `advertising_id`, `device_id`, `gps_lat` and `gps_lon`, which are PII and precise location. The contract labels the table `classification: internal`, which contradicts this. Do the following:\n   - Restrict readers to a specific group.\n   - Drop the PII columns from staging, or hash or coarsen them.\n   - Use column-level policy tags for anything you keep.\n   - Reclassify the table to match what it actually holds.\n\n**Rollout**\n\n7. **Backup and rollback gaps.**\n   - Step 1 clones `stg_app_events`, which doesn't exist on the first run. Add a first-run case.\n   - A single `_bak` name gets overwritten on the next run. Date-stamp it.\n   - Snapshots have no expiry. Set one, or they will accumulate.\n   - Time travel only covers 7 days, so say that the undo window is 7 days.\n8. **Row counts alone won't catch the problems above.** Add checks for the following:\n   - `event_id` is unique.\n   - `amount` is not null.\n   - The sum of `amount` is reconciled against a deduplicated source.\n   - The count compared with the previous day is within a set tolerance.\n\n**Smaller points**\n\n- Use `NUMERIC` consistently, and say how nulls in `amount` are handled.\n- `freshness_sla: 07:00 UTC` needs a stated dependency on when the SDK uploads land. Late-arriving events need a lookback window.\n- The plan doesn't mention partitioning or clustering for the new table.\n\nItems 1, 4 and 6 should block the build. Do you want me to draft a revised plan with these changes?"
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. It has several problems that I'd fix before building.\n\n**Correctness**\n\n1. **Duplicates are summed.** The SDK retries uploads, so `raw_app.events` will contain duplicate rows for the same `event_id`. `SUM(amount)` adds each duplicate again and inflates revenue. Dedupe instead, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`. Then the amount comes from one row and isn't summed.\n2. **`ds` and `event_ts` disagree.** The source query filters on `DATE(event_ts) = @ds`, but the model and load filter on `ds = @ds`. Late or retried uploads can have a `ds` that differs from the event's date. Pick one definition and use it everywhere. Also confirm which column the table is partitioned on. If it's `ds`, `DATE(event_ts)` forces a scan of a roughly 900 GB table.\n3. **The grain and the key don't match.** The grain is \"one row per event per ds\", but the contract says `primary_key: event_id`. If an event can show up under more than one `ds`, `event_id` alone isn't unique. Decide which is true, and add a uniqueness test.\n4. **The load isn't idempotent.** A plain `INSERT` duplicates rows when a ds is re-run, and the rollout rebuilds a range. Use `MERGE`, or delete and insert by partition (`ds`), or `INSERT OVERWRITE`.\n5. **The model and load are the same query.** The doc repeats it verbatim, so the two copies can drift apart. Keep one definition.\n\n**Privacy and access (the most serious problem)**\n\n6. **Too broad, with sensitive columns.** The plan grants `allAuthenticatedUsers` read access on `shared_product`. That is anyone with a Google account, not just your organization. The columns include `email`, `advertising_id`, `device_id`, `gps_lat` and `gps_lon`, which are PII and precise location. The contract labels the table `classification: internal`, which contradicts this. Do the following:\n   - Restrict readers to a specific group.\n   - Drop the PII columns from staging, or hash or coarsen them.\n   - Use column-level policy tags for anything you keep.\n   - Reclassify the table to match what it actually holds.\n\n**Rollout**\n\n7. **Backup and rollback gaps.**\n   - Step 1 clones `stg_app_events`, which doesn't exist on the first run. Add a first-run case.\n   - A single `_bak` name gets overwritten on the next run. Date-stamp it.\n   - Snapshots have no expiry. Set one, or they will accumulate.\n   - Time travel only covers 7 days, so say that the undo window is 7 days.\n8. **Row counts alone won't catch the problems above.** Add checks for the following:\n   - `event_id` is unique.\n   - `amount` is not null.\n   - The sum of `amount` is reconciled against a deduplicated source.\n   - The count compared with the previous day is within a set tolerance.\n\n**Smaller points**\n\n- Use `NUMERIC` consistently, and say how nulls in `amount` are handled.\n- `freshness_sla: 07:00 UTC` needs a stated dependency on when the SDK uploads land. Late-arriving events need a lookback window.\n- The plan doesn't mention partitioning or clustering for the new table.\n\nItems 1, 4 and 6 should block the build. Do you want me to draft a revised plan with these changes?"
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0415591,
+            "judgeCostUsd": 0.002242099999999997,
+            "durationSeconds": 41,
+            "startedAt": "2026-11-04T15:39:54.372Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-zpP1ae/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. I found several problems to fix before building.\n\n**Blocking**\n\n1. **Duplicates are collapsed by summing.** The source is retried on bad networks, so the same `event_id` can arrive more than once. `SUM(amount)` then double-counts the amount. The model should dedupe, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`, and not sum. The plan also needs to say which copy wins.\n\n2. **Access is too open for the columns listed.** `allAuthenticatedUsers` means anyone with a Google account can read the dataset. The column list includes `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`, which are PII. The contract says `classification: internal`, which doesn't fit. Either drop or hash those columns, or restrict readers to a named group and reclassify the table as PII/confidential.\n\n3. **The model SQL doesn't produce the listed columns.** The model and load SQL select only `ds, event_id, amount`, but Access lists `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`. Also, `raw_app.events` has no such columns in its DDL. Either the source DDL is incomplete or the Access list is wrong.\n\n4. **The source query filters on the wrong column.** The source example uses `DATE(event_ts) = @ds`, but the model uses `ds = @ds`. These can select different rows, because `ds` may be the load date and `event_ts` the client time. Late retries make this worse. Pick one definition of the partition and use it everywhere. If `event_id` can arrive on a different `ds` than its first copy, dedupe within one `ds` won't catch it.\n\n5. **The load is not idempotent.** A plain `INSERT` re-run for the same `ds` duplicates the rows. Use `MERGE` on `event_id`, or `DELETE` the `ds` partition and then insert it in one transaction. The rollout step \"Rebuild for the ds range\" depends on this.\n\n**Should fix**\n\n6. **Grain is ambiguous.** \"One row per event per ds\" conflicts with `primary_key: event_id`. If an event can appear in more than one `ds`, `event_id` alone isn't unique. Decide whether the key is `event_id` or `(ds, event_id)`, and add a uniqueness test.\n\n7. **Cost.** The table is about 900 GB. The plan doesn't say whether it is partitioned on `ds`, or whether `ds` is required in the filter. An unpruned scan is expensive, and the `DATE(event_ts)` form in the source query likely prevents pruning.\n\n8. **Rollback is weaker than it looks.**\n   - Time travel only works for 7 days, so the undo window ends then.\n   - The snapshot is of the whole table, and the plan never says when it gets dropped.\n   - The check in step 3 is only row counts. After the dedupe change, counts will intentionally differ, so add checks on duplicate `event_id`s and on `SUM(amount)` against a reference.\n\n9. **Contract gaps.**\n   - There is no schema or column-level contract.\n   - There is no test list (unique, not null, accepted ranges for `amount`).\n   - There is no `ds` retention.\n   - Freshness at 07:00 UTC needs an upstream arrival time, and a late-data window given the retries.\n\n**Suggested rewrite of the model**\n\n```sql\nSELECT ds, event_id, event_ts, amount\nFROM raw_app.events\nWHERE ds = @ds\nQUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1\n```\n\nLoad it with a `MERGE` or a partition replace. Leave the PII columns out of the shared dataset. If they're needed, put them in a restricted table.\n\nQuestions for the author:\n- Is `ds` the ingest date or the event date?\n- Can a retried event land in a later `ds`?\n- Do you need the PII columns downstream at all?\n\nI haven't changed any files. I can apply these edits to the plan if you want."
+              },
+              {
+                "name": "2-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan. I found several problems to fix before building.\n\n**Blocking**\n\n1. **Duplicates are collapsed by summing.** The source is retried on bad networks, so the same `event_id` can arrive more than once. `SUM(amount)` then double-counts the amount. The model should dedupe, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`, and not sum. The plan also needs to say which copy wins.\n\n2. **Access is too open for the columns listed.** `allAuthenticatedUsers` means anyone with a Google account can read the dataset. The column list includes `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`, which are PII. The contract says `classification: internal`, which doesn't fit. Either drop or hash those columns, or restrict readers to a named group and reclassify the table as PII/confidential.\n\n3. **The model SQL doesn't produce the listed columns.** The model and load SQL select only `ds, event_id, amount`, but Access lists `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`. Also, `raw_app.events` has no such columns in its DDL. Either the source DDL is incomplete or the Access list is wrong.\n\n4. **The source query filters on the wrong column.** The source example uses `DATE(event_ts) = @ds`, but the model uses `ds = @ds`. These can select different rows, because `ds` may be the load date and `event_ts` the client time. Late retries make this worse. Pick one definition of the partition and use it everywhere. If `event_id` can arrive on a different `ds` than its first copy, dedupe within one `ds` won't catch it.\n\n5. **The load is not idempotent.** A plain `INSERT` re-run for the same `ds` duplicates the rows. Use `MERGE` on `event_id`, or `DELETE` the `ds` partition and then insert it in one transaction. The rollout step \"Rebuild for the ds range\" depends on this.\n\n**Should fix**\n\n6. **Grain is ambiguous.** \"One row per event per ds\" conflicts with `primary_key: event_id`. If an event can appear in more than one `ds`, `event_id` alone isn't unique. Decide whether the key is `event_id` or `(ds, event_id)`, and add a uniqueness test.\n\n7. **Cost.** The table is about 900 GB. The plan doesn't say whether it is partitioned on `ds`, or whether `ds` is required in the filter. An unpruned scan is expensive, and the `DATE(event_ts)` form in the source query likely prevents pruning.\n\n8. **Rollback is weaker than it looks.**\n   - Time travel only works for 7 days, so the undo window ends then.\n   - The snapshot is of the whole table, and the plan never says when it gets dropped.\n   - The check in step 3 is only row counts. After the dedupe change, counts will intentionally differ, so add checks on duplicate `event_id`s and on `SUM(amount)` against a reference.\n\n9. **Contract gaps.**\n   - There is no schema or column-level contract.\n   - There is no test list (unique, not null, accepted ranges for `amount`).\n   - There is no `ds` retention.\n   - Freshness at 07:00 UTC needs an upstream arrival time, and a late-data window given the retries.\n\n**Suggested rewrite of the model**\n\n```sql\nSELECT ds, event_id, event_ts, amount\nFROM raw_app.events\nWHERE ds = @ds\nQUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1\n```\n\nLoad it with a `MERGE` or a partition replace. Leave the PII columns out of the shared dataset. If they're needed, put them in a restricted table.\n\nQuestions for the author:\n- Is `ds` the ingest date or the event date?\n- Can a retried event land in a later `ds`?\n- Do you need the PII columns downstream at all?\n\nI haven't changed any files. I can apply these edits to the plan if you want."
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. I found several problems to fix before building.\n\n**Blocking**\n\n1. **Duplicates are collapsed by summing.** The source is retried on bad networks, so the same `event_id` can arrive more than once. `SUM(amount)` then double-counts the amount. The model should dedupe, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`, and not sum. The plan also needs to say which copy wins.\n\n2. **Access is too open for the columns listed.** `allAuthenticatedUsers` means anyone with a Google account can read the dataset. The column list includes `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`, which are PII. The contract says `classification: internal`, which doesn't fit. Either drop or hash those columns, or restrict readers to a named group and reclassify the table as PII/confidential.\n\n3. **The model SQL doesn't produce the listed columns.** The model and load SQL select only `ds, event_id, amount`, but Access lists `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`. Also, `raw_app.events` has no such columns in its DDL. Either the source DDL is incomplete or the Access list is wrong.\n\n4. **The source query filters on the wrong column.** The source example uses `DATE(event_ts) = @ds`, but the model uses `ds = @ds`. These can select different rows, because `ds` may be the load date and `event_ts` the client time. Late retries make this worse. Pick one definition of the partition and use it everywhere. If `event_id` can arrive on a different `ds` than its first copy, dedupe within one `ds` won't catch it.\n\n5. **The load is not idempotent.** A plain `INSERT` re-run for the same `ds` duplicates the rows. Use `MERGE` on `event_id`, or `DELETE` the `ds` partition and then insert it in one transaction. The rollout step \"Rebuild for the ds range\" depends on this.\n\n**Should fix**\n\n6. **Grain is ambiguous.** \"One row per event per ds\" conflicts with `primary_key: event_id`. If an event can appear in more than one `ds`, `event_id` alone isn't unique. Decide whether the key is `event_id` or `(ds, event_id)`, and add a uniqueness test.\n\n7. **Cost.** The table is about 900 GB. The plan doesn't say whether it is partitioned on `ds`, or whether `ds` is required in the filter. An unpruned scan is expensive, and the `DATE(event_ts)` form in the source query likely prevents pruning.\n\n8. **Rollback is weaker than it looks.**\n   - Time travel only works for 7 days, so the undo window ends then.\n   - The snapshot is of the whole table, and the plan never says when it gets dropped.\n   - The check in step 3 is only row counts. After the dedupe change, counts will intentionally differ, so add checks on duplicate `event_id`s and on `SUM(amount)` against a reference.\n\n9. **Contract gaps.**\n   - There is no schema or column-level contract.\n   - There is no test list (unique, not null, accepted ranges for `amount`).\n   - There is no `ds` retention.\n   - Freshness at 07:00 UTC needs an upstream arrival time, and a late-data window given the retries.\n\n**Suggested rewrite of the model**\n\n```sql\nSELECT ds, event_id, event_ts, amount\nFROM raw_app.events\nWHERE ds = @ds\nQUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1\n```\n\nLoad it with a `MERGE` or a partition replace. Leave the PII columns out of the shared dataset. If they're needed, put them in a restricted table.\n\nQuestions for the author:\n- Is `ds` the ingest date or the event date?\n- Can a retried event land in a later `ds`?\n- Do you need the PII columns downstream at all?\n\nI haven't changed any files. I can apply these edits to the plan if you want."
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.040776599999999996,
+            "judgeCostUsd": 0.0026032999999999994,
+            "durationSeconds": 37,
+            "startedAt": "2026-11-04T15:40:35.143Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-3q6ZnP/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  true,
+                  false
+                ],
+                "evidence": "Review of the plan: I found several problems, and a few are serious.\n\n**Blocking**\n\n1. **Duplicates are summed, not removed.** The source is \"retried on bad networks\", so the same `event_id` can arrive more than once. `SUM(amount)` over those rows double-counts. The `GROUP BY` makes it look like dedup, but it isn't. Dedup instead, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`, or `ANY_VALUE`/`MAX` if retries are identical. If one `event_id` can legitimately have several amounts, the plan needs to say so.\n\n2. **The access section exposes PII to everyone.** The plan gives `allAuthenticatedUsers` read access to `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`. That is a privacy and compliance problem. It also conflicts with `classification: internal`, because that data is at least confidential or restricted. The model's SELECT doesn't produce most of those columns either, so the column list and the model disagree. Drop the PII columns or hash them. Restrict readers to a named group, and use column-level policy tags if the columns stay.\n\n3. **The partition column and the query filter disagree.** The source query filters on `DATE(event_ts) = @ds`, but the model and load filter on `ds = @ds`. If `ds` is the ingestion or upload date, late and retried events land in a different `ds` than their `event_ts` date. That breaks \"one row per event per ds\". An event retried across days would also appear in two partitions and pass the grain check. Decide which date defines `ds`, and make the query and the model use it. `primary_key: event_id` is unique only if that choice dedups across days.\n\n4. **The load isn't idempotent.** `INSERT INTO` re-run for the same `ds` appends the rows again. The rollout rebuilds a ds range, which will do exactly that. Use `MERGE`, or delete and insert the partition in one transaction, or `INSERT OVERWRITE` the partition.\n\n**Should fix**\n\n5. **The rollback is weaker than it looks.**\n   - The snapshot is of the whole table, but only a ds range is rebuilt.\n   - Time travel (7 days) and the snapshot are the only undo, and no step checks that the snapshot exists before the rebuild.\n   - \"Check row counts\" has no pass/fail criterion. Compare against the source's distinct `event_id` count per ds, and add uniqueness and null checks.\n\n6. **Cost.** The source is about 900 GB. Say whether `raw_app.events` is partitioned on `ds`. Filtering on `DATE(event_ts)` would defeat pruning and scan the full table on every run. Also say whether `stg_app_events` is partitioned and clustered, with `ds` as the partition and `event_id` as the cluster key.\n\n7. **Contract gaps.**\n   - There is no late-arrival window, so the plan doesn't say how many days back each run reprocesses.\n   - The 07:00 UTC freshness SLA has no stated dependency on upstream arrival time.\n   - Column types and nullability aren't specified, and `amount` has no currency or sign rules.\n\n**Minor**\n\n- The Model and Load sections repeat the same query. Keep one and have the other refer to it.\n- `INSERT INTO stg_app_events` needs the fully qualified table name and an explicit column list.\n\nMy recommendation is not to build until items 1–4 are settled. Items 1 and 3 change the model's logic, and item 2 needs a decision from whoever owns the data. I can draft a revised plan with a dedup, partition-overwrite model and a tightened access section if you'd like. Item 3 needs your answer first on what `ds` means."
+              },
+              {
+                "name": "2-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "Review of the plan: I found several problems, and a few are serious.\n\n**Blocking**\n\n1. **Duplicates are summed, not removed.** The source is \"retried on bad networks\", so the same `event_id` can arrive more than once. `SUM(amount)` over those rows double-counts. The `GROUP BY` makes it look like dedup, but it isn't. Dedup instead, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`, or `ANY_VALUE`/`MAX` if retries are identical. If one `event_id` can legitimately have several amounts, the plan needs to say so.\n\n2. **The access section exposes PII to everyone.** The plan gives `allAuthenticatedUsers` read access to `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`. That is a privacy and compliance problem. It also conflicts with `classification: internal`, because that data is at least confidential or restricted. The model's SELECT doesn't produce most of those columns either, so the column list and the model disagree. Drop the PII columns or hash them. Restrict readers to a named group, and use column-level policy tags if the columns stay.\n\n3. **The partition column and the query filter disagree.** The source query filters on `DATE(event_ts) = @ds`, but the model and load filter on `ds = @ds`. If `ds` is the ingestion or upload date, late and retried events land in a different `ds` than their `event_ts` date. That breaks \"one row per event per ds\". An event retried across days would also appear in two partitions and pass the grain check. Decide which date defines `ds`, and make the query and the model use it. `primary_key: event_id` is unique only if that choice dedups across days.\n\n4. **The load isn't idempotent.** `INSERT INTO` re-run for the same `ds` appends the rows again. The rollout rebuilds a ds range, which will do exactly that. Use `MERGE`, or delete and insert the partition in one transaction, or `INSERT OVERWRITE` the partition.\n\n**Should fix**\n\n5. **The rollback is weaker than it looks.**\n   - The snapshot is of the whole table, but only a ds range is rebuilt.\n   - Time travel (7 days) and the snapshot are the only undo, and no step checks that the snapshot exists before the rebuild.\n   - \"Check row counts\" has no pass/fail criterion. Compare against the source's distinct `event_id` count per ds, and add uniqueness and null checks.\n\n6. **Cost.** The source is about 900 GB. Say whether `raw_app.events` is partitioned on `ds`. Filtering on `DATE(event_ts)` would defeat pruning and scan the full table on every run. Also say whether `stg_app_events` is partitioned and clustered, with `ds` as the partition and `event_id` as the cluster key.\n\n7. **Contract gaps.**\n   - There is no late-arrival window, so the plan doesn't say how many days back each run reprocesses.\n   - The 07:00 UTC freshness SLA has no stated dependency on upstream arrival time.\n   - Column types and nullability aren't specified, and `amount` has no currency or sign rules.\n\n**Minor**\n\n- The Model and Load sections repeat the same query. Keep one and have the other refer to it.\n- `INSERT INTO stg_app_events` needs the fully qualified table name and an explicit column list.\n\nMy recommendation is not to build until items 1–4 are settled. Items 1 and 3 change the model's logic, and item 2 needs a decision from whoever owns the data. I can draft a revised plan with a dedup, partition-overwrite model and a tightened access section if you'd like. Item 3 needs your answer first on what `ds` means."
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "Review of the plan: I found several problems, and a few are serious.\n\n**Blocking**\n\n1. **Duplicates are summed, not removed.** The source is \"retried on bad networks\", so the same `event_id` can arrive more than once. `SUM(amount)` over those rows double-counts. The `GROUP BY` makes it look like dedup, but it isn't. Dedup instead, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`, or `ANY_VALUE`/`MAX` if retries are identical. If one `event_id` can legitimately have several amounts, the plan needs to say so.\n\n2. **The access section exposes PII to everyone.** The plan gives `allAuthenticatedUsers` read access to `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`. That is a privacy and compliance problem. It also conflicts with `classification: internal`, because that data is at least confidential or restricted. The model's SELECT doesn't produce most of those columns either, so the column list and the model disagree. Drop the PII columns or hash them. Restrict readers to a named group, and use column-level policy tags if the columns stay.\n\n3. **The partition column and the query filter disagree.** The source query filters on `DATE(event_ts) = @ds`, but the model and load filter on `ds = @ds`. If `ds` is the ingestion or upload date, late and retried events land in a different `ds` than their `event_ts` date. That breaks \"one row per event per ds\". An event retried across days would also appear in two partitions and pass the grain check. Decide which date defines `ds`, and make the query and the model use it. `primary_key: event_id` is unique only if that choice dedups across days.\n\n4. **The load isn't idempotent.** `INSERT INTO` re-run for the same `ds` appends the rows again. The rollout rebuilds a ds range, which will do exactly that. Use `MERGE`, or delete and insert the partition in one transaction, or `INSERT OVERWRITE` the partition.\n\n**Should fix**\n\n5. **The rollback is weaker than it looks.**\n   - The snapshot is of the whole table, but only a ds range is rebuilt.\n   - Time travel (7 days) and the snapshot are the only undo, and no step checks that the snapshot exists before the rebuild.\n   - \"Check row counts\" has no pass/fail criterion. Compare against the source's distinct `event_id` count per ds, and add uniqueness and null checks.\n\n6. **Cost.** The source is about 900 GB. Say whether `raw_app.events` is partitioned on `ds`. Filtering on `DATE(event_ts)` would defeat pruning and scan the full table on every run. Also say whether `stg_app_events` is partitioned and clustered, with `ds` as the partition and `event_id` as the cluster key.\n\n7. **Contract gaps.**\n   - There is no late-arrival window, so the plan doesn't say how many days back each run reprocesses.\n   - The 07:00 UTC freshness SLA has no stated dependency on upstream arrival time.\n   - Column types and nullability aren't specified, and `amount` has no currency or sign rules.\n\n**Minor**\n\n- The Model and Load sections repeat the same query. Keep one and have the other refer to it.\n- `INSERT INTO stg_app_events` needs the fully qualified table name and an explicit column list.\n\nMy recommendation is not to build until items 1–4 are settled. Items 1 and 3 change the model's logic, and item 2 needs a decision from whoever owns the data. I can draft a revised plan with a dedup, partition-overwrite model and a tightened access section if you'd like. Item 3 needs your answer first on what `ds` means."
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.04110970000000001,
+            "judgeCostUsd": 0.0026992000000000092,
+            "durationSeconds": 43,
+            "startedAt": "2026-11-04T15:41:12.110Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-FJ5VCc/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I found several problems in the plan.\n\n**Correctness**\n1. **Retries create duplicates, and the model sums them.** The SDK retries uploads, so the same `event_id` can arrive more than once. `SUM(amount)` then double-counts it. Dedupe first, for example with `ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`. Don't sum across duplicates.\n2. **The source filter and the model filter use different columns.** The source query filters on `DATE(event_ts) = @ds`. The model and load filter on `ds = @ds`. Retried or late uploads can have a `ds` that differs from the date of `event_ts`. Pick one definition of the day and use it everywhere. If late arrivals are possible, use a lookback window.\n3. **The grain doesn't match the contract.** The grain is \"one row per event per ds\", but the contract says `primary_key: event_id`. If an event can land in more than one `ds`, `event_id` isn't unique. Either make the key `(ds, event_id)` or enforce one `ds` per event.\n4. **The model and load SQL leave out columns that Access lists.** The model selects only `ds, event_id, amount`. Access lists `device_id, advertising_id, email, gps_lat, gps_lon`, and the source DDL doesn't have any of them. Either the source DDL is incomplete or the Access section is wrong.\n5. **The load isn't idempotent.** `INSERT INTO` for a ds range duplicates rows if it's re-run or backfilled. Use `MERGE`, or delete and insert the partition in a single transaction. Alternatively, use `INSERT OVERWRITE` on the partition.\n\n**Cost and performance**\n6. **`DATE(event_ts) = @ds` probably defeats partition pruning.** If `raw_app.events` is partitioned on `ds`, this scans about 900 GB. The plan doesn't say whether the table is partitioned or clustered. It should say so. It should also filter on the partition column, using `event_ts` only as a secondary bound.\n\n**Security and privacy (the most serious)**\n7. **The plan exposes PII to every authenticated user.** `allAuthenticatedUsers` is effectively public to anyone with a Google account. The column list includes `email`, `advertising_id`, `device_id` and precise GPS. The contract also says `classification: internal`, which contradicts that access. Fix this before building anything:\n   - Restrict readers to a named group.\n   - Drop the PII columns from staging, or hash or coarsen them.\n   - Use column-level policy tags if you keep them.\n   - Reclassify the data to match its contents.\n\n**Rollout**\n8. **The undo plan is weaker than it looks.** The snapshot is taken of the current table, which is fine. But if the rebuild only covers a ds range and the snapshot is whole-table, a full restore would also roll back unrelated partitions that changed since. The plan should say the restore is scoped to the range. Time travel only helps for 7 days. A bad rebuild found later can't be undone that way.\n9. **\"Check row counts\" is too weak.** Row counts won't catch the duplicate problem. Add a uniqueness check on the key, a null check, and a reconciliation of `SUM(amount)` against deduped source totals.\n10. **There are no freshness or late-data details.** The contract has a 07:00 UTC SLA, but the plan doesn't say what schedule meets it. It also doesn't say how late-arriving retries are handled.\n\n**Suggested order:** fix #7 first, then #1–#3 and #5, which change the model's SQL. After that, confirm the source schema (#4, #6). I can draft a revised plan with corrected SQL if you'd like."
+              },
+              {
+                "name": "2-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  true,
+                  false
+                ],
+                "evidence": "I found several problems in the plan.\n\n**Correctness**\n1. **Retries create duplicates, and the model sums them.** The SDK retries uploads, so the same `event_id` can arrive more than once. `SUM(amount)` then double-counts it. Dedupe first, for example with `ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`. Don't sum across duplicates.\n2. **The source filter and the model filter use different columns.** The source query filters on `DATE(event_ts) = @ds`. The model and load filter on `ds = @ds`. Retried or late uploads can have a `ds` that differs from the date of `event_ts`. Pick one definition of the day and use it everywhere. If late arrivals are possible, use a lookback window.\n3. **The grain doesn't match the contract.** The grain is \"one row per event per ds\", but the contract says `primary_key: event_id`. If an event can land in more than one `ds`, `event_id` isn't unique. Either make the key `(ds, event_id)` or enforce one `ds` per event.\n4. **The model and load SQL leave out columns that Access lists.** The model selects only `ds, event_id, amount`. Access lists `device_id, advertising_id, email, gps_lat, gps_lon`, and the source DDL doesn't have any of them. Either the source DDL is incomplete or the Access section is wrong.\n5. **The load isn't idempotent.** `INSERT INTO` for a ds range duplicates rows if it's re-run or backfilled. Use `MERGE`, or delete and insert the partition in a single transaction. Alternatively, use `INSERT OVERWRITE` on the partition.\n\n**Cost and performance**\n6. **`DATE(event_ts) = @ds` probably defeats partition pruning.** If `raw_app.events` is partitioned on `ds`, this scans about 900 GB. The plan doesn't say whether the table is partitioned or clustered. It should say so. It should also filter on the partition column, using `event_ts` only as a secondary bound.\n\n**Security and privacy (the most serious)**\n7. **The plan exposes PII to every authenticated user.** `allAuthenticatedUsers` is effectively public to anyone with a Google account. The column list includes `email`, `advertising_id`, `device_id` and precise GPS. The contract also says `classification: internal`, which contradicts that access. Fix this before building anything:\n   - Restrict readers to a named group.\n   - Drop the PII columns from staging, or hash or coarsen them.\n   - Use column-level policy tags if you keep them.\n   - Reclassify the data to match its contents.\n\n**Rollout**\n8. **The undo plan is weaker than it looks.** The snapshot is taken of the current table, which is fine. But if the rebuild only covers a ds range and the snapshot is whole-table, a full restore would also roll back unrelated partitions that changed since. The plan should say the restore is scoped to the range. Time travel only helps for 7 days. A bad rebuild found later can't be undone that way.\n9. **\"Check row counts\" is too weak.** Row counts won't catch the duplicate problem. Add a uniqueness check on the key, a null check, and a reconciliation of `SUM(amount)` against deduped source totals.\n10. **There are no freshness or late-data details.** The contract has a 07:00 UTC SLA, but the plan doesn't say what schedule meets it. It also doesn't say how late-arriving retries are handled.\n\n**Suggested order:** fix #7 first, then #1–#3 and #5, which change the model's SQL. After that, confirm the source schema (#4, #6). I can draft a revised plan with corrected SQL if you'd like."
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I found several problems in the plan.\n\n**Correctness**\n1. **Retries create duplicates, and the model sums them.** The SDK retries uploads, so the same `event_id` can arrive more than once. `SUM(amount)` then double-counts it. Dedupe first, for example with `ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`. Don't sum across duplicates.\n2. **The source filter and the model filter use different columns.** The source query filters on `DATE(event_ts) = @ds`. The model and load filter on `ds = @ds`. Retried or late uploads can have a `ds` that differs from the date of `event_ts`. Pick one definition of the day and use it everywhere. If late arrivals are possible, use a lookback window.\n3. **The grain doesn't match the contract.** The grain is \"one row per event per ds\", but the contract says `primary_key: event_id`. If an event can land in more than one `ds`, `event_id` isn't unique. Either make the key `(ds, event_id)` or enforce one `ds` per event.\n4. **The model and load SQL leave out columns that Access lists.** The model selects only `ds, event_id, amount`. Access lists `device_id, advertising_id, email, gps_lat, gps_lon`, and the source DDL doesn't have any of them. Either the source DDL is incomplete or the Access section is wrong.\n5. **The load isn't idempotent.** `INSERT INTO` for a ds range duplicates rows if it's re-run or backfilled. Use `MERGE`, or delete and insert the partition in a single transaction. Alternatively, use `INSERT OVERWRITE` on the partition.\n\n**Cost and performance**\n6. **`DATE(event_ts) = @ds` probably defeats partition pruning.** If `raw_app.events` is partitioned on `ds`, this scans about 900 GB. The plan doesn't say whether the table is partitioned or clustered. It should say so. It should also filter on the partition column, using `event_ts` only as a secondary bound.\n\n**Security and privacy (the most serious)**\n7. **The plan exposes PII to every authenticated user.** `allAuthenticatedUsers` is effectively public to anyone with a Google account. The column list includes `email`, `advertising_id`, `device_id` and precise GPS. The contract also says `classification: internal`, which contradicts that access. Fix this before building anything:\n   - Restrict readers to a named group.\n   - Drop the PII columns from staging, or hash or coarsen them.\n   - Use column-level policy tags if you keep them.\n   - Reclassify the data to match its contents.\n\n**Rollout**\n8. **The undo plan is weaker than it looks.** The snapshot is taken of the current table, which is fine. But if the rebuild only covers a ds range and the snapshot is whole-table, a full restore would also roll back unrelated partitions that changed since. The plan should say the restore is scoped to the range. Time travel only helps for 7 days. A bad rebuild found later can't be undone that way.\n9. **\"Check row counts\" is too weak.** Row counts won't catch the duplicate problem. Add a uniqueness check on the key, a null check, and a reconciliation of `SUM(amount)` against deduped source totals.\n10. **There are no freshness or late-data details.** The contract has a 07:00 UTC SLA, but the plan doesn't say what schedule meets it. It also doesn't say how late-arriving retries are handled.\n\n**Suggested order:** fix #7 first, then #1–#3 and #5, which change the model's SQL. After that, confirm the source schema (#4, #6). I can draft a revised plan with corrected SQL if you'd like."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 2,
+            "costUsd": 0.0467409,
+            "judgeCostUsd": 0.0031902000000000076,
+            "durationSeconds": 44,
+            "startedAt": "2026-11-04T15:41:54.751Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-oADMcD/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Review of `docs/wraith/2026-10-12-app-events/plan.md`: don't build it yet.** I'd fix the first three items before building.\n\n**Blockers**\n\n1. **Access (lines 42-43).** `allAuthenticatedUsers` makes the dataset readable by anyone with a Google account. The column list includes `email`, `advertising_id`, `device_id` and `gps_lat`/`gps_lon`. That is a public PII exposure, and it contradicts `classification: internal` (line 56).\n   - Grant a specific group instead.\n   - Drop the PII columns, or hash them or move them to a restricted table.\n   - Set the classification to match the data.\n2. **`SUM(amount)` double-counts retries (lines 11, 24, 34).** The source note says SDK uploads are retried, so duplicate `event_id` rows are expected. Summing them inflates `amount`. Dedupe instead, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`. Use `SUM` only if rows with the same `event_id` are genuinely partial amounts, and the plan should say so if they are.\n3. **The load isn't idempotent (lines 33-38).** `INSERT INTO` run twice for the same `ds` duplicates the whole partition. Step 2 of the rollout rebuilds a ds range, so this is likely to happen. Use `MERGE` on `event_id`, or delete the partition and insert it again in one transaction. You could also use a partition overwrite.\n\n**Should fix**\n\n4. **Two different date filters.** The source example filters `DATE(event_ts) = @ds` (line 16), but the model filters `ds = @ds` (line 26). The plan doesn't say how `ds` relates to `event_ts`. Late-arriving retries may land in a later `ds` than their `event_ts` date, so the same `event_id` could show up under two `ds` values. Pick one definition and document it.\n5. **Grain and key disagree.** The grain is one row per event per `ds` (line 21), but `primary_key: event_id` (line 55). Those match only if an `event_id` can never appear under two `ds` values, which item 4 puts in doubt.\n6. **Column list doesn't match the source or model.** The source DDL (line 14) has only `ds, event_ts, event_id, amount`. The model outputs only `ds, event_id, amount`. The Access section lists `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`, which exist in neither. Either the DDL is incomplete or the Access section is wrong.\n7. **Scan cost.** The table is about 900 GB, and the plan never says whether it's partitioned on `ds`. If it isn't, `WHERE ds = @ds` scans the whole table on every run. `DATE(event_ts)` also won't prune a table partitioned on `ds`. Confirm the partitioning and add `require_partition_filter`.\n\n**Rollout and contract**\n\n- **Row counts (step 3) won't catch problems 2 or 3.** Compare `COUNT(*)` with `COUNT(DISTINCT event_id)`. Also reconcile `SUM(amount)` against a deduped source.\n- **Snapshot (step 1).** It's a sound safety net. Just make sure `stg_app_events_bak` doesn't inherit the broad access grant, and say when it gets dropped.\n- **Contract.** Add `unique` and `not_null` tests on the key. State how the 07:00 UTC SLA copes with late retries, such as a lookback window that reprocesses recent `ds` values.\n\nI can draft a corrected version of the Model, Load and Access sections if you'd like."
+              },
+              {
+                "name": "2-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "**Review of `docs/wraith/2026-10-12-app-events/plan.md`: don't build it yet.** I'd fix the first three items before building.\n\n**Blockers**\n\n1. **Access (lines 42-43).** `allAuthenticatedUsers` makes the dataset readable by anyone with a Google account. The column list includes `email`, `advertising_id`, `device_id` and `gps_lat`/`gps_lon`. That is a public PII exposure, and it contradicts `classification: internal` (line 56).\n   - Grant a specific group instead.\n   - Drop the PII columns, or hash them or move them to a restricted table.\n   - Set the classification to match the data.\n2. **`SUM(amount)` double-counts retries (lines 11, 24, 34).** The source note says SDK uploads are retried, so duplicate `event_id` rows are expected. Summing them inflates `amount`. Dedupe instead, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`. Use `SUM` only if rows with the same `event_id` are genuinely partial amounts, and the plan should say so if they are.\n3. **The load isn't idempotent (lines 33-38).** `INSERT INTO` run twice for the same `ds` duplicates the whole partition. Step 2 of the rollout rebuilds a ds range, so this is likely to happen. Use `MERGE` on `event_id`, or delete the partition and insert it again in one transaction. You could also use a partition overwrite.\n\n**Should fix**\n\n4. **Two different date filters.** The source example filters `DATE(event_ts) = @ds` (line 16), but the model filters `ds = @ds` (line 26). The plan doesn't say how `ds` relates to `event_ts`. Late-arriving retries may land in a later `ds` than their `event_ts` date, so the same `event_id` could show up under two `ds` values. Pick one definition and document it.\n5. **Grain and key disagree.** The grain is one row per event per `ds` (line 21), but `primary_key: event_id` (line 55). Those match only if an `event_id` can never appear under two `ds` values, which item 4 puts in doubt.\n6. **Column list doesn't match the source or model.** The source DDL (line 14) has only `ds, event_ts, event_id, amount`. The model outputs only `ds, event_id, amount`. The Access section lists `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`, which exist in neither. Either the DDL is incomplete or the Access section is wrong.\n7. **Scan cost.** The table is about 900 GB, and the plan never says whether it's partitioned on `ds`. If it isn't, `WHERE ds = @ds` scans the whole table on every run. `DATE(event_ts)` also won't prune a table partitioned on `ds`. Confirm the partitioning and add `require_partition_filter`.\n\n**Rollout and contract**\n\n- **Row counts (step 3) won't catch problems 2 or 3.** Compare `COUNT(*)` with `COUNT(DISTINCT event_id)`. Also reconcile `SUM(amount)` against a deduped source.\n- **Snapshot (step 1).** It's a sound safety net. Just make sure `stg_app_events_bak` doesn't inherit the broad access grant, and say when it gets dropped.\n- **Contract.** Add `unique` and `not_null` tests on the key. State how the 07:00 UTC SLA copes with late retries, such as a lookback window that reprocesses recent `ds` values.\n\nI can draft a corrected version of the Model, Load and Access sections if you'd like."
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Review of `docs/wraith/2026-10-12-app-events/plan.md`: don't build it yet.** I'd fix the first three items before building.\n\n**Blockers**\n\n1. **Access (lines 42-43).** `allAuthenticatedUsers` makes the dataset readable by anyone with a Google account. The column list includes `email`, `advertising_id`, `device_id` and `gps_lat`/`gps_lon`. That is a public PII exposure, and it contradicts `classification: internal` (line 56).\n   - Grant a specific group instead.\n   - Drop the PII columns, or hash them or move them to a restricted table.\n   - Set the classification to match the data.\n2. **`SUM(amount)` double-counts retries (lines 11, 24, 34).** The source note says SDK uploads are retried, so duplicate `event_id` rows are expected. Summing them inflates `amount`. Dedupe instead, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`. Use `SUM` only if rows with the same `event_id` are genuinely partial amounts, and the plan should say so if they are.\n3. **The load isn't idempotent (lines 33-38).** `INSERT INTO` run twice for the same `ds` duplicates the whole partition. Step 2 of the rollout rebuilds a ds range, so this is likely to happen. Use `MERGE` on `event_id`, or delete the partition and insert it again in one transaction. You could also use a partition overwrite.\n\n**Should fix**\n\n4. **Two different date filters.** The source example filters `DATE(event_ts) = @ds` (line 16), but the model filters `ds = @ds` (line 26). The plan doesn't say how `ds` relates to `event_ts`. Late-arriving retries may land in a later `ds` than their `event_ts` date, so the same `event_id` could show up under two `ds` values. Pick one definition and document it.\n5. **Grain and key disagree.** The grain is one row per event per `ds` (line 21), but `primary_key: event_id` (line 55). Those match only if an `event_id` can never appear under two `ds` values, which item 4 puts in doubt.\n6. **Column list doesn't match the source or model.** The source DDL (line 14) has only `ds, event_ts, event_id, amount`. The model outputs only `ds, event_id, amount`. The Access section lists `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`, which exist in neither. Either the DDL is incomplete or the Access section is wrong.\n7. **Scan cost.** The table is about 900 GB, and the plan never says whether it's partitioned on `ds`. If it isn't, `WHERE ds = @ds` scans the whole table on every run. `DATE(event_ts)` also won't prune a table partitioned on `ds`. Confirm the partitioning and add `require_partition_filter`.\n\n**Rollout and contract**\n\n- **Row counts (step 3) won't catch problems 2 or 3.** Compare `COUNT(*)` with `COUNT(DISTINCT event_id)`. Also reconcile `SUM(amount)` against a deduped source.\n- **Snapshot (step 1).** It's a sound safety net. Just make sure `stg_app_events_bak` doesn't inherit the broad access grant, and say when it gets dropped.\n- **Contract.** Add `unique` and `not_null` tests on the key. State how the 07:00 UTC SLA copes with late retries, such as a lookback window that reprocesses recent `ds` values.\n\nI can draft a corrected version of the Model, Load and Access sections if you'd like."
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.39999999999999997,
+        "passRate": 0,
+        "scoreWithout": 0.6,
+        "passRateWithout": 0.2,
+        "delta": -0.2
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 0,
+    "overallScore": 0.39999999999999997,
+    "overallPassRate": 0,
+    "meanDelta": -0.2
+  }
+}
