@@ -404,6 +404,12 @@ def run_task(args, task, tmp, out, state):
     remaining = [n for n in names if n not in prior["complete"]]
     attempt = len(prior["attempts"]) + 1
     per_case = attempt > 1
+    kind = "dry-run" if args.dry_run else "attempt"
+    for name in (kind, "failed"):
+        dest = out / task / f"{name}-{attempt}"
+        if dest.exists():
+            raise BenchError(f"{dest} already exists; pass a new --out "
+                             "or remove it")
     jobs = ([(n, n) for n in remaining] if per_case
             else [(args.case, None)])
     cap = args.max_cost_usd
@@ -467,8 +473,7 @@ def run_task(args, task, tmp, out, state):
             if flags:
                 break
         if args.dry_run:
-            dest = out / task / f"attempt-{attempt}"
-            shutil.copytree(results, dest)
+            shutil.copytree(results, out / task / f"{kind}-{attempt}")
             return {"status": "dry_run", "wraith_sha": sha}
         scan_for_secrets(results, credential_secrets(args.credentials))
         rel = f"{task}/attempt-{attempt}"

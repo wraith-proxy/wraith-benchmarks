@@ -184,8 +184,30 @@ class RunnerTest(unittest.TestCase):
                              "--wraith-repo", str(repo), "--out", str(out),
                              "--dry-run"], {})
             self.assertEqual(code, 0)
-            self.assertTrue((out / "guard/attempt-1/DRY-RUN").exists())
+            self.assertTrue((out / "guard/dry-run-1/DRY-RUN").exists())
             self.assertFalse((out / "state.json").exists())
+
+    def test_existing_attempt_dir_fails_before_the_eval(self):
+        calls = []
+
+        def fake(full):
+            calls.append(full)
+            return 0, "output"
+
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = make_repo(tmp)
+            cred = Path(tmp) / "c.json"
+            cred.write_text(json.dumps({"tok": "t" * 24}))
+            out = Path(tmp) / "out"
+            (out / "guard/attempt-1").mkdir(parents=True)
+            argv = ["--task", "guard", "--wraith-ref", "v0", "--wraith-repo",
+                    str(repo), "--out", str(out), "--credentials", str(cred),
+                    "--max-cost-usd", "8", "--runs", "2"]
+            with mock.patch.object(run, "run_container", fake):
+                code, err = quiet(argv, {})
+            self.assertEqual(code, 4)
+            self.assertIn("attempt-1 already exists", err)
+            self.assertEqual(calls, [])
 
     def test_usage_limit_then_resume_keeps_attempts_apart(self):
         names = run.case_names("guard")
