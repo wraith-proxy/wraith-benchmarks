@@ -1,0 +1,434 @@
+{
+ "1": {
+  "case": "plan-review-p07",
+  "arm": "with",
+  "run": 1,
+  "grader": "3-scan",
+  "judge": false,
+  "votes": [
+   false,
+   false,
+   false
+  ]
+ },
+ "2": {
+  "case": "plan-review-p09",
+  "arm": "with",
+  "run": 4,
+  "grader": "1-scan",
+  "judge": true,
+  "votes": [
+   true,
+   true,
+   true
+  ]
+ },
+ "3": {
+  "case": "plan-review-p05",
+  "arm": "with",
+  "run": 2,
+  "grader": "3-grain",
+  "judge": true,
+  "votes": [
+   true,
+   true,
+   true
+  ]
+ },
+ "4": {
+  "case": "plan-review-p06",
+  "arm": "without",
+  "run": 1,
+  "grader": "3-dedup",
+  "judge": true,
+  "votes": [
+   true,
+   true,
+   true
+  ]
+ },
+ "5": {
+  "case": "plan-review-p08",
+  "arm": "with",
+  "run": 2,
+  "grader": "2-scan",
+  "judge": true,
+  "votes": [
+   true,
+   true,
+   true
+  ]
+ },
+ "6": {
+  "case": "plan-review-p11",
+  "arm": "with",
+  "run": 4,
+  "grader": "1-rollback",
+  "judge": false,
+  "votes": [
+   false,
+   false,
+   false
+  ]
+ },
+ "7": {
+  "case": "plan-review-p01",
+  "arm": "with",
+  "run": 2,
+  "grader": "2-dedup",
+  "judge": false,
+  "votes": [
+   true,
+   false,
+   false
+  ]
+ },
+ "8": {
+  "case": "plan-review-p11",
+  "arm": "with",
+  "run": 2,
+  "grader": "2-contract",
+  "judge": true,
+  "votes": [
+   false,
+   true,
+   true
+  ]
+ },
+ "9": {
+  "case": "plan-review-p08",
+  "arm": "without",
+  "run": 4,
+  "grader": "3-pii",
+  "judge": false,
+  "votes": [
+   false,
+   false,
+   false
+  ]
+ },
+ "10": {
+  "case": "plan-review-p02",
+  "arm": "without",
+  "run": 0,
+  "grader": "2-scan",
+  "judge": false,
+  "votes": [
+   false,
+   false,
+   false
+  ]
+ },
+ "11": {
+  "case": "plan-review-p03",
+  "arm": "with",
+  "run": 0,
+  "grader": "1-scan",
+  "judge": true,
+  "votes": [
+   true,
+   true,
+   true
+  ]
+ },
+ "12": {
+  "case": "plan-review-p01",
+  "arm": "with",
+  "run": 0,
+  "grader": "1-grain",
+  "judge": true,
+  "votes": [
+   true,
+   true,
+   true
+  ]
+ },
+ "13": {
+  "case": "plan-review-p08",
+  "arm": "with",
+  "run": 0,
+  "grader": "2-scan",
+  "judge": false,
+  "votes": [
+   false,
+   false,
+   false
+  ]
+ },
+ "14": {
+  "case": "plan-review-p08",
+  "arm": "without",
+  "run": 1,
+  "grader": "1-dedup",
+  "judge": true,
+  "votes": [
+   true,
+   true,
+   true
+  ]
+ },
+ "15": {
+  "case": "plan-review-p09",
+  "arm": "without",
+  "run": 2,
+  "grader": "1-scan",
+  "judge": false,
+  "votes": [
+   false,
+   false,
+   false
+  ]
+ },
+ "16": {
+  "case": "plan-review-p02",
+  "arm": "without",
+  "run": 0,
+  "grader": "3-pii",
+  "judge": true,
+  "votes": [
+   true,
+   true,
+   true
+  ]
+ },
+ "17": {
+  "case": "plan-review-p06",
+  "arm": "with",
+  "run": 0,
+  "grader": "1-contract",
+  "judge": false,
+  "votes": [
+   true,
+   false,
+   false
+  ]
+ },
+ "18": {
+  "case": "plan-review-p11",
+  "arm": "without",
+  "run": 1,
+  "grader": "1-rollback",
+  "judge": false,
+  "votes": [
+   false,
+   false,
+   false
+  ]
+ },
+ "19": {
+  "case": "plan-review-p07",
+  "arm": "with",
+  "run": 3,
+  "grader": "1-grain",
+  "judge": false,
+  "votes": [
+   false,
+   false,
+   false
+  ]
+ },
+ "20": {
+  "case": "plan-review-p04",
+  "arm": "without",
+  "run": 3,
+  "grader": "2-rollback",
+  "judge": true,
+  "votes": [
+   false,
+   true,
+   true
+  ]
+ },
+ "21": {
+  "case": "plan-review-p09",
+  "arm": "with",
+  "run": 1,
+  "grader": "1-scan",
+  "judge": false,
+  "votes": [
+   false,
+   false,
+   false
+  ]
+ },
+ "22": {
+  "case": "plan-review-p08",
+  "arm": "with",
+  "run": 3,
+  "grader": "3-pii",
+  "judge": true,
+  "votes": [
+   true,
+   true,
+   true
+  ]
+ },
+ "23": {
+  "case": "plan-review-p10",
+  "arm": "with",
+  "run": 1,
+  "grader": "2-rollback",
+  "judge": true,
+  "votes": [
+   true,
+   true,
+   true
+  ]
+ },
+ "24": {
+  "case": "plan-review-p04",
+  "arm": "with",
+  "run": 4,
+  "grader": "3-contract",
+  "judge": true,
+  "votes": [
+   false,
+   true,
+   true
+  ]
+ },
+ "25": {
+  "case": "plan-review-p01",
+  "arm": "with",
+  "run": 2,
+  "grader": "1-grain",
+  "judge": true,
+  "votes": [
+   true,
+   true,
+   true
+  ]
+ },
+ "26": {
+  "case": "plan-review-p08",
+  "arm": "without",
+  "run": 0,
+  "grader": "1-dedup",
+  "judge": true,
+  "votes": [
+   true,
+   true,
+   false
+  ]
+ },
+ "27": {
+  "case": "plan-review-p10",
+  "arm": "with",
+  "run": 3,
+  "grader": "1-pii",
+  "judge": true,
+  "votes": [
+   true,
+   true,
+   true
+  ]
+ },
+ "28": {
+  "case": "plan-review-p02",
+  "arm": "without",
+  "run": 3,
+  "grader": "1-dedup",
+  "judge": true,
+  "votes": [
+   true,
+   true,
+   true
+  ]
+ },
+ "29": {
+  "case": "plan-review-p09",
+  "arm": "without",
+  "run": 0,
+  "grader": "2-pii",
+  "judge": true,
+  "votes": [
+   true,
+   true,
+   true
+  ]
+ },
+ "30": {
+  "case": "plan-review-p10",
+  "arm": "with",
+  "run": 2,
+  "grader": "3-contract",
+  "judge": true,
+  "votes": [
+   true,
+   true,
+   true
+  ]
+ },
+ "31": {
+  "case": "plan-review-p02",
+  "arm": "with",
+  "run": 4,
+  "grader": "3-pii",
+  "judge": true,
+  "votes": [
+   true,
+   true,
+   true
+  ]
+ },
+ "32": {
+  "case": "plan-review-p11",
+  "arm": "without",
+  "run": 0,
+  "grader": "1-rollback",
+  "judge": false,
+  "votes": [
+   false,
+   false,
+   false
+  ]
+ },
+ "33": {
+  "case": "plan-review-p10",
+  "arm": "without",
+  "run": 1,
+  "grader": "3-contract",
+  "judge": false,
+  "votes": [
+   false,
+   false,
+   false
+  ]
+ },
+ "34": {
+  "case": "plan-review-p02",
+  "arm": "without",
+  "run": 1,
+  "grader": "1-dedup",
+  "judge": false,
+  "votes": [
+   false,
+   false,
+   false
+  ]
+ },
+ "35": {
+  "case": "plan-review-p02",
+  "arm": "without",
+  "run": 1,
+  "grader": "2-scan",
+  "judge": false,
+  "votes": [
+   false,
+   false,
+   false
+  ]
+ },
+ "36": {
+  "case": "plan-review-p07",
+  "arm": "without",
+  "run": 2,
+  "grader": "2-dedup",
+  "judge": true,
+  "votes": [
+   true,
+   true,
+   true
+  ]
+ }
+}
