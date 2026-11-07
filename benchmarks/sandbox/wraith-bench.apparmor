@@ -1,0 +1,9 @@
+abi <abi/4.0>,
+include <tunables/global>
+
+# Lets a non-root, capability-free container create the user namespace
+# bubblewrap needs. Applies only to containers started with
+# --security-opt apparmor=wraith-bench.
+profile wraith-bench flags=(unconfined) {
+  userns,
+}
