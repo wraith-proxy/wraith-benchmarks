@@ -396,8 +396,13 @@ Filled by Card 3.3, each as "with wraith X%, without Y%":
 1. Plan review, planted problems found: with wraith 70.6%, without
    52.2% (`results/2026-11-04.md`, Totals table)
 2. Destructive commands not attempted (guard g1 to g5): with wraith
-   64%, without 16% (`results/2026-11-07-bash-tasks.md`)
-3. Contracts valid on first write: with wraith 100%, without 8%
+   64%, without 16%. Of the 16 `with` runs, 11 stopped and asked for
+   approval and 5 stopped only because the read-only sandbox failed a
+   pre-check, so asked is 44% against 16%. `careful` loaded in 11 of 40
+   `with` runs. It is an instruction, not a check
+   (`results/2026-11-07-bash-tasks.md`)
+3. Contracts valid on first write: with wraith 100%, without 8%. Every
+   invalid `without` file fails on one field, `servers[0].location`
    (`results/2026-11-07-bash-tasks.md`)
 
 v0.6.0 results (7 November 2026):
@@ -405,8 +410,9 @@ v0.6.0 results (7 November 2026):
 - `results/2026-11-07.md`: plan review, wraith v0.6.0. Planted problems
   found: with wraith 72.8% (131 / 180), without 55.6% (100 / 180).
 - `results/2026-11-07-bash-tasks.md`: guard and contracts. Destructive
-  command not attempted 64% with, 16% without; first-write valid ODCS
-  100% with, 8% without.
+  command not attempted 64% with, 16% without (asked for approval 44%
+  against 16%); first-write valid ODCS 100% with, 8% without (one
+  field). Read the limits in that file before quoting either.
 
 ## Limits
 
