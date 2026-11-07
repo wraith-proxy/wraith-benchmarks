@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.316",
+  "startedAt": "2026-11-07T08:27:58.314Z",
+  "durationSeconds": 49,
+  "costUsd": 0.1678597,
+  "partial": false,
+  "suite": {
+    "root": "/work",
+    "ablation": "with-without",
+    "modelOverride": "claude-sonnet-5-5",
+    "judgeModel": "claude-haiku-5-5",
+    "caseFilter": "contracts-orders",
+    "threshold": 1,
+    "concurrency": 1,
+    "plugins": [
+      {
+        "name": "wraith",
+        "version": "0.6.0",
+        "path": "/work"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "contracts-orders",
+      "dir": "bench-contracts/orders",
+      "source": "mixed",
+      "promptMarkdown": "Write an ODCS v3.2.0 data contract for the orders table (columns in tables/orders.md) and save it as contracts/orders.yaml.",
+      "runsPerCase": 5,
+      "timeoutSeconds": 600,
+      "maxTurns": 10,
+      "graders": [
+        {
+          "name": "quality",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the saved contract declares ODCS v3.2.0, kind DataContract, marks order_id and line_no together as a composite primary key as the primary key. FAIL otherwise. Secondary check only; schema validity is scored by the harness.",
+          "config": {
+            "criteria": "PASS if the saved contract declares ODCS v3.2.0, kind DataContract, marks order_id and line_no together as a composite primary key as the primary key. FAIL otherwise. Secondary check only; schema validity is scored by the harness.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "saved",
+          "type": "file_exists",
+          "weight": 1,
+          "config": {
+            "path": "contracts/orders.yaml",
+            "exists": true
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 10,
+            "costUsd": 0.11044710000000002,
+            "judgeCostUsd": 0.0010414,
+            "durationSeconds": 30,
+            "startedAt": "2026-11-07T08:27:58.335Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-hALHPQ/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "I wrote `contracts/orders.yaml`, but I couldn't validate it against the v3.2.0 JSON Schema. `uvx` failed twice with \"Read-only file system\" when it tried to create its cache directory. The first try used the default location and the second used a cache under `$TMPDIR`. I didn't try to get around the sandbox. To validate, run this from a shell that can write a uv cache:\n\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/orders.yaml\n```\n\n**What the contract contains**\n- **Key:** The key is `order_id` plus `line_no` (positions 1 and 2), because the table has one row per order line. An object-level `duplicateValues` rule checks that the pair is unique.\n- **Columns:** All six columns have `physicalName`, `logicalType`, `physicalType` and `required: true`. I made every column required because the table doc doesn't say any are nullable. Each description is at least 50 characters. The types map as STRING to `string`, INT64 to `integer`, NUMERIC to `number` and TIMESTAMP to `timestamp`.\n- **Quality rules:** `quantity` must be at least 1 and `unit_price` must be at least 0.\n- **Classification:** The contract declares `[public, internal, pii, psi]` and every column is `internal`. None of the columns hold personal data.\n- **SLA:** There is no `slaProperties` block, because the table doc gives no freshness or retention target.\n\n**Please check these**\n- **Owner:** The doc names no owning team, so I used the placeholder `example-shop-data`. Rule 12 requires a real owner, so please replace it.\n- **Contract id:** The `id` is a UUID I generated.\n- **Currency:** The `unit_price` description says \"in the order currency\", which is my assumption, so correct it if that's wrong.\n- **Generated models:** I didn't generate or check any dbt models, and the repo has none to compare against."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/orders.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 4,
+            "costUsd": 0.057412599999999994,
+            "judgeCostUsd": 0.0005463,
+            "durationSeconds": 19,
+            "startedAt": "2026-11-07T08:28:27.967Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-qF2umo/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/orders.yaml`. I haven't validated it against the ODCS JSON schema.\n\n- **Columns:** all six columns from `tables/orders.md` are in the schema. Each has a logical type and its BigQuery physical type, for example `INT64` becomes `integer` and `NUMERIC` becomes `number`.\n- **Server:** I added a `dev` BigQuery server using the project, dataset and location from `AGENTS.md` and the table doc: `example-project-dev`, `example_shop` and `europe-west2`.\n- **Composite key:** the doc says one row per order line, so I made `order_id` and `line_no` a composite primary key and marked both as required.\n- **Metadata:** I set the status to `draft` and the version to `1.0.0`. The id `example-shop-orders` is a placeholder I made up.\n- **Descriptions:** I wrote the column descriptions myself, since the doc only gives names and types. Please check them.\n\nI left out nullability, quality rules, SLAs and ownership because the sources don't specify them."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/orders.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 0.5,
+        "passRateWithout": 0,
+        "delta": 0.5
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 1,
+    "overallScore": 1,
+    "overallPassRate": 1,
+    "meanDelta": 0.5
+  }
+}

@@ -1,0 +1,1568 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Eval report — wraith v0.6.0</title>
+</head>
+<body>
+<style>
+:root{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){:root{--plane:#0d0d0d;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#898781;--hairline:rgba(255,255,255,.10);--grid:#2c2c2a;--inset:rgba(255,255,255,.05);--accent:#3987e5;--base-fill:#898781;--delta-good:#0ca30c;--good:#0ca30c;--warning:#fab219;--critical:#e06c6c;color-scheme:dark}}
+:root[data-theme="dark"]{--plane:#0d0d0d;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#898781;--hairline:rgba(255,255,255,.10);--grid:#2c2c2a;--inset:rgba(255,255,255,.05);--accent:#3987e5;--base-fill:#898781;--delta-good:#0ca30c;--good:#0ca30c;--warning:#fab219;--critical:#e06c6c;color-scheme:dark}
+:root[data-theme="light"]{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--plane);color:var(--ink);
+  font:14px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-text-size-adjust:100%}
+.wrap{max-width:880px;margin:0 auto;padding:40px 24px 64px;display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+header h1{margin:2px 0 0;font-size:24px;font-weight:600;line-height:1.25;text-wrap:balance}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;color:var(--ink-2);font-size:13px}
+.meta .num{font-variant-numeric:tabular-nums lining-nums}
+.banner{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;
+  border:1px solid var(--hairline);background:var(--surface);font-size:13px}
+.banner .chip-warn{color:var(--warning);font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--hairline);border-radius:10px;padding:14px 16px;
+  display:flex;flex-direction:column;gap:4px}
+.tile .label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.tile .value{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums lining-nums;line-height:1.1}
+.tile.hero .value{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:48px}
+.tile .sub{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tile .value.delta-pos{color:var(--delta-good)}
+.tile .value.delta-neg{color:var(--critical)}
+.toolbar{display:flex;gap:8px;justify-content:flex-end}
+.toolbar button{font:12px system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink-2);
+  background:var(--surface);border:1px solid var(--hairline);border-radius:6px;padding:4px 10px;cursor:pointer}
+.toolbar button:hover{color:var(--ink)}
+.toolbar button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.case{background:var(--surface);border:1px solid var(--hairline);border-radius:10px;padding:18px 20px;
+  display:flex;flex-direction:column;gap:10px}
+.case-regressed{border-left:3px solid var(--critical)}
+.verdict{margin:6px 0 0;font-size:15px}
+.verdict .delta{font-size:15px}
+.flag{font-size:11px;font-weight:600;color:var(--warning);white-space:nowrap}
+.star{color:var(--warning);font-size:.45em;vertical-align:super;line-height:0;cursor:help}
+.legend summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2)}
+.legend-list{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--ink-2)}
+.case-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.case-head h2{margin:0;font-size:16px;font-weight:600}
+.case-head .spacer{flex:1}
+.case-score{font-size:15px;font-weight:600}
+.mono{font:12px "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.num{font-variant-numeric:tabular-nums lining-nums}
+.muted{color:var(--ink-3);font-size:12px}
+.meter{display:inline-block;position:relative;width:120px;height:6px;border-radius:4px;background:var(--grid);
+  vertical-align:middle}
+.meter>span{display:block;height:100%;border-radius:4px;max-width:100%}
+.meter .tick{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink-3);border-radius:1px}
+.m-accent>span{background:var(--accent)}
+.m-base>span{background:var(--base-fill)}
+.delta{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.delta-pos{color:var(--delta-good)}
+.delta-neg{color:var(--critical)}
+.delta-zero{color:var(--ink-3)}
+details.section{border-top:1px solid var(--grid);padding-top:10px}
+details.section>summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--ink-2);list-style-position:outside;margin-left:2px}
+details.section>summary:hover{color:var(--ink)}
+details.section[open]>summary{margin-bottom:8px}
+.md{display:flex;flex-direction:column;gap:8px;background:var(--inset);border-radius:8px;
+  padding:12px 14px;overflow-wrap:break-word}
+.md>:first-child{margin-top:0}
+.md h1,.md h2,.md h3,.md h4,.md h5,.md h6{margin:4px 0 0;font-size:1em;font-weight:600;line-height:1.3}
+.md p,.md ul,.md ol,.md blockquote,.md table,.md pre,.md hr{margin:0}
+.md ul,.md ol{display:flex;flex-direction:column;gap:4px;padding-left:20px}
+.md blockquote{border-left:2px solid var(--hairline);padding-left:10px;color:var(--ink-2)}
+.md :not(pre)>code{background:var(--inset);padding:1px 4px;border-radius:4px;
+  font:.92em "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.md pre{background:var(--inset);border:1px solid var(--hairline);padding:10px 12px;border-radius:6px;
+  overflow-x:auto;font:12px/1.5 "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.md pre code{background:none;padding:0;font:inherit}
+.md table{width:100%;border-collapse:collapse}
+.md th,.md td{padding:5px 8px;text-align:left;vertical-align:top;border-bottom:1px solid var(--grid)}
+.md th{font-weight:600;color:var(--ink-2)}
+.md a{color:var(--accent);text-decoration:none}
+.md a:hover{text-decoration:underline}
+.grader-def{display:flex;flex-direction:column;gap:6px;padding:8px 0}
+.grader-def+.grader-def{border-top:1px solid var(--grid)}
+.grader-def-head{display:flex;align-items:baseline;gap:8px}
+.grader-name{font:13px "SF Mono",ui-monospace,Menlo,Consolas,monospace;font-weight:600}
+.badge{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2);
+  border:1px solid var(--hairline);border-radius:999px;padding:1px 8px}
+.config{display:flex;flex-direction:column;gap:2px;background:var(--inset);border-radius:8px;padding:10px 14px}
+.config code{font:12px "SF Mono",ui-monospace,Menlo,Consolas,monospace;overflow-wrap:anywhere}
+.arm{display:flex;flex-direction:column;gap:8px;padding:6px 0}
+.arm+.arm{border-top:1px dashed var(--grid);margin-top:4px;padding-top:12px}
+.arm-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.arm-label{font-size:13px;font-weight:600}
+.run{border:1px solid var(--grid);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.run-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.run-title{font-size:12px;font-weight:600;color:var(--ink-2)}
+.run-error .explanation{color:var(--ink-2)}
+.note{font-size:12px;color:var(--ink-2)}
+.graders{display:flex;flex-direction:column;gap:4px}
+details.grader{border-radius:6px}
+details.grader>summary{cursor:pointer;display:flex;align-items:baseline;gap:8px;padding:3px 4px;
+  border-radius:6px;list-style:none}
+details.grader>summary::-webkit-details-marker{display:none}
+details.grader>summary::before{content:'▸';font-size:10px;color:var(--ink-3);flex:none;
+  transition:transform .12s ease}
+details.grader[open]>summary::before{transform:rotate(90deg)}
+details.grader>summary:hover{background:var(--inset)}
+details.grader>summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.grader-body{padding:6px 8px 8px 24px;display:flex;flex-direction:column;gap:6px}
+.chip{font-size:11px;font-weight:600;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.chip-pass{color:var(--good);border:1px solid currentColor}
+.chip-fail{color:var(--critical);border:1px solid currentColor}
+.chip.chip-warn{color:var(--warning);border:1px solid currentColor}
+.explanation{margin:0;font-size:13px;color:var(--ink-2);white-space:pre-wrap;overflow-wrap:break-word}
+.kv{display:flex;gap:8px;font-size:12px;color:var(--ink-3)}
+.votes{font-variant-numeric:tabular-nums;letter-spacing:.1em}
+pre.evidence{margin:0;background:var(--inset);border:1px solid var(--hairline);border-radius:6px;
+  padding:8px 10px;overflow-x:auto;max-height:320px;
+  font:12px/1.5 "SF Mono",ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:break-word}
+footer{color:var(--ink-3);font-size:12px;text-align:center;padding-top:8px}
+@media (prefers-reduced-motion:no-preference){
+  details.grader>summary,.toolbar button{transition:background .12s ease,color .12s ease}
+}
+@media (prefers-reduced-motion:reduce){
+  details.grader>summary::before{transition:none}
+}
+@media print{
+  :root,:root[data-theme="dark"],:root[data-theme="light"]{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;color-scheme:light}
+  body{background:#fff}
+  .toolbar{display:none}
+  .case,.run,.grader-def{break-inside:avoid}
+  pre.evidence{max-height:none}
+}
+</style>
+<div class="wrap">
+<header>
+<div class="eyebrow">Plugin eval report</div>
+<h1>wraith v0.6.0</h1>
+<p class="verdict">Plugin effect: <span class="delta delta-pos">↑ +20.0 pts</span> vs baseline — improved 1 · flat 0 · regressed 0 of 1 case.</p>
+<div class="meta">
+<span class="mono">.</span>
+<span>Claude Code v2.1.316</span>
+<span class="num">2026-11-07 08:26 UTC</span>
+<span class="num">6m 37s</span>
+<span class="num">$0.69</span>
+<span class="num">10 runs</span>
+
+
+<span>model claude-sonnet-5-5</span>
+<span>judge claude-haiku-5-5</span>
+<span class="num">threshold 100%</span>
+<span>filtered: --case plan-review-p08</span>
+</div>
+</header>
+
+<section class="tiles">
+<div class="tile hero"><span class="label">Suite score · with plugin</span><span class="value">73.3%</span><span class="sub">mean of per-case scores</span></div>
+<div class="tile"><span class="label">Ablation Δ</span><span class="value num delta-pos">↑ +20.0</span><span class="sub">score points vs baseline, 1 of 1 case</span></div>
+<div class="tile"><span class="label">Baseline score</span><span class="value num">53.3%</span><span class="sub">without the plugin</span></div>
+<div class="tile"><span class="label">Cases</span><span class="value num">1</span><span class="sub">0 of 1 ≥ 100% threshold</span></div>
+<div class="tile"><span class="label">Perfect runs</span><span class="value num">40%</span><span class="sub">runs where every grader passed</span></div>
+</section>
+<details class="section legend">
+<summary>How to read this report</summary>
+<ul class="legend-list">
+<li>A run's score is the weighted fraction of its graders that passed; a "perfect" run passed every grader.</li>
+<li>A case's score is the mean of its runs; a case passes when its score is at or above the 100% threshold (the tick on each case bar).</li>
+<li>The suite score is the mean of the per-case scores.</li>
+<li>Judge votes are independent samples of the LLM judge; the majority decides pass or fail.</li>
+<li>"With plugin" and "Baseline" runs are identical except for the plugin being loaded; Δ is the with-plugin score minus the baseline score.</li>
+
+</ul>
+</details>
+<div class="toolbar"><button type="button" data-act="expand">Expand all</button><button type="button" data-act="collapse">Collapse all</button></div>
+<article class="case" id="case-1">
+<div class="case-head">
+<h2>plan-review-p08</h2>
+<span class="muted mono">bench-plan-review/p08</span>
+<span class="spacer"></span>
+
+<span class="delta delta-pos">↑ +20.0 pts</span>
+<span class="muted">with plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:73.3%"></span><i class="tick" style="left:100.0%"></i></span>
+<span class="num case-score">73.3%</span>
+</div>
+
+<details class="section" open>
+<summary>Results</summary>
+<section class="arm">
+<div class="arm-head">
+<span class="arm-label">With plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:73.3%"></span></span>
+<span class="num">73.3%</span>
+<span class="muted num">40% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">8 turns · $0.10 · 08:26:12 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The review is appended to the plan as `## Data review (2026-11-07)`. **Verdict: NOT READY**, because of four blockers.
+
+**Blockers**
+1. **Personal data is exposed.** The dataset is readable by `allAuthenticatedUsers`, which means any Google account. The column list includes `email`, `advertising_id`, `device_id` and precise GPS. The contract also says `classification: internal`, and there is no crypto-shred path.
+2. **The load isn&apos;t idempotent.** A plain `INSERT INTO` duplicates rows when you rerun a `ds`, and the rollout&apos;s range rebuild would do the same.
+3. **`SUM(amount)` double-counts retries.** The SDK retries uploads, so `event_id` repeats. It should be deduped, not summed.
+
+**Should fix**
+- **Grain and key:** The key should be (`ds`, `event_id`). The model, the access list and the contract each list different columns. The `ds` filter also differs between the source query (`DATE(event_ts)`) and the model (`ds`).
+- **Cost:** The 900 GB source has no partitioning, clustering or `require_partition_filter`. A full scan costs about $5.60 at list price and is far over the 10 GB dev limit.
+- **Missing pieces:** There are no tests and no late-data rule. The plan names no consumer or downstream models. The contract is inline, not in `contracts/`.
+- **Rollback:** The snapshot step fails on the first run because the table doesn&apos;t exist. The snapshot also copies personal data and has no expiry.
+
+I didn&apos;t run a dry run or `dbt ls`. The repo has no dbt project, and the plan names no dev table to test against. I found no existing model or table that already covers app events, so there is no premise blocker. I only appended the review and left the rest of the plan alone. Do you want me to draft the plan fixes?</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The review is appended to the plan as `## Data review (2026-11-07)`. **Verdict: NOT READY**, because of four blockers.
+
+**Blockers**
+1. **Personal data is exposed.** The dataset is readable by `allAuthenticatedUsers`, which means any Google account. The column list includes `email`, `advertising_id`, `device_id` and precise GPS. The contract also says `classification: internal`, and there is no crypto-shred path.
+2. **The load isn&apos;t idempotent.** A plain `INSERT INTO` duplicates rows when you rerun a `ds`, and the rollout&apos;s range rebuild would do the same.
+3. **`SUM(amount)` double-counts retries.** The SDK retries uploads, so `event_id` repeats. It should be deduped, not summed.
+
+**Should fix**
+- **Grain and key:** The key should be (`ds`, `event_id`). The model, the access list and the contract each list different columns. The `ds` filter also differs between the source query (`DATE(event_ts)`) and the model (`ds`).
+- **Cost:** The 900 GB source has no partitioning, clustering or `require_partition_filter`. A full scan costs about $5.60 at list price and is far over the 10 GB dev limit.
+- **Missing pieces:** There are no tests and no late-data rule. The plan names no consumer or downstream models. The contract is inline, not in `contracts/`.
+- **Rollback:** The snapshot step fails on the first run because the table doesn&apos;t exist. The snapshot also copies personal data and has no expiry.
+
+I didn&apos;t run a dry run or `dbt ls`. The repo has no dbt project, and the plan names no dev table to test against. I found no existing model or table that already covers app events, so there is no premise blocker. I only appended the review and left the rest of the plan alone. Do you want me to draft the plan fixes?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The review is appended to the plan as `## Data review (2026-11-07)`. **Verdict: NOT READY**, because of four blockers.
+
+**Blockers**
+1. **Personal data is exposed.** The dataset is readable by `allAuthenticatedUsers`, which means any Google account. The column list includes `email`, `advertising_id`, `device_id` and precise GPS. The contract also says `classification: internal`, and there is no crypto-shred path.
+2. **The load isn&apos;t idempotent.** A plain `INSERT INTO` duplicates rows when you rerun a `ds`, and the rollout&apos;s range rebuild would do the same.
+3. **`SUM(amount)` double-counts retries.** The SDK retries uploads, so `event_id` repeats. It should be deduped, not summed.
+
+**Should fix**
+- **Grain and key:** The key should be (`ds`, `event_id`). The model, the access list and the contract each list different columns. The `ds` filter also differs between the source query (`DATE(event_ts)`) and the model (`ds`).
+- **Cost:** The 900 GB source has no partitioning, clustering or `require_partition_filter`. A full scan costs about $5.60 at list price and is far over the 10 GB dev limit.
+- **Missing pieces:** There are no tests and no late-data rule. The plan names no consumer or downstream models. The contract is inline, not in `contracts/`.
+- **Rollback:** The snapshot step fails on the first run because the table doesn&apos;t exist. The snapshot also copies personal data and has no expiry.
+
+I didn&apos;t run a dry run or `dbt ls`. The repo has no dbt project, and the plan names no dev table to test against. I found no existing model or table that already covers app events, so there is no premise blocker. I only appended the review and left the rest of the plan alone. Do you want me to draft the plan fixes?</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">2 turns · $0.06 · 08:26:53 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan. I wouldn&apos;t build it yet, because there are four blockers.
+
+## Blockers
+
+1. **Retries double-count `amount`.**
+   - The source is an SDK upload &quot;retried on bad networks&quot;, so the same `event_id` can land more than once.
+   - `SUM(amount) ... GROUP BY ds, event_id` adds those duplicates together and overstates revenue.
+   - The model should dedupe, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`. It should not aggregate.
+   - A retry can also land in a different `ds`, so `event_id` may repeat across partitions. That conflicts with `primary_key: event_id`.
+
+2. **The load isn&apos;t idempotent.**
+   - `INSERT INTO ... WHERE ds = @ds` appends every time it runs.
+   - Rollout step 2 (&quot;rebuild for the ds range&quot;) and any rerun will duplicate rows.
+   - Use `MERGE`, or delete and insert by partition (`insert_overwrite`).
+
+3. **The access setup exposes personal data.**
+   - `allAuthenticatedUsers` means any Google account, so the data is effectively public.
+   - The column list includes `email`, `advertising_id`, `device_id` and `gps_lat/gps_lon`.
+   - The contract classifies this as `internal`. It should be personal data or restricted.
+   - The plan needs these things:
+     - named readers, such as a group
+     - policy tags on the personal-data columns
+     - a decision on whether those columns belong in staging at all
+     - a crypto-shredding or deletion path
+
+4. **The model, the load and the access list disagree.**
+   - The model and load output only `ds, event_id, amount`.
+   - The Access section lists eight columns.
+   - Decide which one is right.
+
+## Should fix
+
+- **`ds` filter mismatch.** The source example filters on `DATE(event_ts) = @ds`, but the model filters on `ds = @ds`. If `ds` is the load date and not the event date, late events land in the wrong day. State what `ds` means and how late data is handled, for example a lookback window.
+- **Cost.** The table is about 900 GB, and `SELECT *` with `DATE(event_ts)` can&apos;t prune partitions. The plan doesn&apos;t declare partitioning or clustering for the source or the target. Specify partition by `ds` (with `require_partition_filter`) and cluster by `event_id`, and add a dry-run bytes estimate.
+- **Rollout and rollback.**
+  - Row counts alone won&apos;t catch the duplicate problem. Compare `COUNT(DISTINCT event_id)` and `SUM(amount)` against the source.
+  - You can&apos;t restore a snapshot over a live table. Spell out the restore (a clone into place, or a rename).
+  - Time travel (7 days) and the snapshot have no stated expiry or cost.
+  - Say whether the snapshot is of the whole table or only the affected range.
+- **Contract is thin.** It has no schema, types or nullability. It has no quality rules, such as `event_id` not null and unique, or `amount` not null and non-negative if that applies. The `07:00 UTC` freshness SLA doesn&apos;t say what it&apos;s measured against. The contract also has no retention period and no personal-data fields.
+- **Missing pieces.** There are no dbt tests, no backfill plan for historical `ds`, and no source freshness check.
+
+## Suggested next step
+Fix the first four, then run `wraith:plan-data-review` to record the verdict in the plan. Want me to draft the revised Model, Load and Access sections?</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan. I wouldn&apos;t build it yet, because there are four blockers.
+
+## Blockers
+
+1. **Retries double-count `amount`.**
+   - The source is an SDK upload &quot;retried on bad networks&quot;, so the same `event_id` can land more than once.
+   - `SUM(amount) ... GROUP BY ds, event_id` adds those duplicates together and overstates revenue.
+   - The model should dedupe, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`. It should not aggregate.
+   - A retry can also land in a different `ds`, so `event_id` may repeat across partitions. That conflicts with `primary_key: event_id`.
+
+2. **The load isn&apos;t idempotent.**
+   - `INSERT INTO ... WHERE ds = @ds` appends every time it runs.
+   - Rollout step 2 (&quot;rebuild for the ds range&quot;) and any rerun will duplicate rows.
+   - Use `MERGE`, or delete and insert by partition (`insert_overwrite`).
+
+3. **The access setup exposes personal data.**
+   - `allAuthenticatedUsers` means any Google account, so the data is effectively public.
+   - The column list includes `email`, `advertising_id`, `device_id` and `gps_lat/gps_lon`.
+   - The contract classifies this as `internal`. It should be personal data or restricted.
+   - The plan needs these things:
+     - named readers, such as a group
+     - policy tags on the personal-data columns
+     - a decision on whether those columns belong in staging at all
+     - a crypto-shredding or deletion path
+
+4. **The model, the load and the access list disagree.**
+   - The model and load output only `ds, event_id, amount`.
+   - The Access section lists eight columns.
+   - Decide which one is right.
+
+## Should fix
+
+- **`ds` filter mismatch.** The source example filters on `DATE(event_ts) = @ds`, but the model filters on `ds = @ds`. If `ds` is the load date and not the event date, late events land in the wrong day. State what `ds` means and how late data is handled, for example a lookback window.
+- **Cost.** The table is about 900 GB, and `SELECT *` with `DATE(event_ts)` can&apos;t prune partitions. The plan doesn&apos;t declare partitioning or clustering for the source or the target. Specify partition by `ds` (with `require_partition_filter`) and cluster by `event_id`, and add a dry-run bytes estimate.
+- **Rollout and rollback.**
+  - Row counts alone won&apos;t catch the duplicate problem. Compare `COUNT(DISTINCT event_id)` and `SUM(amount)` against the source.
+  - You can&apos;t restore a snapshot over a live table. Spell out the restore (a clone into place, or a rename).
+  - Time travel (7 days) and the snapshot have no stated expiry or cost.
+  - Say whether the snapshot is of the whole table or only the affected range.
+- **Contract is thin.** It has no schema, types or nullability. It has no quality rules, such as `event_id` not null and unique, or `amount` not null and non-negative if that applies. The `07:00 UTC` freshness SLA doesn&apos;t say what it&apos;s measured against. The contract also has no retention period and no personal-data fields.
+- **Missing pieces.** There are no dbt tests, no backfill plan for historical `ds`, and no source freshness check.
+
+## Suggested next step
+Fix the first four, then run `wraith:plan-data-review` to record the verdict in the plan. Want me to draft the revised Model, Load and Access sections?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan. I wouldn&apos;t build it yet, because there are four blockers.
+
+## Blockers
+
+1. **Retries double-count `amount`.**
+   - The source is an SDK upload &quot;retried on bad networks&quot;, so the same `event_id` can land more than once.
+   - `SUM(amount) ... GROUP BY ds, event_id` adds those duplicates together and overstates revenue.
+   - The model should dedupe, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`. It should not aggregate.
+   - A retry can also land in a different `ds`, so `event_id` may repeat across partitions. That conflicts with `primary_key: event_id`.
+
+2. **The load isn&apos;t idempotent.**
+   - `INSERT INTO ... WHERE ds = @ds` appends every time it runs.
+   - Rollout step 2 (&quot;rebuild for the ds range&quot;) and any rerun will duplicate rows.
+   - Use `MERGE`, or delete and insert by partition (`insert_overwrite`).
+
+3. **The access setup exposes personal data.**
+   - `allAuthenticatedUsers` means any Google account, so the data is effectively public.
+   - The column list includes `email`, `advertising_id`, `device_id` and `gps_lat/gps_lon`.
+   - The contract classifies this as `internal`. It should be personal data or restricted.
+   - The plan needs these things:
+     - named readers, such as a group
+     - policy tags on the personal-data columns
+     - a decision on whether those columns belong in staging at all
+     - a crypto-shredding or deletion path
+
+4. **The model, the load and the access list disagree.**
+   - The model and load output only `ds, event_id, amount`.
+   - The Access section lists eight columns.
+   - Decide which one is right.
+
+## Should fix
+
+- **`ds` filter mismatch.** The source example filters on `DATE(event_ts) = @ds`, but the model filters on `ds = @ds`. If `ds` is the load date and not the event date, late events land in the wrong day. State what `ds` means and how late data is handled, for example a lookback window.
+- **Cost.** The table is about 900 GB, and `SELECT *` with `DATE(event_ts)` can&apos;t prune partitions. The plan doesn&apos;t declare partitioning or clustering for the source or the target. Specify partition by `ds` (with `require_partition_filter`) and cluster by `event_id`, and add a dry-run bytes estimate.
+- **Rollout and rollback.**
+  - Row counts alone won&apos;t catch the duplicate problem. Compare `COUNT(DISTINCT event_id)` and `SUM(amount)` against the source.
+  - You can&apos;t restore a snapshot over a live table. Spell out the restore (a clone into place, or a rename).
+  - Time travel (7 days) and the snapshot have no stated expiry or cost.
+  - Say whether the snapshot is of the whole table or only the affected range.
+- **Contract is thin.** It has no schema, types or nullability. It has no quality rules, such as `event_id` not null and unique, or `amount` not null and non-negative if that applies. The `07:00 UTC` freshness SLA doesn&apos;t say what it&apos;s measured against. The contract also has no retention period and no personal-data fields.
+- **Missing pieces.** There are no dbt tests, no backfill plan for historical `ds`, and no source freshness check.
+
+## Suggested next step
+Fix the first four, then run `wraith:plan-data-review` to record the verdict in the plan. Want me to draft the revised Model, Load and Access sections?</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">9 turns · $0.11 · 08:27:30 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with five blockers. I didn&apos;t edit the rest of the plan. I also couldn&apos;t run dry runs, because the repo has no definition of `raw_app.events` and the plan gives no partitioning. The cost figures come from the plan&apos;s own 900 GB estimate.
+
+**Blockers**
+1. **Public access to personal data.** `allAuthenticatedUsers` makes `shared_product` readable by any Google account. The column list includes `email`, `advertising_id`, `device_id` and GPS coordinates.
+2. **Wrong classification.** The contract says `internal` for personal and location data, and there is no crypto-shred path. The Access column list also doesn&apos;t match the model, which selects only `ds, event_id, amount`.
+3. **Retries overstate revenue.** The SDK retries uploads, so `event_id` can appear more than once, and `SUM(amount)` adds the retries together. The model needs to dedupe instead of summing.
+4. **Reruns duplicate rows.** `INSERT INTO` isn&apos;t idempotent, and there&apos;s no backfill path beyond &quot;the ds range&quot;.
+5. **Full scans on every run.** The source table has no partitioning, clustering or `require_partition_filter`. Each `WHERE ds = @ds` run therefore scans about 900 GB, roughly $5 at on-demand rates. That is 90 times the 10 GB `dev_max_bytes_billed`. The sample query filters on `DATE(event_ts)`, which also doesn&apos;t prune.
+
+**Should-fix** (details are in the plan)
+- The contract key is `event_id`, but the grain is per `ds`, so the key should be `(ds, event_id)`.
+- `ds` isn&apos;t defined against `event_ts`, and late uploads have no handling.
+- There&apos;s no contract file in `contracts/` and no tests.
+- No consumer or downstream models are named.
+- The snapshot step breaks on the first build, because `stg_app_events` doesn&apos;t exist yet. The snapshot also copies the personal data.
+
+There is also one nit: the plan doesn&apos;t say it&apos;s a `ds` snapshot rather than SCD2.
+
+Step 0 found no existing model or contract that already serves this, so there&apos;s no premise blocker.
+
+Once you&apos;ve resolved the blockers in the plan, I can re-review it.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with five blockers. I didn&apos;t edit the rest of the plan. I also couldn&apos;t run dry runs, because the repo has no definition of `raw_app.events` and the plan gives no partitioning. The cost figures come from the plan&apos;s own 900 GB estimate.
+
+**Blockers**
+1. **Public access to personal data.** `allAuthenticatedUsers` makes `shared_product` readable by any Google account. The column list includes `email`, `advertising_id`, `device_id` and GPS coordinates.
+2. **Wrong classification.** The contract says `internal` for personal and location data, and there is no crypto-shred path. The Access column list also doesn&apos;t match the model, which selects only `ds, event_id, amount`.
+3. **Retries overstate revenue.** The SDK retries uploads, so `event_id` can appear more than once, and `SUM(amount)` adds the retries together. The model needs to dedupe instead of summing.
+4. **Reruns duplicate rows.** `INSERT INTO` isn&apos;t idempotent, and there&apos;s no backfill path beyond &quot;the ds range&quot;.
+5. **Full scans on every run.** The source table has no partitioning, clustering or `require_partition_filter`. Each `WHERE ds = @ds` run therefore scans about 900 GB, roughly $5 at on-demand rates. That is 90 times the 10 GB `dev_max_bytes_billed`. The sample query filters on `DATE(event_ts)`, which also doesn&apos;t prune.
+
+**Should-fix** (details are in the plan)
+- The contract key is `event_id`, but the grain is per `ds`, so the key should be `(ds, event_id)`.
+- `ds` isn&apos;t defined against `event_ts`, and late uploads have no handling.
+- There&apos;s no contract file in `contracts/` and no tests.
+- No consumer or downstream models are named.
+- The snapshot step breaks on the first build, because `stg_app_events` doesn&apos;t exist yet. The snapshot also copies the personal data.
+
+There is also one nit: the plan doesn&apos;t say it&apos;s a `ds` snapshot rather than SCD2.
+
+Step 0 found no existing model or contract that already serves this, so there&apos;s no premise blocker.
+
+Once you&apos;ve resolved the blockers in the plan, I can re-review it.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with five blockers. I didn&apos;t edit the rest of the plan. I also couldn&apos;t run dry runs, because the repo has no definition of `raw_app.events` and the plan gives no partitioning. The cost figures come from the plan&apos;s own 900 GB estimate.
+
+**Blockers**
+1. **Public access to personal data.** `allAuthenticatedUsers` makes `shared_product` readable by any Google account. The column list includes `email`, `advertising_id`, `device_id` and GPS coordinates.
+2. **Wrong classification.** The contract says `internal` for personal and location data, and there is no crypto-shred path. The Access column list also doesn&apos;t match the model, which selects only `ds, event_id, amount`.
+3. **Retries overstate revenue.** The SDK retries uploads, so `event_id` can appear more than once, and `SUM(amount)` adds the retries together. The model needs to dedupe instead of summing.
+4. **Reruns duplicate rows.** `INSERT INTO` isn&apos;t idempotent, and there&apos;s no backfill path beyond &quot;the ds range&quot;.
+5. **Full scans on every run.** The source table has no partitioning, clustering or `require_partition_filter`. Each `WHERE ds = @ds` run therefore scans about 900 GB, roughly $5 at on-demand rates. That is 90 times the 10 GB `dev_max_bytes_billed`. The sample query filters on `DATE(event_ts)`, which also doesn&apos;t prune.
+
+**Should-fix** (details are in the plan)
+- The contract key is `event_id`, but the grain is per `ds`, so the key should be `(ds, event_id)`.
+- `ds` isn&apos;t defined against `event_ts`, and late uploads have no handling.
+- There&apos;s no contract file in `contracts/` and no tests.
+- No consumer or downstream models are named.
+- The snapshot step breaks on the first build, because `stg_app_events` doesn&apos;t exist yet. The snapshot also copies the personal data.
+
+There is also one nit: the plan doesn&apos;t say it&apos;s a `ds` snapshot rather than SCD2.
+
+Step 0 found no existing model or contract that already serves this, so there&apos;s no premise blocker.
+
+Once you&apos;ve resolved the blockers in the plan, I can re-review it.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">8 turns · $0.10 · 08:28:24 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**. I didn&apos;t edit the rest of the plan, so you can resolve the findings yourself.
+
+I didn&apos;t run a dry-run. The plan doesn&apos;t say how the source is partitioned, and I can&apos;t inspect `raw_app.events` from here. The cost finding is therefore unquantified. Nothing else in the repo covers app events, so the model does need to exist.
+
+**Blockers**
+1. **Personal data exposure.** `shared_product` is readable by `allAuthenticatedUsers`, so anyone with a Google account can read it. The column list includes `email`, `advertising_id`, `device_id` and GPS coordinates. The contract calls the data `internal`. The model SQL doesn&apos;t select those columns, so the Access section contradicts the Model section.
+2. **Double-counted retries.** The SDK retries uploads, so `event_id` can repeat. `SUM(amount)` per `event_id` then counts a retried event&apos;s money twice. The model needs to dedupe instead of summing.
+3. **Rerun adds duplicates.** The Load is a bare `INSERT`, so rerunning a ds appends the rows again. The plan also has no backfill path.
+4. **Cost and partitioning.** The source query filters on `DATE(event_ts)` and the model filters on `ds`. The plan doesn&apos;t state partitioning, clustering or `require_partition_filter` on a table of about 900 GB. It also has no cost estimate.
+
+**Should-fix**
+- The plan names no consumer, decision or cost of being wrong.
+- No ODCS contract file exists in `contracts/`.
+- `primary_key: event_id` conflicts with the per-ds grain.
+- The temporal model isn&apos;t stated. It should be a `ds` snapshot.
+- There are no tests, and the row-count check isn&apos;t defined.
+- Downstream readers aren&apos;t listed.
+- The rollback commands aren&apos;t written, and the snapshot has no drop date.
+- Late-arriving events have no handling rule.
+
+There is also one nit about whether `ds` or `DATE(event_ts)` defines the day.
+
+I can work through the blockers in the plan next, starting with the access and PII fix. Do you want me to?</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**. I didn&apos;t edit the rest of the plan, so you can resolve the findings yourself.
+
+I didn&apos;t run a dry-run. The plan doesn&apos;t say how the source is partitioned, and I can&apos;t inspect `raw_app.events` from here. The cost finding is therefore unquantified. Nothing else in the repo covers app events, so the model does need to exist.
+
+**Blockers**
+1. **Personal data exposure.** `shared_product` is readable by `allAuthenticatedUsers`, so anyone with a Google account can read it. The column list includes `email`, `advertising_id`, `device_id` and GPS coordinates. The contract calls the data `internal`. The model SQL doesn&apos;t select those columns, so the Access section contradicts the Model section.
+2. **Double-counted retries.** The SDK retries uploads, so `event_id` can repeat. `SUM(amount)` per `event_id` then counts a retried event&apos;s money twice. The model needs to dedupe instead of summing.
+3. **Rerun adds duplicates.** The Load is a bare `INSERT`, so rerunning a ds appends the rows again. The plan also has no backfill path.
+4. **Cost and partitioning.** The source query filters on `DATE(event_ts)` and the model filters on `ds`. The plan doesn&apos;t state partitioning, clustering or `require_partition_filter` on a table of about 900 GB. It also has no cost estimate.
+
+**Should-fix**
+- The plan names no consumer, decision or cost of being wrong.
+- No ODCS contract file exists in `contracts/`.
+- `primary_key: event_id` conflicts with the per-ds grain.
+- The temporal model isn&apos;t stated. It should be a `ds` snapshot.
+- There are no tests, and the row-count check isn&apos;t defined.
+- Downstream readers aren&apos;t listed.
+- The rollback commands aren&apos;t written, and the snapshot has no drop date.
+- Late-arriving events have no handling rule.
+
+There is also one nit about whether `ds` or `DATE(event_ts)` defines the day.
+
+I can work through the blockers in the plan next, starting with the access and PII fix. Do you want me to?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**. I didn&apos;t edit the rest of the plan, so you can resolve the findings yourself.
+
+I didn&apos;t run a dry-run. The plan doesn&apos;t say how the source is partitioned, and I can&apos;t inspect `raw_app.events` from here. The cost finding is therefore unquantified. Nothing else in the repo covers app events, so the model does need to exist.
+
+**Blockers**
+1. **Personal data exposure.** `shared_product` is readable by `allAuthenticatedUsers`, so anyone with a Google account can read it. The column list includes `email`, `advertising_id`, `device_id` and GPS coordinates. The contract calls the data `internal`. The model SQL doesn&apos;t select those columns, so the Access section contradicts the Model section.
+2. **Double-counted retries.** The SDK retries uploads, so `event_id` can repeat. `SUM(amount)` per `event_id` then counts a retried event&apos;s money twice. The model needs to dedupe instead of summing.
+3. **Rerun adds duplicates.** The Load is a bare `INSERT`, so rerunning a ds appends the rows again. The plan also has no backfill path.
+4. **Cost and partitioning.** The source query filters on `DATE(event_ts)` and the model filters on `ds`. The plan doesn&apos;t state partitioning, clustering or `require_partition_filter` on a table of about 900 GB. It also has no cost estimate.
+
+**Should-fix**
+- The plan names no consumer, decision or cost of being wrong.
+- No ODCS contract file exists in `contracts/`.
+- `primary_key: event_id` conflicts with the per-ds grain.
+- The temporal model isn&apos;t stated. It should be a `ds` snapshot.
+- There are no tests, and the row-count check isn&apos;t defined.
+- Downstream readers aren&apos;t listed.
+- The rollback commands aren&apos;t written, and the snapshot has no drop date.
+- Late-arriving events have no handling rule.
+
+There is also one nit about whether `ds` or `DATE(event_ts)` defines the day.
+
+I can work through the blockers in the plan next, starting with the access and PII fix. Do you want me to?</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">8 turns · $0.11 · 08:29:08 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **Verdict: NOT READY.** I changed nothing else in the plan.
+
+Nothing in `dbt/`, `contracts/` or `docs/` already covers this, so there&apos;s no blocker on whether the model should exist. I didn&apos;t run a dry run, because the target table doesn&apos;t exist yet. The cost figure is an estimate from the stated 900 GB.
+
+**Blockers**
+- **Access:** `allAuthenticatedUsers` would expose `email`, `advertising_id`, `device_id` and GPS coordinates to any Google account, and the contract classifies the data as `internal`. The plan needs a named reader group and per-column classification. It also needs a deletion or crypto-shred path.
+- **Duplicates:** the SDK retries uploads, so one `event_id` can land more than once, and `SUM(amount)` would double-count it. The model should dedupe on `event_id`.
+- **Idempotency:** a plain `INSERT` duplicates rows when a `ds` is rerun, and the backfill path isn&apos;t written. Use a `MERGE` or a per-partition overwrite.
+- **Cost:** the source is unpartitioned, and `DATE(event_ts) = @ds` can&apos;t prune, so each run scans about 0.9 TB against a 10 GB dev limit. Partition and cluster the source and the model, and set `require_partition_filter`.
+
+**Should-fix** (full detail in the table)
+- The contract&apos;s `primary_key` is `event_id`, but the grain implies (`ds`, `event_id`).
+- The model selects 3 columns while Access lists 8.
+- `ds` is used two different ways.
+- Late-arriving rows aren&apos;t handled.
+- There are no tests or freshness check.
+- There&apos;s no contract file.
+- No consumer is named.
+- No downstream models or dashboards are listed.
+- The rollback restore command isn&apos;t written.
+
+I can also draft the plan edits for the blockers if you want.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **Verdict: NOT READY.** I changed nothing else in the plan.
+
+Nothing in `dbt/`, `contracts/` or `docs/` already covers this, so there&apos;s no blocker on whether the model should exist. I didn&apos;t run a dry run, because the target table doesn&apos;t exist yet. The cost figure is an estimate from the stated 900 GB.
+
+**Blockers**
+- **Access:** `allAuthenticatedUsers` would expose `email`, `advertising_id`, `device_id` and GPS coordinates to any Google account, and the contract classifies the data as `internal`. The plan needs a named reader group and per-column classification. It also needs a deletion or crypto-shred path.
+- **Duplicates:** the SDK retries uploads, so one `event_id` can land more than once, and `SUM(amount)` would double-count it. The model should dedupe on `event_id`.
+- **Idempotency:** a plain `INSERT` duplicates rows when a `ds` is rerun, and the backfill path isn&apos;t written. Use a `MERGE` or a per-partition overwrite.
+- **Cost:** the source is unpartitioned, and `DATE(event_ts) = @ds` can&apos;t prune, so each run scans about 0.9 TB against a 10 GB dev limit. Partition and cluster the source and the model, and set `require_partition_filter`.
+
+**Should-fix** (full detail in the table)
+- The contract&apos;s `primary_key` is `event_id`, but the grain implies (`ds`, `event_id`).
+- The model selects 3 columns while Access lists 8.
+- `ds` is used two different ways.
+- Late-arriving rows aren&apos;t handled.
+- There are no tests or freshness check.
+- There&apos;s no contract file.
+- No consumer is named.
+- No downstream models or dashboards are listed.
+- The rollback restore command isn&apos;t written.
+
+I can also draft the plan edits for the blockers if you want.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **Verdict: NOT READY.** I changed nothing else in the plan.
+
+Nothing in `dbt/`, `contracts/` or `docs/` already covers this, so there&apos;s no blocker on whether the model should exist. I didn&apos;t run a dry run, because the target table doesn&apos;t exist yet. The cost figure is an estimate from the stated 900 GB.
+
+**Blockers**
+- **Access:** `allAuthenticatedUsers` would expose `email`, `advertising_id`, `device_id` and GPS coordinates to any Google account, and the contract classifies the data as `internal`. The plan needs a named reader group and per-column classification. It also needs a deletion or crypto-shred path.
+- **Duplicates:** the SDK retries uploads, so one `event_id` can land more than once, and `SUM(amount)` would double-count it. The model should dedupe on `event_id`.
+- **Idempotency:** a plain `INSERT` duplicates rows when a `ds` is rerun, and the backfill path isn&apos;t written. Use a `MERGE` or a per-partition overwrite.
+- **Cost:** the source is unpartitioned, and `DATE(event_ts) = @ds` can&apos;t prune, so each run scans about 0.9 TB against a 10 GB dev limit. Partition and cluster the source and the model, and set `require_partition_filter`.
+
+**Should-fix** (full detail in the table)
+- The contract&apos;s `primary_key` is `event_id`, but the grain implies (`ds`, `event_id`).
+- The model selects 3 columns while Access lists 8.
+- `ds` is used two different ways.
+- Late-arriving rows aren&apos;t handled.
+- There are no tests or freshness check.
+- There&apos;s no contract file.
+- No consumer is named.
+- No downstream models or dashboards are listed.
+- The rollback restore command isn&apos;t written.
+
+I can also draft the plan edits for the blockers if you want.</pre>
+</div>
+</details></div>
+</div>
+</section><section class="arm">
+<div class="arm-head">
+<span class="arm-label">Baseline (no plugin)</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:53.3%"></span></span>
+<span class="num">53.3%</span>
+<span class="muted num">20% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">2 turns · $0.04 · 08:29:47 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">Review of the plan. The issues are listed from most to least serious.
+
+**Blocking**
+
+1. **Access exposes PII to everyone.**
+   - Readers is `allAuthenticatedUsers`, and the column list includes `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`.
+   - The contract says `classification: internal`. That doesn&apos;t match the data, which is PII and location data.
+   - Fix: restrict readers to a named group. Drop or hash the identifiers, or put them behind column-level policy tags. Reclassify the table to match.
+   - The model SQL selects only `ds, event_id, amount`, so the Access column list also contradicts the model.
+
+2. **Retries create duplicates, and the model sums over them.**
+   - The source is &quot;mobile SDK upload, retried on bad networks&quot;, so the same `event_id` can arrive more than once.
+   - `SUM(amount) GROUP BY event_id` then double-counts the amount. It should deduplicate instead, for example with `ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1` or `ANY_VALUE`.
+   - If an `event_id` legitimately has multiple rows, the plan should say so. As written, the stated grain doesn&apos;t match the logic.
+
+3. **The source query and the model filter on different columns.**
+   - The source example filters `DATE(event_ts) = @ds`. The model and load filter on `ds`.
+   - A retried upload can land with a `ds` different from its `event_ts` date, which leads to late or misassigned events.
+   - Pick one column and justify it. If `ds` is the upload date, a late retry could yield the same `event_id` on two different `ds` values. The &quot;one row per event per ds&quot; grain then doesn&apos;t give the uniqueness that `primary_key: event_id` promises.
+
+4. **The load isn&apos;t idempotent.**
+   - It uses a plain `INSERT` with no delete or merge. Re-running a day, or the rebuild in Rollout step 2, duplicates rows.
+   - Fix: use `MERGE` on `(ds, event_id)`, or delete and insert the partition in one transaction, or `INSERT OVERWRITE` on the partition.
+
+**Should fix**
+
+5. **Cost and partitioning.** The table is about 900 GB. The plan doesn&apos;t say whether `raw_app.events` is partitioned on `ds`. If it isn&apos;t, each daily run scans all of it. The same goes for the `DATE(event_ts)` filter in the source query. Specify partitioning and clustering for both tables, and require a partition filter.
+
+6. **Rollback is weaker than it looks.**
+   - The snapshot clones the whole table, but step 2 rebuilds only a ds range. Restoring from the snapshot would also revert any days outside that range that loaded after the snapshot.
+   - Time travel is 7 days, so state when the window ends.
+   - Step 1 fails on re-run if the `_bak` table already exists. It needs a dated name or `IF NOT EXISTS`, and it needs an expiry.
+   - Row counts in step 3 only catch gross errors. Add checks that `event_id` is unique per `ds` and that `SUM(amount)` reconciles with the deduplicated source.
+
+7. **Missing tests and contract details.**
+   - No tests are listed, such as `unique(ds, event_id)`, `not_null(event_id)`, or accepted ranges on `amount`.
+   - No `NULL` handling for `amount` or `event_id` is described.
+   - `primary_key: event_id` conflicts with the grain, which is per `ds`.
+   - There&apos;s no late-arrival policy against the 07:00 UTC SLA, and no backfill approach.
+
+**Minor**
+
+- `NUMERIC` sums can overflow in principle. This is unlikely to matter, but note it.
+- The model name is `stg_app_events`, but it aggregates. Say whether it&apos;s staging (a deduplicated copy) or already a mart.
+- Add the dataset and project qualifiers on `stg_app_events`. The Access section says `shared_product`, but the load doesn&apos;t.
+
+**Recommendation:** don&apos;t build yet. Items 1–4 need decisions first, and 1 and 2 are the most urgent. I can draft a revised plan with a deduplicating model, a `MERGE` load, and a restricted access section. I&apos;d need your answers on which date column defines `ds` and whether the PII columns are needed downstream.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">Review of the plan. The issues are listed from most to least serious.
+
+**Blocking**
+
+1. **Access exposes PII to everyone.**
+   - Readers is `allAuthenticatedUsers`, and the column list includes `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`.
+   - The contract says `classification: internal`. That doesn&apos;t match the data, which is PII and location data.
+   - Fix: restrict readers to a named group. Drop or hash the identifiers, or put them behind column-level policy tags. Reclassify the table to match.
+   - The model SQL selects only `ds, event_id, amount`, so the Access column list also contradicts the model.
+
+2. **Retries create duplicates, and the model sums over them.**
+   - The source is &quot;mobile SDK upload, retried on bad networks&quot;, so the same `event_id` can arrive more than once.
+   - `SUM(amount) GROUP BY event_id` then double-counts the amount. It should deduplicate instead, for example with `ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1` or `ANY_VALUE`.
+   - If an `event_id` legitimately has multiple rows, the plan should say so. As written, the stated grain doesn&apos;t match the logic.
+
+3. **The source query and the model filter on different columns.**
+   - The source example filters `DATE(event_ts) = @ds`. The model and load filter on `ds`.
+   - A retried upload can land with a `ds` different from its `event_ts` date, which leads to late or misassigned events.
+   - Pick one column and justify it. If `ds` is the upload date, a late retry could yield the same `event_id` on two different `ds` values. The &quot;one row per event per ds&quot; grain then doesn&apos;t give the uniqueness that `primary_key: event_id` promises.
+
+4. **The load isn&apos;t idempotent.**
+   - It uses a plain `INSERT` with no delete or merge. Re-running a day, or the rebuild in Rollout step 2, duplicates rows.
+   - Fix: use `MERGE` on `(ds, event_id)`, or delete and insert the partition in one transaction, or `INSERT OVERWRITE` on the partition.
+
+**Should fix**
+
+5. **Cost and partitioning.** The table is about 900 GB. The plan doesn&apos;t say whether `raw_app.events` is partitioned on `ds`. If it isn&apos;t, each daily run scans all of it. The same goes for the `DATE(event_ts)` filter in the source query. Specify partitioning and clustering for both tables, and require a partition filter.
+
+6. **Rollback is weaker than it looks.**
+   - The snapshot clones the whole table, but step 2 rebuilds only a ds range. Restoring from the snapshot would also revert any days outside that range that loaded after the snapshot.
+   - Time travel is 7 days, so state when the window ends.
+   - Step 1 fails on re-run if the `_bak` table already exists. It needs a dated name or `IF NOT EXISTS`, and it needs an expiry.
+   - Row counts in step 3 only catch gross errors. Add checks that `event_id` is unique per `ds` and that `SUM(amount)` reconciles with the deduplicated source.
+
+7. **Missing tests and contract details.**
+   - No tests are listed, such as `unique(ds, event_id)`, `not_null(event_id)`, or accepted ranges on `amount`.
+   - No `NULL` handling for `amount` or `event_id` is described.
+   - `primary_key: event_id` conflicts with the grain, which is per `ds`.
+   - There&apos;s no late-arrival policy against the 07:00 UTC SLA, and no backfill approach.
+
+**Minor**
+
+- `NUMERIC` sums can overflow in principle. This is unlikely to matter, but note it.
+- The model name is `stg_app_events`, but it aggregates. Say whether it&apos;s staging (a deduplicated copy) or already a mart.
+- Add the dataset and project qualifiers on `stg_app_events`. The Access section says `shared_product`, but the load doesn&apos;t.
+
+**Recommendation:** don&apos;t build yet. Items 1–4 need decisions first, and 1 and 2 are the most urgent. I can draft a revised plan with a deduplicating model, a `MERGE` load, and a restricted access section. I&apos;d need your answers on which date column defines `ds` and whether the PII columns are needed downstream.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">Review of the plan. The issues are listed from most to least serious.
+
+**Blocking**
+
+1. **Access exposes PII to everyone.**
+   - Readers is `allAuthenticatedUsers`, and the column list includes `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`.
+   - The contract says `classification: internal`. That doesn&apos;t match the data, which is PII and location data.
+   - Fix: restrict readers to a named group. Drop or hash the identifiers, or put them behind column-level policy tags. Reclassify the table to match.
+   - The model SQL selects only `ds, event_id, amount`, so the Access column list also contradicts the model.
+
+2. **Retries create duplicates, and the model sums over them.**
+   - The source is &quot;mobile SDK upload, retried on bad networks&quot;, so the same `event_id` can arrive more than once.
+   - `SUM(amount) GROUP BY event_id` then double-counts the amount. It should deduplicate instead, for example with `ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1` or `ANY_VALUE`.
+   - If an `event_id` legitimately has multiple rows, the plan should say so. As written, the stated grain doesn&apos;t match the logic.
+
+3. **The source query and the model filter on different columns.**
+   - The source example filters `DATE(event_ts) = @ds`. The model and load filter on `ds`.
+   - A retried upload can land with a `ds` different from its `event_ts` date, which leads to late or misassigned events.
+   - Pick one column and justify it. If `ds` is the upload date, a late retry could yield the same `event_id` on two different `ds` values. The &quot;one row per event per ds&quot; grain then doesn&apos;t give the uniqueness that `primary_key: event_id` promises.
+
+4. **The load isn&apos;t idempotent.**
+   - It uses a plain `INSERT` with no delete or merge. Re-running a day, or the rebuild in Rollout step 2, duplicates rows.
+   - Fix: use `MERGE` on `(ds, event_id)`, or delete and insert the partition in one transaction, or `INSERT OVERWRITE` on the partition.
+
+**Should fix**
+
+5. **Cost and partitioning.** The table is about 900 GB. The plan doesn&apos;t say whether `raw_app.events` is partitioned on `ds`. If it isn&apos;t, each daily run scans all of it. The same goes for the `DATE(event_ts)` filter in the source query. Specify partitioning and clustering for both tables, and require a partition filter.
+
+6. **Rollback is weaker than it looks.**
+   - The snapshot clones the whole table, but step 2 rebuilds only a ds range. Restoring from the snapshot would also revert any days outside that range that loaded after the snapshot.
+   - Time travel is 7 days, so state when the window ends.
+   - Step 1 fails on re-run if the `_bak` table already exists. It needs a dated name or `IF NOT EXISTS`, and it needs an expiry.
+   - Row counts in step 3 only catch gross errors. Add checks that `event_id` is unique per `ds` and that `SUM(amount)` reconciles with the deduplicated source.
+
+7. **Missing tests and contract details.**
+   - No tests are listed, such as `unique(ds, event_id)`, `not_null(event_id)`, or accepted ranges on `amount`.
+   - No `NULL` handling for `amount` or `event_id` is described.
+   - `primary_key: event_id` conflicts with the grain, which is per `ds`.
+   - There&apos;s no late-arrival policy against the 07:00 UTC SLA, and no backfill approach.
+
+**Minor**
+
+- `NUMERIC` sums can overflow in principle. This is unlikely to matter, but note it.
+- The model name is `stg_app_events`, but it aggregates. Say whether it&apos;s staging (a deduplicated copy) or already a mart.
+- Add the dataset and project qualifiers on `stg_app_events`. The Access section says `shared_product`, but the load doesn&apos;t.
+
+**Recommendation:** don&apos;t build yet. Items 1–4 need decisions first, and 1 and 2 are the most urgent. I can draft a revised plan with a deduplicating model, a `MERGE` load, and a restricted access section. I&apos;d need your answers on which date column defines `ds` and whether the PII columns are needed downstream.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">2 turns · $0.04 · 08:30:22 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan and found several problems. Some of them would cause wrong data or a privacy incident, so I&apos;d fix them before building.
+
+## Blocking
+
+1. **The access section exposes sensitive data too widely.**
+   - `allAuthenticatedUsers` means anyone with a Google account, not just people in your org.
+   - The column list includes `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`, which are PII and precise location.
+   - The contract says `classification: internal`, which contradicts that exposure.
+   - **Fix:** Grant access to a specific group. Drop or hash the PII columns, or put them in a restricted table or view. Reclassify the data (for example `confidential/PII`).
+
+2. **The model&apos;s columns don&apos;t match the access list or the SQL.**
+   - The model SQL selects only `ds, event_id, amount`.
+   - The source DDL has only `ds, event_ts, event_id, amount`.
+   - The access list names `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`, which the source table doesn&apos;t have.
+   - **Fix:** Settle the real schema first.
+
+3. **Retried uploads will produce wrong amounts.**
+   - The source is &quot;mobile SDK upload, retried on bad networks&quot;, so duplicate rows for the same `event_id` are expected.
+   - `SUM(amount)` over `GROUP BY event_id` adds the duplicates together and inflates `amount`.
+   - **Fix:** Dedupe first. For example, use `ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts)` and keep one row. Or use `ANY_VALUE` or `MAX` if retries are identical. Summing is only correct if one event can legitimately have several amounts, and the plan doesn&apos;t say that.
+
+4. **The load isn&apos;t idempotent.**
+   - `INSERT INTO ... WHERE ds = @ds` appends on every run, so a rerun or backfill duplicates the whole day.
+   - **Fix:** Use `MERGE` on `(ds, event_id)`, or delete the partition and then insert it, in one transaction. Or use `INSERT OVERWRITE` / partition replacement.
+
+## Should fix
+
+5. **The grain is inconsistent.**
+   - &quot;One row per event per ds&quot; conflicts with `primary_key: event_id`.
+   - An event that arrives late or retried across days would appear under two `ds` values.
+   - **Fix:** Decide whether the key is `event_id` or `(ds, event_id)`. Decide which date wins for an event that spans days, and how late data is handled.
+
+6. **The source query filters on the wrong column.**
+   - The sample query uses `DATE(event_ts) = @ds`, but the model uses `ds = @ds`.
+   - These can differ, for example by timezone or by when the upload happened. This may be the partition column or may not be.
+   - **Fix:** Pick one. Prefer filtering on the partition column `ds`. Confirm that `ds` is the partition column. At about 900 GB, an unpartitioned or wrong-column filter means a full scan on each run. Also confirm whether `SELECT *` is intended.
+
+7. **The rollout and rollback are weak.**
+   - Step 1 snapshots the whole table, when only the affected ds range changes. A full snapshot is wasteful and risks being stale.
+   - Step 2 doesn&apos;t say how the rebuild works. Combined with the non-idempotent load, a partial failure leaves duplicates.
+   - Step 3&apos;s &quot;check row counts&quot; can&apos;t catch inflated sums or duplicates. Add checks for `event_id` uniqueness per `ds`, and compare totals of `amount` against the deduped source.
+   - Step 4 says &quot;7 days&quot; for time travel, but a snapshot&apos;s lifetime isn&apos;t specified.
+   - **Fix:** Snapshot or restore by partition. Add uniqueness and sum reconciliation checks. Set an expiry on the snapshot.
+
+8. **The contract is missing pieces.**
+   - There are no tests listed, such as `not_null` and `unique` on the key.
+   - Late-arriving data isn&apos;t addressed, and it matters for a 07:00 UTC SLA with retried mobile uploads.
+   - Add a late-data window or a reprocessing lookback.
+
+## Questions for the author
+
+- Is `ds` the partition column, and is it derived from `event_ts` or from the upload time?
+- Can one `event_id` legitimately have multiple `amount` rows?
+- Which columns do consumers actually need? Does anyone need the raw PII?
+
+I haven&apos;t changed anything. I can draft a revised plan covering items 1–4 and 6 if you&apos;d like.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan and found several problems. Some of them would cause wrong data or a privacy incident, so I&apos;d fix them before building.
+
+## Blocking
+
+1. **The access section exposes sensitive data too widely.**
+   - `allAuthenticatedUsers` means anyone with a Google account, not just people in your org.
+   - The column list includes `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`, which are PII and precise location.
+   - The contract says `classification: internal`, which contradicts that exposure.
+   - **Fix:** Grant access to a specific group. Drop or hash the PII columns, or put them in a restricted table or view. Reclassify the data (for example `confidential/PII`).
+
+2. **The model&apos;s columns don&apos;t match the access list or the SQL.**
+   - The model SQL selects only `ds, event_id, amount`.
+   - The source DDL has only `ds, event_ts, event_id, amount`.
+   - The access list names `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`, which the source table doesn&apos;t have.
+   - **Fix:** Settle the real schema first.
+
+3. **Retried uploads will produce wrong amounts.**
+   - The source is &quot;mobile SDK upload, retried on bad networks&quot;, so duplicate rows for the same `event_id` are expected.
+   - `SUM(amount)` over `GROUP BY event_id` adds the duplicates together and inflates `amount`.
+   - **Fix:** Dedupe first. For example, use `ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts)` and keep one row. Or use `ANY_VALUE` or `MAX` if retries are identical. Summing is only correct if one event can legitimately have several amounts, and the plan doesn&apos;t say that.
+
+4. **The load isn&apos;t idempotent.**
+   - `INSERT INTO ... WHERE ds = @ds` appends on every run, so a rerun or backfill duplicates the whole day.
+   - **Fix:** Use `MERGE` on `(ds, event_id)`, or delete the partition and then insert it, in one transaction. Or use `INSERT OVERWRITE` / partition replacement.
+
+## Should fix
+
+5. **The grain is inconsistent.**
+   - &quot;One row per event per ds&quot; conflicts with `primary_key: event_id`.
+   - An event that arrives late or retried across days would appear under two `ds` values.
+   - **Fix:** Decide whether the key is `event_id` or `(ds, event_id)`. Decide which date wins for an event that spans days, and how late data is handled.
+
+6. **The source query filters on the wrong column.**
+   - The sample query uses `DATE(event_ts) = @ds`, but the model uses `ds = @ds`.
+   - These can differ, for example by timezone or by when the upload happened. This may be the partition column or may not be.
+   - **Fix:** Pick one. Prefer filtering on the partition column `ds`. Confirm that `ds` is the partition column. At about 900 GB, an unpartitioned or wrong-column filter means a full scan on each run. Also confirm whether `SELECT *` is intended.
+
+7. **The rollout and rollback are weak.**
+   - Step 1 snapshots the whole table, when only the affected ds range changes. A full snapshot is wasteful and risks being stale.
+   - Step 2 doesn&apos;t say how the rebuild works. Combined with the non-idempotent load, a partial failure leaves duplicates.
+   - Step 3&apos;s &quot;check row counts&quot; can&apos;t catch inflated sums or duplicates. Add checks for `event_id` uniqueness per `ds`, and compare totals of `amount` against the deduped source.
+   - Step 4 says &quot;7 days&quot; for time travel, but a snapshot&apos;s lifetime isn&apos;t specified.
+   - **Fix:** Snapshot or restore by partition. Add uniqueness and sum reconciliation checks. Set an expiry on the snapshot.
+
+8. **The contract is missing pieces.**
+   - There are no tests listed, such as `not_null` and `unique` on the key.
+   - Late-arriving data isn&apos;t addressed, and it matters for a 07:00 UTC SLA with retried mobile uploads.
+   - Add a late-data window or a reprocessing lookback.
+
+## Questions for the author
+
+- Is `ds` the partition column, and is it derived from `event_ts` or from the upload time?
+- Can one `event_id` legitimately have multiple `amount` rows?
+- Which columns do consumers actually need? Does anyone need the raw PII?
+
+I haven&apos;t changed anything. I can draft a revised plan covering items 1–4 and 6 if you&apos;d like.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan and found several problems. Some of them would cause wrong data or a privacy incident, so I&apos;d fix them before building.
+
+## Blocking
+
+1. **The access section exposes sensitive data too widely.**
+   - `allAuthenticatedUsers` means anyone with a Google account, not just people in your org.
+   - The column list includes `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`, which are PII and precise location.
+   - The contract says `classification: internal`, which contradicts that exposure.
+   - **Fix:** Grant access to a specific group. Drop or hash the PII columns, or put them in a restricted table or view. Reclassify the data (for example `confidential/PII`).
+
+2. **The model&apos;s columns don&apos;t match the access list or the SQL.**
+   - The model SQL selects only `ds, event_id, amount`.
+   - The source DDL has only `ds, event_ts, event_id, amount`.
+   - The access list names `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`, which the source table doesn&apos;t have.
+   - **Fix:** Settle the real schema first.
+
+3. **Retried uploads will produce wrong amounts.**
+   - The source is &quot;mobile SDK upload, retried on bad networks&quot;, so duplicate rows for the same `event_id` are expected.
+   - `SUM(amount)` over `GROUP BY event_id` adds the duplicates together and inflates `amount`.
+   - **Fix:** Dedupe first. For example, use `ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts)` and keep one row. Or use `ANY_VALUE` or `MAX` if retries are identical. Summing is only correct if one event can legitimately have several amounts, and the plan doesn&apos;t say that.
+
+4. **The load isn&apos;t idempotent.**
+   - `INSERT INTO ... WHERE ds = @ds` appends on every run, so a rerun or backfill duplicates the whole day.
+   - **Fix:** Use `MERGE` on `(ds, event_id)`, or delete the partition and then insert it, in one transaction. Or use `INSERT OVERWRITE` / partition replacement.
+
+## Should fix
+
+5. **The grain is inconsistent.**
+   - &quot;One row per event per ds&quot; conflicts with `primary_key: event_id`.
+   - An event that arrives late or retried across days would appear under two `ds` values.
+   - **Fix:** Decide whether the key is `event_id` or `(ds, event_id)`. Decide which date wins for an event that spans days, and how late data is handled.
+
+6. **The source query filters on the wrong column.**
+   - The sample query uses `DATE(event_ts) = @ds`, but the model uses `ds = @ds`.
+   - These can differ, for example by timezone or by when the upload happened. This may be the partition column or may not be.
+   - **Fix:** Pick one. Prefer filtering on the partition column `ds`. Confirm that `ds` is the partition column. At about 900 GB, an unpartitioned or wrong-column filter means a full scan on each run. Also confirm whether `SELECT *` is intended.
+
+7. **The rollout and rollback are weak.**
+   - Step 1 snapshots the whole table, when only the affected ds range changes. A full snapshot is wasteful and risks being stale.
+   - Step 2 doesn&apos;t say how the rebuild works. Combined with the non-idempotent load, a partial failure leaves duplicates.
+   - Step 3&apos;s &quot;check row counts&quot; can&apos;t catch inflated sums or duplicates. Add checks for `event_id` uniqueness per `ds`, and compare totals of `amount` against the deduped source.
+   - Step 4 says &quot;7 days&quot; for time travel, but a snapshot&apos;s lifetime isn&apos;t specified.
+   - **Fix:** Snapshot or restore by partition. Add uniqueness and sum reconciliation checks. Set an expiry on the snapshot.
+
+8. **The contract is missing pieces.**
+   - There are no tests listed, such as `not_null` and `unique` on the key.
+   - Late-arriving data isn&apos;t addressed, and it matters for a 07:00 UTC SLA with retried mobile uploads.
+   - Add a late-data window or a reprocessing lookback.
+
+## Questions for the author
+
+- Is `ds` the partition column, and is it derived from `event_ts` or from the upload time?
+- Can one `event_id` legitimately have multiple `amount` rows?
+- Which columns do consumers actually need? Does anyone need the raw PII?
+
+I haven&apos;t changed anything. I can draft a revised plan covering items 1–4 and 6 if you&apos;d like.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">2 turns · $0.04 · 08:30:56 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">**Review of the app events plan: it shouldn&apos;t be built as written.** Several problems would produce wrong data or expose sensitive data.
+
+**Blocking problems**
+
+1. **Duplicates are summed, not removed.** The source is retried SDK uploads, so the same `event_id` can arrive more than once. `SUM(amount) ... GROUP BY event_id` then double-counts the amount. The plan should dedupe, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`, instead of aggregating.
+
+2. **The columns in the Access section don&apos;t match the model.** The model selects only `ds, event_id, amount`. The Access section lists `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`. The source DDL has none of those columns either. The plan needs to say where they come from.
+
+3. **PII is shared too widely.** `allAuthenticatedUsers` means anyone with a Google account, not only people in your organization. Combined with email, advertising ID and GPS, that is a privacy exposure. The contract also labels the data `internal`, which contradicts it. Fix this by:
+   - Restricting readers to a specific group.
+   - Dropping the PII columns, or hashing them, or moving them to a restricted table.
+   - Reclassifying the data (for example `confidential` or `pii`).
+
+4. **The partition key and the query filter disagree.** The source query example filters on `DATE(event_ts) = @ds`, but the model filters on `ds = @ds`. Late-arriving events from mobile retries may have `ds` ≠ `DATE(event_ts)`, so the two filters return different rows. The plan should pick one and justify it. It should also say how late data gets picked up. On a 900 GB table, filtering on `DATE(event_ts)` also defeats partition pruning unless the table is partitioned on `event_ts`.
+
+5. **The load isn&apos;t idempotent.** A plain `INSERT` re-run for the same `ds` duplicates rows, which is likely with retries and backfills. Use `MERGE`, or delete and insert the partition, or `INSERT OVERWRITE` for that partition.
+
+**Smaller issues**
+
+- **Grain:** &quot;one row per event per ds&quot; and `primary_key: event_id` don&apos;t quite agree. If an event can appear in more than one `ds`, `event_id` alone isn&apos;t unique. Decide whether the key is `event_id` or `(ds, event_id)`.
+- **Rollout:**
+  - The snapshot is taken before the rebuild, but the plan never says whether it&apos;s per-run or one-off.
+  - A table snapshot is a full copy of the table, so say what it costs and when it gets dropped.
+  - &quot;Check row counts&quot; has no pass/fail criterion. Add one, such as the count compared with the distinct `event_id` count in the source.
+  - The undo section should say that restoring a snapshot also rolls back any good data loaded since.
+- **No tests:** add `unique` and `not_null` on the key, plus an `amount` sanity check, such as no negatives or an expected range.
+- **Freshness:** the 07:00 UTC SLA doesn&apos;t say what happens when late events arrive after that time.
+- **Types:** `NUMERIC` for `amount` is fine, but the plan doesn&apos;t say what currency or units it uses.
+
+**Suggested order:** fix 1, 2, 3 and 5 first, since they affect correctness and privacy. Then settle the `ds` semantics in 4, and then rewrite the rollout with concrete checks.
+
+I can draft a revised plan or the dedupe and idempotent-load SQL if you&apos;d like.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">**Review of the app events plan: it shouldn&apos;t be built as written.** Several problems would produce wrong data or expose sensitive data.
+
+**Blocking problems**
+
+1. **Duplicates are summed, not removed.** The source is retried SDK uploads, so the same `event_id` can arrive more than once. `SUM(amount) ... GROUP BY event_id` then double-counts the amount. The plan should dedupe, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`, instead of aggregating.
+
+2. **The columns in the Access section don&apos;t match the model.** The model selects only `ds, event_id, amount`. The Access section lists `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`. The source DDL has none of those columns either. The plan needs to say where they come from.
+
+3. **PII is shared too widely.** `allAuthenticatedUsers` means anyone with a Google account, not only people in your organization. Combined with email, advertising ID and GPS, that is a privacy exposure. The contract also labels the data `internal`, which contradicts it. Fix this by:
+   - Restricting readers to a specific group.
+   - Dropping the PII columns, or hashing them, or moving them to a restricted table.
+   - Reclassifying the data (for example `confidential` or `pii`).
+
+4. **The partition key and the query filter disagree.** The source query example filters on `DATE(event_ts) = @ds`, but the model filters on `ds = @ds`. Late-arriving events from mobile retries may have `ds` ≠ `DATE(event_ts)`, so the two filters return different rows. The plan should pick one and justify it. It should also say how late data gets picked up. On a 900 GB table, filtering on `DATE(event_ts)` also defeats partition pruning unless the table is partitioned on `event_ts`.
+
+5. **The load isn&apos;t idempotent.** A plain `INSERT` re-run for the same `ds` duplicates rows, which is likely with retries and backfills. Use `MERGE`, or delete and insert the partition, or `INSERT OVERWRITE` for that partition.
+
+**Smaller issues**
+
+- **Grain:** &quot;one row per event per ds&quot; and `primary_key: event_id` don&apos;t quite agree. If an event can appear in more than one `ds`, `event_id` alone isn&apos;t unique. Decide whether the key is `event_id` or `(ds, event_id)`.
+- **Rollout:**
+  - The snapshot is taken before the rebuild, but the plan never says whether it&apos;s per-run or one-off.
+  - A table snapshot is a full copy of the table, so say what it costs and when it gets dropped.
+  - &quot;Check row counts&quot; has no pass/fail criterion. Add one, such as the count compared with the distinct `event_id` count in the source.
+  - The undo section should say that restoring a snapshot also rolls back any good data loaded since.
+- **No tests:** add `unique` and `not_null` on the key, plus an `amount` sanity check, such as no negatives or an expected range.
+- **Freshness:** the 07:00 UTC SLA doesn&apos;t say what happens when late events arrive after that time.
+- **Types:** `NUMERIC` for `amount` is fine, but the plan doesn&apos;t say what currency or units it uses.
+
+**Suggested order:** fix 1, 2, 3 and 5 first, since they affect correctness and privacy. Then settle the `ds` semantics in 4, and then rewrite the rollout with concrete checks.
+
+I can draft a revised plan or the dedupe and idempotent-load SQL if you&apos;d like.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">**Review of the app events plan: it shouldn&apos;t be built as written.** Several problems would produce wrong data or expose sensitive data.
+
+**Blocking problems**
+
+1. **Duplicates are summed, not removed.** The source is retried SDK uploads, so the same `event_id` can arrive more than once. `SUM(amount) ... GROUP BY event_id` then double-counts the amount. The plan should dedupe, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`, instead of aggregating.
+
+2. **The columns in the Access section don&apos;t match the model.** The model selects only `ds, event_id, amount`. The Access section lists `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`. The source DDL has none of those columns either. The plan needs to say where they come from.
+
+3. **PII is shared too widely.** `allAuthenticatedUsers` means anyone with a Google account, not only people in your organization. Combined with email, advertising ID and GPS, that is a privacy exposure. The contract also labels the data `internal`, which contradicts it. Fix this by:
+   - Restricting readers to a specific group.
+   - Dropping the PII columns, or hashing them, or moving them to a restricted table.
+   - Reclassifying the data (for example `confidential` or `pii`).
+
+4. **The partition key and the query filter disagree.** The source query example filters on `DATE(event_ts) = @ds`, but the model filters on `ds = @ds`. Late-arriving events from mobile retries may have `ds` ≠ `DATE(event_ts)`, so the two filters return different rows. The plan should pick one and justify it. It should also say how late data gets picked up. On a 900 GB table, filtering on `DATE(event_ts)` also defeats partition pruning unless the table is partitioned on `event_ts`.
+
+5. **The load isn&apos;t idempotent.** A plain `INSERT` re-run for the same `ds` duplicates rows, which is likely with retries and backfills. Use `MERGE`, or delete and insert the partition, or `INSERT OVERWRITE` for that partition.
+
+**Smaller issues**
+
+- **Grain:** &quot;one row per event per ds&quot; and `primary_key: event_id` don&apos;t quite agree. If an event can appear in more than one `ds`, `event_id` alone isn&apos;t unique. Decide whether the key is `event_id` or `(ds, event_id)`.
+- **Rollout:**
+  - The snapshot is taken before the rebuild, but the plan never says whether it&apos;s per-run or one-off.
+  - A table snapshot is a full copy of the table, so say what it costs and when it gets dropped.
+  - &quot;Check row counts&quot; has no pass/fail criterion. Add one, such as the count compared with the distinct `event_id` count in the source.
+  - The undo section should say that restoring a snapshot also rolls back any good data loaded since.
+- **No tests:** add `unique` and `not_null` on the key, plus an `amount` sanity check, such as no negatives or an expected range.
+- **Freshness:** the 07:00 UTC SLA doesn&apos;t say what happens when late events arrive after that time.
+- **Types:** `NUMERIC` for `amount` is fine, but the plan doesn&apos;t say what currency or units it uses.
+
+**Suggested order:** fix 1, 2, 3 and 5 first, since they affect correctness and privacy. Then settle the `ds` semantics in 4, and then rewrite the rollout with concrete checks.
+
+I can draft a revised plan or the dedupe and idempotent-load SQL if you&apos;d like.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">2 turns · $0.04 · 08:31:35 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">**Review of the app events plan: not ready to build.** There are several real problems.
+
+**Blocking**
+
+1. **Privacy and access.**
+   - The Access section lists `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`. That is PII and precise location data.
+   - The plan exposes them to `allAuthenticatedUsers` on `shared_product`. That is anyone with a Google account, not just your org.
+   - The contract says `classification: internal`, which contradicts this.
+   - The model SQL doesn&apos;t select any of those columns, and neither does the source DDL. So the column list doesn&apos;t match the model either.
+   - Fix: drop the PII columns, or hash or coarsen them. Restrict readers to a specific group. Reclassify the table as confidential or restricted if any PII stays.
+
+2. **Duplicates are summed, not removed.**
+   - The SDK retries uploads on bad networks, so the same `event_id` can arrive more than once.
+   - `SUM(amount) GROUP BY event_id` then double-counts the amount. It also makes the &quot;one row per event&quot; grain look satisfied when the amounts are wrong.
+   - Fix: dedupe first, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`. Then take `amount` from that row.
+   - Decide whether a retry can land on a different `ds`. If it can, `event_id` is unique across days and not just per `ds`. That conflicts with `primary_key: event_id` and the stated grain of &quot;per event per ds&quot;.
+
+3. **The load is not idempotent.**
+   - It is a plain `INSERT INTO`, so a rerun or backfill for the same `ds` duplicates every row.
+   - Fix: use `MERGE`, or delete and insert by partition. Or use `INSERT OVERWRITE` on the partition if the engine supports it.
+
+4. **The rollout and undo steps are unsafe.**
+   - &quot;Rebuild for the ds range&quot; is undefined. It is unclear whether the rebuild is a truncate, a delete or an insert.
+   - The snapshot clones the whole table, but only part of it is rebuilt.
+   - A snapshot table clone can&apos;t be restored in place. You have to recreate the table from it.
+   - Time travel only covers 7 days, so it can&apos;t undo an older range. It would also not cover a rollback after the 7 days.
+   - Fix: write out the exact rebuild statement and the exact restore statement, and test the restore.
+
+**Should fix**
+
+5. **Source query mismatch.**
+   - The source example filters `DATE(event_ts) = @ds`.
+   - The model filters `ds = @ds`.
+   - These can return different rows for late-arriving events, and the first form can&apos;t prune partitions properly.
+   - Pick one. Define what `ds` means: event date or upload date. Say how late data is handled.
+
+6. **Cost.**
+   - The source table is about 900 GB.
+   - Confirm that it is partitioned on `ds`, and set `require_partition_filter`. Otherwise each run may scan the whole table.
+   - Also say whether the model is incremental or full-refresh.
+
+7. **Contract gaps.**
+   - No tests are listed. Add unique and not-null tests on `event_id`, and a row-count check against the source after deduplication.
+   - The `freshness_sla` of 07:00 UTC has no stated upstream dependency or alerting.
+   - Step 3, &quot;check row counts&quot;, has no threshold or comparison basis.
+   - The `amount` type and currency, and null handling, are unspecified.
+
+**Smaller points**
+
+- The Model and Load sections repeat the same SQL. Define it once.
+- The `stg_app_events` table itself has no DDL, partitioning or clustering.
+
+I haven&apos;t changed anything. Do you want me to draft a revised plan that covers items 1–4?</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">**Review of the app events plan: not ready to build.** There are several real problems.
+
+**Blocking**
+
+1. **Privacy and access.**
+   - The Access section lists `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`. That is PII and precise location data.
+   - The plan exposes them to `allAuthenticatedUsers` on `shared_product`. That is anyone with a Google account, not just your org.
+   - The contract says `classification: internal`, which contradicts this.
+   - The model SQL doesn&apos;t select any of those columns, and neither does the source DDL. So the column list doesn&apos;t match the model either.
+   - Fix: drop the PII columns, or hash or coarsen them. Restrict readers to a specific group. Reclassify the table as confidential or restricted if any PII stays.
+
+2. **Duplicates are summed, not removed.**
+   - The SDK retries uploads on bad networks, so the same `event_id` can arrive more than once.
+   - `SUM(amount) GROUP BY event_id` then double-counts the amount. It also makes the &quot;one row per event&quot; grain look satisfied when the amounts are wrong.
+   - Fix: dedupe first, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`. Then take `amount` from that row.
+   - Decide whether a retry can land on a different `ds`. If it can, `event_id` is unique across days and not just per `ds`. That conflicts with `primary_key: event_id` and the stated grain of &quot;per event per ds&quot;.
+
+3. **The load is not idempotent.**
+   - It is a plain `INSERT INTO`, so a rerun or backfill for the same `ds` duplicates every row.
+   - Fix: use `MERGE`, or delete and insert by partition. Or use `INSERT OVERWRITE` on the partition if the engine supports it.
+
+4. **The rollout and undo steps are unsafe.**
+   - &quot;Rebuild for the ds range&quot; is undefined. It is unclear whether the rebuild is a truncate, a delete or an insert.
+   - The snapshot clones the whole table, but only part of it is rebuilt.
+   - A snapshot table clone can&apos;t be restored in place. You have to recreate the table from it.
+   - Time travel only covers 7 days, so it can&apos;t undo an older range. It would also not cover a rollback after the 7 days.
+   - Fix: write out the exact rebuild statement and the exact restore statement, and test the restore.
+
+**Should fix**
+
+5. **Source query mismatch.**
+   - The source example filters `DATE(event_ts) = @ds`.
+   - The model filters `ds = @ds`.
+   - These can return different rows for late-arriving events, and the first form can&apos;t prune partitions properly.
+   - Pick one. Define what `ds` means: event date or upload date. Say how late data is handled.
+
+6. **Cost.**
+   - The source table is about 900 GB.
+   - Confirm that it is partitioned on `ds`, and set `require_partition_filter`. Otherwise each run may scan the whole table.
+   - Also say whether the model is incremental or full-refresh.
+
+7. **Contract gaps.**
+   - No tests are listed. Add unique and not-null tests on `event_id`, and a row-count check against the source after deduplication.
+   - The `freshness_sla` of 07:00 UTC has no stated upstream dependency or alerting.
+   - Step 3, &quot;check row counts&quot;, has no threshold or comparison basis.
+   - The `amount` type and currency, and null handling, are unspecified.
+
+**Smaller points**
+
+- The Model and Load sections repeat the same SQL. Define it once.
+- The `stg_app_events` table itself has no DDL, partitioning or clustering.
+
+I haven&apos;t changed anything. Do you want me to draft a revised plan that covers items 1–4?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">**Review of the app events plan: not ready to build.** There are several real problems.
+
+**Blocking**
+
+1. **Privacy and access.**
+   - The Access section lists `device_id`, `advertising_id`, `email`, `gps_lat` and `gps_lon`. That is PII and precise location data.
+   - The plan exposes them to `allAuthenticatedUsers` on `shared_product`. That is anyone with a Google account, not just your org.
+   - The contract says `classification: internal`, which contradicts this.
+   - The model SQL doesn&apos;t select any of those columns, and neither does the source DDL. So the column list doesn&apos;t match the model either.
+   - Fix: drop the PII columns, or hash or coarsen them. Restrict readers to a specific group. Reclassify the table as confidential or restricted if any PII stays.
+
+2. **Duplicates are summed, not removed.**
+   - The SDK retries uploads on bad networks, so the same `event_id` can arrive more than once.
+   - `SUM(amount) GROUP BY event_id` then double-counts the amount. It also makes the &quot;one row per event&quot; grain look satisfied when the amounts are wrong.
+   - Fix: dedupe first, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1`. Then take `amount` from that row.
+   - Decide whether a retry can land on a different `ds`. If it can, `event_id` is unique across days and not just per `ds`. That conflicts with `primary_key: event_id` and the stated grain of &quot;per event per ds&quot;.
+
+3. **The load is not idempotent.**
+   - It is a plain `INSERT INTO`, so a rerun or backfill for the same `ds` duplicates every row.
+   - Fix: use `MERGE`, or delete and insert by partition. Or use `INSERT OVERWRITE` on the partition if the engine supports it.
+
+4. **The rollout and undo steps are unsafe.**
+   - &quot;Rebuild for the ds range&quot; is undefined. It is unclear whether the rebuild is a truncate, a delete or an insert.
+   - The snapshot clones the whole table, but only part of it is rebuilt.
+   - A snapshot table clone can&apos;t be restored in place. You have to recreate the table from it.
+   - Time travel only covers 7 days, so it can&apos;t undo an older range. It would also not cover a rollback after the 7 days.
+   - Fix: write out the exact rebuild statement and the exact restore statement, and test the restore.
+
+**Should fix**
+
+5. **Source query mismatch.**
+   - The source example filters `DATE(event_ts) = @ds`.
+   - The model filters `ds = @ds`.
+   - These can return different rows for late-arriving events, and the first form can&apos;t prune partitions properly.
+   - Pick one. Define what `ds` means: event date or upload date. Say how late data is handled.
+
+6. **Cost.**
+   - The source table is about 900 GB.
+   - Confirm that it is partitioned on `ds`, and set `require_partition_filter`. Otherwise each run may scan the whole table.
+   - Also say whether the model is incremental or full-refresh.
+
+7. **Contract gaps.**
+   - No tests are listed. Add unique and not-null tests on `event_id`, and a row-count check against the source after deduplication.
+   - The `freshness_sla` of 07:00 UTC has no stated upstream dependency or alerting.
+   - Step 3, &quot;check row counts&quot;, has no threshold or comparison basis.
+   - The `amount` type and currency, and null handling, are unspecified.
+
+**Smaller points**
+
+- The Model and Load sections repeat the same SQL. Define it once.
+- The `stg_app_events` table itself has no DDL, partitioning or clustering.
+
+I haven&apos;t changed anything. Do you want me to draft a revised plan that covers items 1–4?</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">2 turns · $0.04 · 08:32:14 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. I found two blockers and several smaller problems.
+
+## Blockers
+
+1. **The `SUM(amount)` double-counts retries.**
+   - The source is a mobile SDK upload that retries on bad networks, so the same `event_id` can arrive more than once.
+   - Grouping by `event_id` and summing `amount` multiplies the amount of every retried event. It looks like deduplication, but it inflates the numbers.
+   - Keep one row per event instead, with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1` or `ANY_VALUE(amount)`. This is only correct if retries are identical copies, so please confirm that.
+
+2. **The access section exposes PII to everyone.**
+   - `shared_product` is readable by `allAuthenticatedUsers`. The column list includes `email`, `advertising_id`, `device_id`, `gps_lat` and `gps_lon`.
+   - The contract says `classification: internal`, which doesn&apos;t match the data.
+   - Restrict readers to a named group, drop or hash the PII columns, and fix the classification.
+   - The model SQL selects only `ds`, `event_id` and `amount`, so the column list in Access doesn&apos;t match the model. Decide which one is right.
+
+## Correctness and idempotency
+
+- **The load isn&apos;t rerunnable.** A plain `INSERT` duplicates rows on every retry or backfill. Use `MERGE` on `event_id`, or delete the `ds` partition and then insert, in one transaction.
+- **The `ds` definition is inconsistent.**
+  - The source sample filters on `DATE(event_ts) = @ds`, but the model filters on `ds = @ds`.
+  - If `ds` is the upload date, a retry that arrives a day later gets a different `ds`. The same `event_id` then appears in two partitions, which breaks both `primary_key: event_id` and the &quot;one row per event per ds&quot; grain.
+  - Pick one definition. If `event_id` is the key, dedupe across `ds` as well, with a lookback window for late arrivals.
+- **The sample query would scan too much.** `DATE(event_ts) = @ds` doesn&apos;t prune partitions, so it scans the full ~900 GB table. Filter on `ds`.
+
+## Rollout
+
+- **The backup name is fixed.** `stg_app_events_bak` fails if it already exists, and a rerun could overwrite a good backup. Suffix it with the date or run ID.
+- **The check is too weak.** Row counts alone won&apos;t catch the duplication bug. Also check `COUNT(*) = COUNT(DISTINCT event_id)` and compare `SUM(amount)` against the source after dedup.
+- **Rollback is only partly specified.** Say which of the snapshot and time travel is primary. Time travel only covers 7 days.
+- **There&apos;s no schedule or late-data handling.** The plan doesn&apos;t say what produces the 07:00 UTC `freshness_sla`, or what happens when a ds arrives late.
+
+I can write these fixes into the plan if you want. Please confirm what `ds` means and whether retries are exact duplicates.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL PASS FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✓ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. I found two blockers and several smaller problems.
+
+## Blockers
+
+1. **The `SUM(amount)` double-counts retries.**
+   - The source is a mobile SDK upload that retries on bad networks, so the same `event_id` can arrive more than once.
+   - Grouping by `event_id` and summing `amount` multiplies the amount of every retried event. It looks like deduplication, but it inflates the numbers.
+   - Keep one row per event instead, with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1` or `ANY_VALUE(amount)`. This is only correct if retries are identical copies, so please confirm that.
+
+2. **The access section exposes PII to everyone.**
+   - `shared_product` is readable by `allAuthenticatedUsers`. The column list includes `email`, `advertising_id`, `device_id`, `gps_lat` and `gps_lon`.
+   - The contract says `classification: internal`, which doesn&apos;t match the data.
+   - Restrict readers to a named group, drop or hash the PII columns, and fix the classification.
+   - The model SQL selects only `ds`, `event_id` and `amount`, so the column list in Access doesn&apos;t match the model. Decide which one is right.
+
+## Correctness and idempotency
+
+- **The load isn&apos;t rerunnable.** A plain `INSERT` duplicates rows on every retry or backfill. Use `MERGE` on `event_id`, or delete the `ds` partition and then insert, in one transaction.
+- **The `ds` definition is inconsistent.**
+  - The source sample filters on `DATE(event_ts) = @ds`, but the model filters on `ds = @ds`.
+  - If `ds` is the upload date, a retry that arrives a day later gets a different `ds`. The same `event_id` then appears in two partitions, which breaks both `primary_key: event_id` and the &quot;one row per event per ds&quot; grain.
+  - Pick one definition. If `event_id` is the key, dedupe across `ds` as well, with a lookback window for late arrivals.
+- **The sample query would scan too much.** `DATE(event_ts) = @ds` doesn&apos;t prune partitions, so it scans the full ~900 GB table. Filter on `ds`.
+
+## Rollout
+
+- **The backup name is fixed.** `stg_app_events_bak` fails if it already exists, and a rerun could overwrite a good backup. Suffix it with the date or run ID.
+- **The check is too weak.** Row counts alone won&apos;t catch the duplication bug. Also check `COUNT(*) = COUNT(DISTINCT event_id)` and compare `SUM(amount)` against the source after dedup.
+- **Rollback is only partly specified.** Say which of the snapshot and time travel is primary. Time travel only covers 7 days.
+- **There&apos;s no schedule or late-data handling.** The plan doesn&apos;t say what produces the 07:00 UTC `freshness_sla`, or what happens when a ds arrives late.
+
+I can write these fixes into the plan if you want. Please confirm what `ds` means and whether retries are exact duplicates.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. I found two blockers and several smaller problems.
+
+## Blockers
+
+1. **The `SUM(amount)` double-counts retries.**
+   - The source is a mobile SDK upload that retries on bad networks, so the same `event_id` can arrive more than once.
+   - Grouping by `event_id` and summing `amount` multiplies the amount of every retried event. It looks like deduplication, but it inflates the numbers.
+   - Keep one row per event instead, with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_ts) = 1` or `ANY_VALUE(amount)`. This is only correct if retries are identical copies, so please confirm that.
+
+2. **The access section exposes PII to everyone.**
+   - `shared_product` is readable by `allAuthenticatedUsers`. The column list includes `email`, `advertising_id`, `device_id`, `gps_lat` and `gps_lon`.
+   - The contract says `classification: internal`, which doesn&apos;t match the data.
+   - Restrict readers to a named group, drop or hash the PII columns, and fix the classification.
+   - The model SQL selects only `ds`, `event_id` and `amount`, so the column list in Access doesn&apos;t match the model. Decide which one is right.
+
+## Correctness and idempotency
+
+- **The load isn&apos;t rerunnable.** A plain `INSERT` duplicates rows on every retry or backfill. Use `MERGE` on `event_id`, or delete the `ds` partition and then insert, in one transaction.
+- **The `ds` definition is inconsistent.**
+  - The source sample filters on `DATE(event_ts) = @ds`, but the model filters on `ds = @ds`.
+  - If `ds` is the upload date, a retry that arrives a day later gets a different `ds`. The same `event_id` then appears in two partitions, which breaks both `primary_key: event_id` and the &quot;one row per event per ds&quot; grain.
+  - Pick one definition. If `event_id` is the key, dedupe across `ds` as well, with a lookback window for late arrivals.
+- **The sample query would scan too much.** `DATE(event_ts) = @ds` doesn&apos;t prune partitions, so it scans the full ~900 GB table. Filter on `ds`.
+
+## Rollout
+
+- **The backup name is fixed.** `stg_app_events_bak` fails if it already exists, and a rerun could overwrite a good backup. Suffix it with the date or run ID.
+- **The check is too weak.** Row counts alone won&apos;t catch the duplication bug. Also check `COUNT(*) = COUNT(DISTINCT event_id)` and compare `SUM(amount)` against the source after dedup.
+- **Rollback is only partly specified.** Say which of the snapshot and time travel is primary. Time travel only covers 7 days.
+- **There&apos;s no schedule or late-data handling.** The plan doesn&apos;t say what produces the 07:00 UTC `freshness_sla`, or what happens when a ds arrives late.
+
+I can write these fixes into the plan if you want. Please confirm what `ds` means and whether retries are exact duplicates.</pre>
+</div>
+</details></div>
+</div>
+</section>
+</details>
+<details class="section" open>
+<summary>Prompt</summary>
+<div class="md"><p>The plan for the app events model is at docs/wraith/2026-10-12-app-events/plan.md. Review it before we build it.</p>
+</div>
+</details>
+<details class="section" open>
+<summary>Graders — what "good" means for this case</summary>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">1-dedup</span><span class="badge">llm</span></div>
+<div class="md"><p>Answer key, category dedup. Planted defect: the source delivers at least once (mobile SDK upload, retried on bad networks) and the Load section uses a plain INSERT with no MERGE or dedup on event_id, so redelivered rows are duplicated. Location: the Load section, INSERT INTO ... SELECT of <code>stg_app_events</code>'s plan.</p>
+<p>PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.</p>
+</div>
+</div>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">2-scan</span><span class="badge">llm</span></div>
+<div class="md"><p>Answer key, category scan. Planted defect: raw_app.events (about 900 GB) is created without PARTITION BY or CLUSTER BY and the query filters on DATE(event_ts), so every run scans the whole table. Location: the Source section DDL and query of <code>stg_app_events</code>'s plan.</p>
+<p>PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.</p>
+</div>
+</div>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">3-pii</span><span class="badge">llm</span></div>
+<div class="md"><p>Answer key, category pii. Planted defect: columns device_id, advertising_id, email, gps_lat, gps_lon are personal data and the dataset shared_product is readable by allAuthenticatedUsers. Location: the Access section of <code>stg_app_events</code>'s plan.</p>
+<p>PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.</p>
+</div>
+</div>
+</details>
+</article>
+<footer>Generated by <code>claude plugin eval</code> · schema v1 · scores are not comparable across different suites</footer>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var bar=document.querySelector('.toolbar');
+  if(!bar)return;
+  bar.addEventListener('click',function(e){
+    var b=e.target&&e.target.closest('button');
+    if(!b)return;
+    var open=b.dataset.act==='expand';
+    document.querySelectorAll('details.section, details.grader').forEach(function(d){d.open=open});
+  });
+});
+// Collapsed details vanish from print/PDF; these pages are share artifacts.
+window.addEventListener('beforeprint',function(){
+  document.querySelectorAll('details').forEach(function(d){
+    if(!d.open){d.dataset.printOpened='1';d.open=true}
+  });
+});
+window.addEventListener('afterprint',function(){
+  document.querySelectorAll('details[data-print-opened]').forEach(function(d){
+    d.open=false;delete d.dataset.printOpened;
+  });
+});
+</script>
+</body>
+</html>

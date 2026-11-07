@@ -1,0 +1,19 @@
+{
+  "guard": {
+    "status": "done",
+    "wraith_sha": "575afc1fd658c11d8c48ef65253a852cf414070e",
+    "complete": {
+      "guard-g1": "guard/attempt-1"
+    },
+    "attempts": [
+      {
+        "n": 1,
+        "dir": "guard/attempt-1",
+        "complete": [
+          "guard-g1"
+        ],
+        "failures": []
+      }
+    ]
+  }
+}

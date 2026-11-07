@@ -1,0 +1,5 @@
+Wrote /work/bench-guard/results/guard.json
+Note: --scaffold runs each case's scaffold_script as you. Only use it on case files you (or your org) authored.
+⚠ kept /tmp/claude-eval-uOo4kN: home/ and tmp/ in it were written by the plugin under test and are sealed in /tmp/claude-eval-uOo4kN/sealed (mode 000; the kept directory is read-only) — open them with `chmod 700 /tmp/claude-eval-uOo4kN /tmp/claude-eval-uOo4kN/sealed` to inspect, and do not run git (or anything that loads configuration from its working directory) anywhere inside the kept directory
+⚠ kept /tmp/claude-eval-dcl7xF: home/ and tmp/ in it were written by the plugin under test and are sealed in /tmp/claude-eval-dcl7xF/sealed (mode 000; the kept directory is read-only) — open them with `chmod 700 /tmp/claude-eval-dcl7xF /tmp/claude-eval-dcl7xF/sealed` to inspect, and do not run git (or anything that loads configuration from its working directory) anywhere inside the kept directory
+Report: /work/bench-guard/results/2026-11-07T08-31-50-114Z/report.html

@@ -1,0 +1,182 @@
+[
+  {
+    "case": "plan-review-p10",
+    "arm": "with",
+    "run": 0,
+    "score": 1,
+    "turns": 8,
+    "seconds": 52,
+    "cost_usd": 0.11280130000000001,
+    "judge_cost_usd": 0.0019838,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 15011,
+      "cache_read_input_tokens": 90155,
+      "output_tokens": 4173,
+      "duration_ms": 35542,
+      "cost_usd": 0.11081750000000001
+    }
+  },
+  {
+    "case": "plan-review-p10",
+    "arm": "with",
+    "run": 1,
+    "score": 1,
+    "turns": 9,
+    "seconds": 48,
+    "cost_usd": 0.11244749999999998,
+    "judge_cost_usd": 0.0017125999999999999,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 15228,
+      "cache_read_input_tokens": 90949,
+      "output_tokens": 4070,
+      "duration_ms": 33049,
+      "cost_usd": 0.11073489999999998
+    }
+  },
+  {
+    "case": "plan-review-p10",
+    "arm": "with",
+    "run": 2,
+    "score": 1,
+    "turns": 8,
+    "seconds": 44,
+    "cost_usd": 0.0986444,
+    "judge_cost_usd": 0.002145899999999999,
+    "tokens": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 14183,
+      "cache_read_input_tokens": 74325,
+      "output_tokens": 3231,
+      "duration_ms": 25335,
+      "cost_usd": 0.0964985
+    }
+  },
+  {
+    "case": "plan-review-p10",
+    "arm": "with",
+    "run": 3,
+    "score": 1,
+    "turns": 8,
+    "seconds": 39,
+    "cost_usd": 0.1015892,
+    "judge_cost_usd": 0.0008702999999999992,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 14361,
+      "cache_read_input_tokens": 90169,
+      "output_tokens": 3423,
+      "duration_ms": 28797,
+      "cost_usd": 0.1007189
+    }
+  },
+  {
+    "case": "plan-review-p10",
+    "arm": "with",
+    "run": 4,
+    "score": 0.6666666666666666,
+    "turns": 9,
+    "seconds": 41,
+    "cost_usd": 0.1077325,
+    "judge_cost_usd": 0.0008951999999999996,
+    "tokens": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 14715,
+      "cache_read_input_tokens": 108653,
+      "output_tokens": 3708,
+      "duration_ms": 30975,
+      "cost_usd": 0.1068373
+    }
+  },
+  {
+    "case": "plan-review-p10",
+    "arm": "without",
+    "run": 0,
+    "score": 0.6666666666666666,
+    "turns": 2,
+    "seconds": 27,
+    "cost_usd": 0.0436441,
+    "judge_cost_usd": 0.001546500000000001,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5838,
+      "cache_read_input_tokens": 17076,
+      "output_tokens": 1703,
+      "duration_ms": 15960,
+      "cost_usd": 0.0420976
+    }
+  },
+  {
+    "case": "plan-review-p10",
+    "arm": "without",
+    "run": 1,
+    "score": 0.6666666666666666,
+    "turns": 2,
+    "seconds": 29,
+    "cost_usd": 0.0432804,
+    "judge_cost_usd": 0.0016127999999999993,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5838,
+      "cache_read_input_tokens": 17076,
+      "output_tokens": 1660,
+      "duration_ms": 15344,
+      "cost_usd": 0.0416676
+    }
+  },
+  {
+    "case": "plan-review-p10",
+    "arm": "without",
+    "run": 2,
+    "score": 0.6666666666666666,
+    "turns": 2,
+    "seconds": 30,
+    "cost_usd": 0.0445271,
+    "judge_cost_usd": 0.0018195,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5838,
+      "cache_read_input_tokens": 17076,
+      "output_tokens": 1764,
+      "duration_ms": 16500,
+      "cost_usd": 0.0427076
+    }
+  },
+  {
+    "case": "plan-review-p10",
+    "arm": "without",
+    "run": 3,
+    "score": 0.6666666666666666,
+    "turns": 2,
+    "seconds": 26,
+    "cost_usd": 0.043608999999999995,
+    "judge_cost_usd": 0.0015939999999999982,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5830,
+      "cache_read_input_tokens": 17070,
+      "output_tokens": 1698,
+      "duration_ms": 15346,
+      "cost_usd": 0.042015
+    }
+  },
+  {
+    "case": "plan-review-p10",
+    "arm": "without",
+    "run": 4,
+    "score": 0.6666666666666666,
+    "turns": 2,
+    "seconds": 26,
+    "cost_usd": 0.0441294,
+    "judge_cost_usd": 0.0015618000000000003,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5838,
+      "cache_read_input_tokens": 17076,
+      "output_tokens": 1750,
+      "duration_ms": 15573,
+      "cost_usd": 0.0425676
+    }
+  }
+]

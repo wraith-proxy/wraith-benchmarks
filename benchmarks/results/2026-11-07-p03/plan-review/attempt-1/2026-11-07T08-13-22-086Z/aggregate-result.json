@@ -1,0 +1,647 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.316",
+  "startedAt": "2026-11-07T08:13:22.086Z",
+  "durationSeconds": 397,
+  "costUsd": 0.7720180000000001,
+  "partial": false,
+  "suite": {
+    "root": "/work",
+    "ablation": "with-without",
+    "modelOverride": "claude-sonnet-5-5",
+    "judgeModel": "claude-haiku-5-5",
+    "caseFilter": "plan-review-p03",
+    "threshold": 1,
+    "concurrency": 1,
+    "plugins": [
+      {
+        "name": "wraith",
+        "version": "0.6.0",
+        "path": "/work"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "plan-review-p03",
+      "dir": "bench-plan-review/p03",
+      "source": "mixed",
+      "promptMarkdown": "The plan for the support ticket summary is at docs/wraith/2026-10-12-ticket-summary/plan.md. Review it before we build it.",
+      "runsPerCase": 5,
+      "timeoutSeconds": 600,
+      "maxTurns": 12,
+      "graders": [
+        {
+          "name": "1-scan",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category scan. Planted defect: raw_support.ticket_events (about 1.8 TB) is created without PARTITION BY or CLUSTER BY and the query filters on DATE(event_ts), so every run scans the whole table. Location: the Source section DDL and query of `dim_ticket_summary`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category scan. Planted defect: raw_support.ticket_events (about 1.8 TB) is created without PARTITION BY or CLUSTER BY and the query filters on DATE(event_ts), so every run scans the whole table. Location: the Source section DDL and query of `dim_ticket_summary`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "2-pii",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category pii. Planted defect: columns requester_name, requester_email, requester_phone are personal data and the dataset open_support_data is readable by allUsers. Location: the Access section of `dim_ticket_summary`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category pii. Planted defect: columns requester_name, requester_email, requester_phone are personal data and the dataset open_support_data is readable by allUsers. Location: the Access section of `dim_ticket_summary`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "3-rollback",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category rollback. Planted defect: the Rollout changes the live table (CREATE OR REPLACE TABLE over the live table) with no snapshot, clone or restore step, so there is no way back. Location: the Rollout section (CREATE OR REPLACE TABLE over the live table) of `dim_ticket_summary`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category rollback. Planted defect: the Rollout changes the live table (CREATE OR REPLACE TABLE over the live table) with no snapshot, clone or restore step, so there is no way back. Location: the Rollout section (CREATE OR REPLACE TABLE over the live table) of `dim_ticket_summary`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.10334520000000001,
+            "judgeCostUsd": 0.0014046000000000002,
+            "durationSeconds": 45,
+            "startedAt": "2026-11-07T08:13:22.117Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-axwbcX/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**. I didn't edit the rest of the plan. I couldn't dry-run any queries because the source table isn't in the dev project, so the cost figures come from the 1.8 TB stated in the plan.\n\nNothing in the repo already answers this, so the premise holds.\n\n**Blockers (5)**\n- **Public access to personal data:** `open_support_data` grants Readers to `allUsers`, and the table includes requester name, email and phone. The contract also labels it `internal`, and there is no erasure path.\n- **Double-counting:** the webhook is replayed on failure, and there is no event id to dedupe on. `SUM(amount)` will count replayed events twice.\n- **Full scans:** the 1.8 TB source has no partitioning, clustering or `require_partition_filter`. Filtering on `DATE(event_ts)` can't prune by `ds`, so each run scans roughly 1.8 TB. That is far above the 10 GB dev limit.\n- **No rollback:** rollout uses `CREATE OR REPLACE TABLE`, which destroys any existing table, and no undo is written.\n\n**Should-fix (7)**\n- No consumer or decision is named.\n- The contract is inline, and `primary_key: ticket_id` contradicts the per-`ds` grain.\n- The `requester_*` columns appear in Access but not in the source or the model.\n- The source filters on `DATE(event_ts)` while the model filters on `ds`, the MERGE never deletes rows, and no backfill path is written.\n- There are no tests, and nothing says what runs the load, so the 07:00 UTC SLA can't be met or measured.\n- No downstream consumers are listed.\n- Late-arriving events aren't handled.\n\nThere is also one nit: state \"ds snapshot\" explicitly.\n\nThe blockers need resolving before the plan can go to build. The first decision for you is whether the requester columns stay or go. That choice changes the access, classification and erasure fixes."
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**. I didn't edit the rest of the plan. I couldn't dry-run any queries because the source table isn't in the dev project, so the cost figures come from the 1.8 TB stated in the plan.\n\nNothing in the repo already answers this, so the premise holds.\n\n**Blockers (5)**\n- **Public access to personal data:** `open_support_data` grants Readers to `allUsers`, and the table includes requester name, email and phone. The contract also labels it `internal`, and there is no erasure path.\n- **Double-counting:** the webhook is replayed on failure, and there is no event id to dedupe on. `SUM(amount)` will count replayed events twice.\n- **Full scans:** the 1.8 TB source has no partitioning, clustering or `require_partition_filter`. Filtering on `DATE(event_ts)` can't prune by `ds`, so each run scans roughly 1.8 TB. That is far above the 10 GB dev limit.\n- **No rollback:** rollout uses `CREATE OR REPLACE TABLE`, which destroys any existing table, and no undo is written.\n\n**Should-fix (7)**\n- No consumer or decision is named.\n- The contract is inline, and `primary_key: ticket_id` contradicts the per-`ds` grain.\n- The `requester_*` columns appear in Access but not in the source or the model.\n- The source filters on `DATE(event_ts)` while the model filters on `ds`, the MERGE never deletes rows, and no backfill path is written.\n- There are no tests, and nothing says what runs the load, so the 07:00 UTC SLA can't be met or measured.\n- No downstream consumers are listed.\n- Late-arriving events aren't handled.\n\nThere is also one nit: state \"ds snapshot\" explicitly.\n\nThe blockers need resolving before the plan can go to build. The first decision for you is whether the requester columns stay or go. That choice changes the access, classification and erasure fixes."
+              },
+              {
+                "name": "3-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**. I didn't edit the rest of the plan. I couldn't dry-run any queries because the source table isn't in the dev project, so the cost figures come from the 1.8 TB stated in the plan.\n\nNothing in the repo already answers this, so the premise holds.\n\n**Blockers (5)**\n- **Public access to personal data:** `open_support_data` grants Readers to `allUsers`, and the table includes requester name, email and phone. The contract also labels it `internal`, and there is no erasure path.\n- **Double-counting:** the webhook is replayed on failure, and there is no event id to dedupe on. `SUM(amount)` will count replayed events twice.\n- **Full scans:** the 1.8 TB source has no partitioning, clustering or `require_partition_filter`. Filtering on `DATE(event_ts)` can't prune by `ds`, so each run scans roughly 1.8 TB. That is far above the 10 GB dev limit.\n- **No rollback:** rollout uses `CREATE OR REPLACE TABLE`, which destroys any existing table, and no undo is written.\n\n**Should-fix (7)**\n- No consumer or decision is named.\n- The contract is inline, and `primary_key: ticket_id` contradicts the per-`ds` grain.\n- The `requester_*` columns appear in Access but not in the source or the model.\n- The source filters on `DATE(event_ts)` while the model filters on `ds`, the MERGE never deletes rows, and no backfill path is written.\n- There are no tests, and nothing says what runs the load, so the 07:00 UTC SLA can't be met or measured.\n- No downstream consumers are listed.\n- Late-arriving events aren't handled.\n\nThere is also one nit: state \"ds snapshot\" explicitly.\n\nThe blockers need resolving before the plan can go to build. The first decision for you is whether the requester columns stay or go. That choice changes the access, classification and erasure fixes."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 9,
+            "costUsd": 0.10834529999999999,
+            "judgeCostUsd": 0.0018464000000000002,
+            "durationSeconds": 50,
+            "startedAt": "2026-11-07T08:14:07.241Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-QxdYe5/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, with 5 blockers.\n\nI didn't dry-run any queries. There is no dbt project or dev table yet, so the cost figures are estimates from the plan's 1.8 TB. I also found no existing model, contract or table that already serves this consumer.\n\n**Blockers**\n- **Public personal data:** the dataset gives Readers `allUsers`, so it is public. It exposes requester name, email and phone. The contract also says `internal`, which is wrong for personal data.\n- **Replay double counting:** the helpdesk webhook is replayed on failure and the source has no event id. Replays duplicate rows, so `SUM(amount)` overcounts.\n- **No rollback:** rollout step 1 is `CREATE OR REPLACE TABLE`, with no restore path.\n- **Cost:** nothing is partitioned or clustered, and `require_partition_filter` isn't set. The source query filters on `DATE(event_ts)`, which doesn't prune on `ds`. A worst-case run scans the full 1.8 TB, about 11 USD, and one dev run would blow the 10 GB cap.\n\n**Should-fix**\n- No named consumer.\n- No contract file, and the primary key is `ticket_id` alone when the grain is `(ds, ticket_id)`.\n- The Access section lists `requester_*` columns that the model SQL never produces.\n- There is no backfill path, and the MERGE doesn't handle rows that disappear on a rerun.\n- No tests or freshness checks.\n- Downstream consumers aren't listed.\n- Late-arriving data isn't addressed.\n\nThe table in `plan.md` also has a nit on naming. I didn't edit the rest of the plan, so the author needs to resolve these before building.\n\nThe review skill mentions two optional Google vendor skills for a second pass. I didn't run them, because they report usage to Google and you should choose that. Say if you want them."
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, with 5 blockers.\n\nI didn't dry-run any queries. There is no dbt project or dev table yet, so the cost figures are estimates from the plan's 1.8 TB. I also found no existing model, contract or table that already serves this consumer.\n\n**Blockers**\n- **Public personal data:** the dataset gives Readers `allUsers`, so it is public. It exposes requester name, email and phone. The contract also says `internal`, which is wrong for personal data.\n- **Replay double counting:** the helpdesk webhook is replayed on failure and the source has no event id. Replays duplicate rows, so `SUM(amount)` overcounts.\n- **No rollback:** rollout step 1 is `CREATE OR REPLACE TABLE`, with no restore path.\n- **Cost:** nothing is partitioned or clustered, and `require_partition_filter` isn't set. The source query filters on `DATE(event_ts)`, which doesn't prune on `ds`. A worst-case run scans the full 1.8 TB, about 11 USD, and one dev run would blow the 10 GB cap.\n\n**Should-fix**\n- No named consumer.\n- No contract file, and the primary key is `ticket_id` alone when the grain is `(ds, ticket_id)`.\n- The Access section lists `requester_*` columns that the model SQL never produces.\n- There is no backfill path, and the MERGE doesn't handle rows that disappear on a rerun.\n- No tests or freshness checks.\n- Downstream consumers aren't listed.\n- Late-arriving data isn't addressed.\n\nThe table in `plan.md` also has a nit on naming. I didn't edit the rest of the plan, so the author needs to resolve these before building.\n\nThe review skill mentions two optional Google vendor skills for a second pass. I didn't run them, because they report usage to Google and you should choose that. Say if you want them."
+              },
+              {
+                "name": "3-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, with 5 blockers.\n\nI didn't dry-run any queries. There is no dbt project or dev table yet, so the cost figures are estimates from the plan's 1.8 TB. I also found no existing model, contract or table that already serves this consumer.\n\n**Blockers**\n- **Public personal data:** the dataset gives Readers `allUsers`, so it is public. It exposes requester name, email and phone. The contract also says `internal`, which is wrong for personal data.\n- **Replay double counting:** the helpdesk webhook is replayed on failure and the source has no event id. Replays duplicate rows, so `SUM(amount)` overcounts.\n- **No rollback:** rollout step 1 is `CREATE OR REPLACE TABLE`, with no restore path.\n- **Cost:** nothing is partitioned or clustered, and `require_partition_filter` isn't set. The source query filters on `DATE(event_ts)`, which doesn't prune on `ds`. A worst-case run scans the full 1.8 TB, about 11 USD, and one dev run would blow the 10 GB cap.\n\n**Should-fix**\n- No named consumer.\n- No contract file, and the primary key is `ticket_id` alone when the grain is `(ds, ticket_id)`.\n- The Access section lists `requester_*` columns that the model SQL never produces.\n- There is no backfill path, and the MERGE doesn't handle rows that disappear on a rerun.\n- No tests or freshness checks.\n- Downstream consumers aren't listed.\n- Late-arriving data isn't addressed.\n\nThe table in `plan.md` also has a nit on naming. I didn't edit the rest of the plan, so the author needs to resolve these before building.\n\nThe review skill mentions two optional Google vendor skills for a second pass. I didn't run them, because they report usage to Google and you should choose that. Say if you want them."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 9,
+            "costUsd": 0.10968179999999998,
+            "judgeCostUsd": 0.0018766999999999985,
+            "durationSeconds": 52,
+            "startedAt": "2026-11-07T08:14:57.563Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-X2QmG7/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with five blockers.\n\nI didn't run dry-runs or `dbt ls`. There's no dbt project in the repo, and I didn't check that `bq` access works. The cost figure below is an estimate, not a dry-run result. I also didn't edit the rest of the plan.\n\nStep 0 found nothing: no existing model, table or contract serves this need. I only searched this repo, not the warehouse.\n\n**Blockers**\n1. **Public personal data.** Readers are `allUsers`, and the table lists requester name, email and phone. The contract also says `classification: internal`, and no erasure path is given.\n2. **Double-counting on replay.** The webhook is replayed on failure and events have no id. `SUM(amount)` would double-count replayed events, so reruns wouldn't be stable.\n3. **No rollback.** Rollout uses `CREATE OR REPLACE TABLE`, and the only check is a row count.\n4. **No cost controls on 1.8 TB.** The plan sets no partitioning, clustering or `require_partition_filter`. An unpruned run scans about 1.8 TB, roughly $11 per run at list price. That's far above the 10 GB dev limit.\n\n**Should fix**\n- **Primary key.** The contract says `ticket_id`, but the grain is ticket per ds, so it should be `[ds, ticket_id]`. The contract also isn't written in `contracts/`.\n- **Requester columns.** Access lists them, but the model SQL never produces them.\n- **MERGE and backfill.** The MERGE never deletes tickets that disappear on a rerun, and no backfill path is written.\n- **Late-arriving data.** The source query filters on `DATE(event_ts)` and the model on `ds`, and no lookback window is stated.\n- **Gaps.** The plan names no consumer, has no tests, and lists no downstream models.\n\nThere are also two nits: state the ds-snapshot model explicitly, and reconsider the `dim_` name.\n\nThe first decision is the requester columns. If no consumer needs them, dropping them from Access also removes most of the personal-data work."
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with five blockers.\n\nI didn't run dry-runs or `dbt ls`. There's no dbt project in the repo, and I didn't check that `bq` access works. The cost figure below is an estimate, not a dry-run result. I also didn't edit the rest of the plan.\n\nStep 0 found nothing: no existing model, table or contract serves this need. I only searched this repo, not the warehouse.\n\n**Blockers**\n1. **Public personal data.** Readers are `allUsers`, and the table lists requester name, email and phone. The contract also says `classification: internal`, and no erasure path is given.\n2. **Double-counting on replay.** The webhook is replayed on failure and events have no id. `SUM(amount)` would double-count replayed events, so reruns wouldn't be stable.\n3. **No rollback.** Rollout uses `CREATE OR REPLACE TABLE`, and the only check is a row count.\n4. **No cost controls on 1.8 TB.** The plan sets no partitioning, clustering or `require_partition_filter`. An unpruned run scans about 1.8 TB, roughly $11 per run at list price. That's far above the 10 GB dev limit.\n\n**Should fix**\n- **Primary key.** The contract says `ticket_id`, but the grain is ticket per ds, so it should be `[ds, ticket_id]`. The contract also isn't written in `contracts/`.\n- **Requester columns.** Access lists them, but the model SQL never produces them.\n- **MERGE and backfill.** The MERGE never deletes tickets that disappear on a rerun, and no backfill path is written.\n- **Late-arriving data.** The source query filters on `DATE(event_ts)` and the model on `ds`, and no lookback window is stated.\n- **Gaps.** The plan names no consumer, has no tests, and lists no downstream models.\n\nThere are also two nits: state the ds-snapshot model explicitly, and reconsider the `dim_` name.\n\nThe first decision is the requester columns. If no consumer needs them, dropping them from Access also removes most of the personal-data work."
+              },
+              {
+                "name": "3-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with five blockers.\n\nI didn't run dry-runs or `dbt ls`. There's no dbt project in the repo, and I didn't check that `bq` access works. The cost figure below is an estimate, not a dry-run result. I also didn't edit the rest of the plan.\n\nStep 0 found nothing: no existing model, table or contract serves this need. I only searched this repo, not the warehouse.\n\n**Blockers**\n1. **Public personal data.** Readers are `allUsers`, and the table lists requester name, email and phone. The contract also says `classification: internal`, and no erasure path is given.\n2. **Double-counting on replay.** The webhook is replayed on failure and events have no id. `SUM(amount)` would double-count replayed events, so reruns wouldn't be stable.\n3. **No rollback.** Rollout uses `CREATE OR REPLACE TABLE`, and the only check is a row count.\n4. **No cost controls on 1.8 TB.** The plan sets no partitioning, clustering or `require_partition_filter`. An unpruned run scans about 1.8 TB, roughly $11 per run at list price. That's far above the 10 GB dev limit.\n\n**Should fix**\n- **Primary key.** The contract says `ticket_id`, but the grain is ticket per ds, so it should be `[ds, ticket_id]`. The contract also isn't written in `contracts/`.\n- **Requester columns.** Access lists them, but the model SQL never produces them.\n- **MERGE and backfill.** The MERGE never deletes tickets that disappear on a rerun, and no backfill path is written.\n- **Late-arriving data.** The source query filters on `DATE(event_ts)` and the model on `ds`, and no lookback window is stated.\n- **Gaps.** The plan names no consumer, has no tests, and lists no downstream models.\n\nThere are also two nits: state the ds-snapshot model explicitly, and reconsider the `dim_` name.\n\nThe first decision is the requester columns. If no consumer needs them, dropping them from Access also removes most of the personal-data work."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 9,
+            "costUsd": 0.1284869,
+            "judgeCostUsd": 0.0010743000000000011,
+            "durationSeconds": 49,
+            "startedAt": "2026-11-07T08:15:49.077Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-NjpHdL/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: FAIL PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, because there are four blockers.\n\n**Blockers**\n1. **Public personal data.** `Readers: allUsers` makes the dataset public, and it includes `requester_name`, `requester_email` and `requester_phone`. The contract also classifies the table as `internal` and has no erasure path.\n2. **Double-counting on replay.** The webhook is replayed on failure, and `SUM(amount)` has no event id or dedup rule. The plan also doesn't say how late-arriving events are handled.\n3. **No rollback.** Rollout step 1 is `CREATE OR REPLACE TABLE`, and no rollback is written.\n\n**Should fix**\n- **Cost:** The 1.8 TB source has no partitioning, clustering or `require_partition_filter`. The source query uses `SELECT *` and filters on `DATE(event_ts)`, so it won't prune on `ds`. No cost estimate is given.\n- **Key and grain:** The contract key is `ticket_id`, but the grain is `(ds, ticket_id)`. `ds` is also defined two ways, and the requester columns are listed under Access but never selected by the model.\n- **Rerun safety:** The `MERGE` leaves stale rows behind on a rerun, and there is no backfill path.\n- **Contract:** The contract isn't in `contracts/`, and it has no schema, quality rules or change class.\n- **Also missing:** The consumer and decision, tests, a source freshness check, and downstream lineage.\n\n**Not done**\n- **Dry-run:** I didn't run one, because `dim_ticket_summary` isn't defined anywhere. The cost figures come from the plan's own 1.8 TB number.\n- **Existing model:** I searched the repo and found nothing that already covers this, so the premise stands.\n- **Vendor second pass:** I didn't run it, and I didn't check whether the companion skills are installed.\n\nI left the rest of the plan untouched. The author needs to resolve the findings, and the blockers need fixing before the build."
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, because there are four blockers.\n\n**Blockers**\n1. **Public personal data.** `Readers: allUsers` makes the dataset public, and it includes `requester_name`, `requester_email` and `requester_phone`. The contract also classifies the table as `internal` and has no erasure path.\n2. **Double-counting on replay.** The webhook is replayed on failure, and `SUM(amount)` has no event id or dedup rule. The plan also doesn't say how late-arriving events are handled.\n3. **No rollback.** Rollout step 1 is `CREATE OR REPLACE TABLE`, and no rollback is written.\n\n**Should fix**\n- **Cost:** The 1.8 TB source has no partitioning, clustering or `require_partition_filter`. The source query uses `SELECT *` and filters on `DATE(event_ts)`, so it won't prune on `ds`. No cost estimate is given.\n- **Key and grain:** The contract key is `ticket_id`, but the grain is `(ds, ticket_id)`. `ds` is also defined two ways, and the requester columns are listed under Access but never selected by the model.\n- **Rerun safety:** The `MERGE` leaves stale rows behind on a rerun, and there is no backfill path.\n- **Contract:** The contract isn't in `contracts/`, and it has no schema, quality rules or change class.\n- **Also missing:** The consumer and decision, tests, a source freshness check, and downstream lineage.\n\n**Not done**\n- **Dry-run:** I didn't run one, because `dim_ticket_summary` isn't defined anywhere. The cost figures come from the plan's own 1.8 TB number.\n- **Existing model:** I searched the repo and found nothing that already covers this, so the premise stands.\n- **Vendor second pass:** I didn't run it, and I didn't check whether the companion skills are installed.\n\nI left the rest of the plan untouched. The author needs to resolve the findings, and the blockers need fixing before the build."
+              },
+              {
+                "name": "3-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, because there are four blockers.\n\n**Blockers**\n1. **Public personal data.** `Readers: allUsers` makes the dataset public, and it includes `requester_name`, `requester_email` and `requester_phone`. The contract also classifies the table as `internal` and has no erasure path.\n2. **Double-counting on replay.** The webhook is replayed on failure, and `SUM(amount)` has no event id or dedup rule. The plan also doesn't say how late-arriving events are handled.\n3. **No rollback.** Rollout step 1 is `CREATE OR REPLACE TABLE`, and no rollback is written.\n\n**Should fix**\n- **Cost:** The 1.8 TB source has no partitioning, clustering or `require_partition_filter`. The source query uses `SELECT *` and filters on `DATE(event_ts)`, so it won't prune on `ds`. No cost estimate is given.\n- **Key and grain:** The contract key is `ticket_id`, but the grain is `(ds, ticket_id)`. `ds` is also defined two ways, and the requester columns are listed under Access but never selected by the model.\n- **Rerun safety:** The `MERGE` leaves stale rows behind on a rerun, and there is no backfill path.\n- **Contract:** The contract isn't in `contracts/`, and it has no schema, quality rules or change class.\n- **Also missing:** The consumer and decision, tests, a source freshness check, and downstream lineage.\n\n**Not done**\n- **Dry-run:** I didn't run one, because `dim_ticket_summary` isn't defined anywhere. The cost figures come from the plan's own 1.8 TB number.\n- **Existing model:** I searched the repo and found nothing that already covers this, so the premise stands.\n- **Vendor second pass:** I didn't run it, and I didn't check whether the companion skills are installed.\n\nI left the rest of the plan untouched. The author needs to resolve the findings, and the blockers need fixing before the build."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 0.10878349999999999,
+            "judgeCostUsd": 0.0012003000000000014,
+            "durationSeconds": 48,
+            "startedAt": "2026-11-07T08:16:37.620Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-wHyOCt/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **The verdict is NOT READY.** I didn't edit the rest of the plan, and I didn't run a `bq` dry-run. The cost figure is an estimate from the stated 1.8 TB.\n\nNothing in `dbt/` or `contracts/` already covers tickets, so the plan isn't duplicating an existing asset.\n\n**Blockers**\n- **Public personal data:** `allUsers` can read the dataset, and the column list includes requester name, email and phone.\n- **Contract:** it says `classification: internal`, which contradicts those columns. Its `primary_key` is `ticket_id` where the grain needs `(ds, ticket_id)`. No ODCS YAML file exists yet.\n- **Double counting:** the webhook is replayed on failure and the source has no event id. A replay duplicates rows, and `SUM(amount)` counts them twice.\n- **Rollout and rollback:** step 1 is `CREATE OR REPLACE TABLE`, and no rollback is written.\n- **Cost:** neither table is partitioned, and the source example filters on `DATE(event_ts)` rather than `ds`. An unpartitioned scan of 1.8 TB costs roughly $11 per run, against a dev limit of 10 GB.\n\n**Should-fix**\n- No named consumer or decision.\n- The MERGE leaves stale rows behind, and no backfill path is written.\n- `ds` isn't defined consistently between the source query and the model.\n- Late-arriving events aren't handled.\n- There are no tests, and \"check row counts\" has no threshold.\n- Downstream models and dashboards aren't listed.\n\n**Nit:** the `dim_` prefix doesn't fit a per-day aggregate with a measure.\n\nThe two blockers I'd settle first are the PII exposure and the missing dedup key. The fix for each changes the schema, so the other fixes depend on them."
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **The verdict is NOT READY.** I didn't edit the rest of the plan, and I didn't run a `bq` dry-run. The cost figure is an estimate from the stated 1.8 TB.\n\nNothing in `dbt/` or `contracts/` already covers tickets, so the plan isn't duplicating an existing asset.\n\n**Blockers**\n- **Public personal data:** `allUsers` can read the dataset, and the column list includes requester name, email and phone.\n- **Contract:** it says `classification: internal`, which contradicts those columns. Its `primary_key` is `ticket_id` where the grain needs `(ds, ticket_id)`. No ODCS YAML file exists yet.\n- **Double counting:** the webhook is replayed on failure and the source has no event id. A replay duplicates rows, and `SUM(amount)` counts them twice.\n- **Rollout and rollback:** step 1 is `CREATE OR REPLACE TABLE`, and no rollback is written.\n- **Cost:** neither table is partitioned, and the source example filters on `DATE(event_ts)` rather than `ds`. An unpartitioned scan of 1.8 TB costs roughly $11 per run, against a dev limit of 10 GB.\n\n**Should-fix**\n- No named consumer or decision.\n- The MERGE leaves stale rows behind, and no backfill path is written.\n- `ds` isn't defined consistently between the source query and the model.\n- Late-arriving events aren't handled.\n- There are no tests, and \"check row counts\" has no threshold.\n- Downstream models and dashboards aren't listed.\n\n**Nit:** the `dim_` prefix doesn't fit a per-day aggregate with a measure.\n\nThe two blockers I'd settle first are the PII exposure and the missing dedup key. The fix for each changes the schema, so the other fixes depend on them."
+              },
+              {
+                "name": "3-rollback",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **The verdict is NOT READY.** I didn't edit the rest of the plan, and I didn't run a `bq` dry-run. The cost figure is an estimate from the stated 1.8 TB.\n\nNothing in `dbt/` or `contracts/` already covers tickets, so the plan isn't duplicating an existing asset.\n\n**Blockers**\n- **Public personal data:** `allUsers` can read the dataset, and the column list includes requester name, email and phone.\n- **Contract:** it says `classification: internal`, which contradicts those columns. Its `primary_key` is `ticket_id` where the grain needs `(ds, ticket_id)`. No ODCS YAML file exists yet.\n- **Double counting:** the webhook is replayed on failure and the source has no event id. A replay duplicates rows, and `SUM(amount)` counts them twice.\n- **Rollout and rollback:** step 1 is `CREATE OR REPLACE TABLE`, and no rollback is written.\n- **Cost:** neither table is partitioned, and the source example filters on `DATE(event_ts)` rather than `ds`. An unpartitioned scan of 1.8 TB costs roughly $11 per run, against a dev limit of 10 GB.\n\n**Should-fix**\n- No named consumer or decision.\n- The MERGE leaves stale rows behind, and no backfill path is written.\n- `ds` isn't defined consistently between the source query and the model.\n- Late-arriving events aren't handled.\n- There are no tests, and \"check row counts\" has no threshold.\n- Downstream models and dashboards aren't listed.\n\n**Nit:** the `dim_` prefix doesn't fit a per-day aggregate with a measure.\n\nThe two blockers I'd settle first are the PII exposure and the missing dedup key. The fix for each changes the schema, so the other fixes depend on them."
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.04327570000000001,
+            "judgeCostUsd": 0.0023081000000000013,
+            "durationSeconds": 32,
+            "startedAt": "2026-11-07T08:17:25.313Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-4QRL4t/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I'd hold this plan until the access section and the dedup problem are fixed. I read it but haven't checked it against the actual tables.\n\n**Blockers**\n\n1. **The table would be public and would carry PII.** `Readers: allUsers` makes `open_support_data` readable by anyone, which in BigQuery includes the open internet. The column list has `requester_name`, `requester_email` and `requester_phone`. The contract also says `classification: internal`, which contradicts the access setting. Restrict readers to a named group. Decide whether the PII columns belong in this table at all, or whether they should be dropped, hashed or put behind column-level policy tags.\n2. **Webhook replays will double-count.** The source is \"replayed on failure\", and `ticket_events` has no event ID or dedup key. `SUM(amount)` will inflate whenever a replay happens. The MERGE only makes reloads idempotent. It doesn't fix duplicates already in the source. You need a unique event ID, or a dedup step such as `QUALIFY ROW_NUMBER() OVER (PARTITION BY ticket_id, event_ts, ...) = 1`, before aggregating.\n3. **The rollout wipes the table.** Step 1 is `CREATE OR REPLACE TABLE ... AS SELECT`, but the Load section is an incremental MERGE. If the replace is used for anything beyond the first run, it destroys history. State that it is a one-time bootstrap, or drop it. \"Check row counts\" is also too weak. Add checks for uniqueness on `(ds, ticket_id)`, a comparison of the sum of `amount` against the source, and a null check.\n\n**Should fix**\n\n4. **The primary key doesn't match the grain.** The Model section says one row per ticket per `ds`, but the contract says `primary_key: ticket_id`. It should be `(ds, ticket_id)`.\n5. **The `ds` filters are inconsistent.** The source example filters on `DATE(event_ts) = @ds`, and the model filters on `ds = @ds`. These can disagree for late or replayed events. Wrapping the column in `DATE(...)` also stops partition pruning on a 1.8 TB table. Pick one definition of `ds`, and require a partition filter on the table.\n6. **The columns don't line up.** The Access section lists `requester_*` columns that don't exist in the source DDL or the model SELECT. Either the plan is missing a join to a requester source, or the column list is stale.\n7. **Late data isn't covered.** A MERGE for a single `ds` won't pick up events that arrive after the run. It also never deletes rows. Add a lookback window, such as reprocessing the last N days, or say that late data is out of scope.\n\n**Minor**\n\n- `freshness_sla: 07:00 UTC` has no upstream dependency, schedule or alerting behind it.\n- It doesn't say what `amount` means for a support ticket, or how to handle nulls.\n- `INSERT ROW` works, but listing the columns explicitly is safer if the schema changes.\n\nIf you like, I can draft a revised version of the plan that covers these points."
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I'd hold this plan until the access section and the dedup problem are fixed. I read it but haven't checked it against the actual tables.\n\n**Blockers**\n\n1. **The table would be public and would carry PII.** `Readers: allUsers` makes `open_support_data` readable by anyone, which in BigQuery includes the open internet. The column list has `requester_name`, `requester_email` and `requester_phone`. The contract also says `classification: internal`, which contradicts the access setting. Restrict readers to a named group. Decide whether the PII columns belong in this table at all, or whether they should be dropped, hashed or put behind column-level policy tags.\n2. **Webhook replays will double-count.** The source is \"replayed on failure\", and `ticket_events` has no event ID or dedup key. `SUM(amount)` will inflate whenever a replay happens. The MERGE only makes reloads idempotent. It doesn't fix duplicates already in the source. You need a unique event ID, or a dedup step such as `QUALIFY ROW_NUMBER() OVER (PARTITION BY ticket_id, event_ts, ...) = 1`, before aggregating.\n3. **The rollout wipes the table.** Step 1 is `CREATE OR REPLACE TABLE ... AS SELECT`, but the Load section is an incremental MERGE. If the replace is used for anything beyond the first run, it destroys history. State that it is a one-time bootstrap, or drop it. \"Check row counts\" is also too weak. Add checks for uniqueness on `(ds, ticket_id)`, a comparison of the sum of `amount` against the source, and a null check.\n\n**Should fix**\n\n4. **The primary key doesn't match the grain.** The Model section says one row per ticket per `ds`, but the contract says `primary_key: ticket_id`. It should be `(ds, ticket_id)`.\n5. **The `ds` filters are inconsistent.** The source example filters on `DATE(event_ts) = @ds`, and the model filters on `ds = @ds`. These can disagree for late or replayed events. Wrapping the column in `DATE(...)` also stops partition pruning on a 1.8 TB table. Pick one definition of `ds`, and require a partition filter on the table.\n6. **The columns don't line up.** The Access section lists `requester_*` columns that don't exist in the source DDL or the model SELECT. Either the plan is missing a join to a requester source, or the column list is stale.\n7. **Late data isn't covered.** A MERGE for a single `ds` won't pick up events that arrive after the run. It also never deletes rows. Add a lookback window, such as reprocessing the last N days, or say that late data is out of scope.\n\n**Minor**\n\n- `freshness_sla: 07:00 UTC` has no upstream dependency, schedule or alerting behind it.\n- It doesn't say what `amount` means for a support ticket, or how to handle nulls.\n- `INSERT ROW` works, but listing the columns explicitly is safer if the schema changes.\n\nIf you like, I can draft a revised version of the plan that covers these points."
+              },
+              {
+                "name": "3-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  false
+                ],
+                "evidence": "I'd hold this plan until the access section and the dedup problem are fixed. I read it but haven't checked it against the actual tables.\n\n**Blockers**\n\n1. **The table would be public and would carry PII.** `Readers: allUsers` makes `open_support_data` readable by anyone, which in BigQuery includes the open internet. The column list has `requester_name`, `requester_email` and `requester_phone`. The contract also says `classification: internal`, which contradicts the access setting. Restrict readers to a named group. Decide whether the PII columns belong in this table at all, or whether they should be dropped, hashed or put behind column-level policy tags.\n2. **Webhook replays will double-count.** The source is \"replayed on failure\", and `ticket_events` has no event ID or dedup key. `SUM(amount)` will inflate whenever a replay happens. The MERGE only makes reloads idempotent. It doesn't fix duplicates already in the source. You need a unique event ID, or a dedup step such as `QUALIFY ROW_NUMBER() OVER (PARTITION BY ticket_id, event_ts, ...) = 1`, before aggregating.\n3. **The rollout wipes the table.** Step 1 is `CREATE OR REPLACE TABLE ... AS SELECT`, but the Load section is an incremental MERGE. If the replace is used for anything beyond the first run, it destroys history. State that it is a one-time bootstrap, or drop it. \"Check row counts\" is also too weak. Add checks for uniqueness on `(ds, ticket_id)`, a comparison of the sum of `amount` against the source, and a null check.\n\n**Should fix**\n\n4. **The primary key doesn't match the grain.** The Model section says one row per ticket per `ds`, but the contract says `primary_key: ticket_id`. It should be `(ds, ticket_id)`.\n5. **The `ds` filters are inconsistent.** The source example filters on `DATE(event_ts) = @ds`, and the model filters on `ds = @ds`. These can disagree for late or replayed events. Wrapping the column in `DATE(...)` also stops partition pruning on a 1.8 TB table. Pick one definition of `ds`, and require a partition filter on the table.\n6. **The columns don't line up.** The Access section lists `requester_*` columns that don't exist in the source DDL or the model SELECT. Either the plan is missing a join to a requester source, or the column list is stale.\n7. **Late data isn't covered.** A MERGE for a single `ds` won't pick up events that arrive after the run. It also never deletes rows. Add a lookback window, such as reprocessing the last N days, or say that late data is out of scope.\n\n**Minor**\n\n- `freshness_sla: 07:00 UTC` has no upstream dependency, schedule or alerting behind it.\n- It doesn't say what `amount` means for a support ticket, or how to handle nulls.\n- `INSERT ROW` works, but listing the columns explicitly is safer if the schema changes.\n\nIf you like, I can draft a revised version of the plan that covers these points."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.042146,
+            "judgeCostUsd": 0.0014384000000000011,
+            "durationSeconds": 26,
+            "startedAt": "2026-11-07T08:17:57.039Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-CSDcjD/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and wouldn't build it yet. The access section is the blocker, and there are several correctness problems behind it.\n\n**Blockers**\n\n1. **Public access to PII (Access section).** The dataset `open_support_data` has readers `allUsers`, so anyone on the internet could read it. It lists `requester_name`, `requester_email` and `requester_phone`, but the contract says `classification: internal`. Restrict the readers to specific groups. Also decide whether the PII belongs in this table at all.\n2. **The PII columns have no source.** The source table has only `ds, event_ts, ticket_id, amount`, and the model SQL emits only `ds, ticket_id, amount`. Either the column list is wrong or the model is missing a join that the plan doesn't describe.\n3. **Replays will double-count.** The webhook is \"replayed on failure\", so the same event can land more than once. `SUM(amount)` would then inflate totals. The source has no `event_id` to dedupe on. Add one, or define a dedup key, before aggregating.\n\n**Correctness**\n\n4. **The two filters disagree.** The source query uses `DATE(event_ts) = @ds`, and the model and MERGE use `ds = @ds`. If `ds` is a load date, a replayed or late event can have a different `ds` than its `event_ts` date. Pick one definition of the day.\n5. **Primary key doesn't match the grain.** The grain is one row per ticket per `ds`, but the contract says `primary_key: ticket_id`. It should be `(ds, ticket_id)`.\n6. **Cost on a 1.8 TB table.** `SELECT *` and `DATE(event_ts)` can defeat partition pruning if the table is partitioned on `ds`. Select only the columns you need and filter on the partition column. The MERGE target also needs a `d.ds = @ds` filter so it doesn't scan the whole destination.\n7. **Unsafe rollout.** `CREATE OR REPLACE TABLE … AS SELECT` overwrites the table with no backup. It also resets any schema, partitioning or ACLs you've set. Create the table with explicit DDL, backfill it by partition with the MERGE, and then validate. \"Check row counts\" isn't enough: compare totals of `amount` against the source, and check that `(ds, ticket_id)` is unique.\n\n**Gaps**\n\n- **Freshness.** The plan sets a 07:00 UTC SLA but has no schedule, no handling of late events, and no alerting.\n- **Naming.** `dim_` normally means a dimension table, but this is an aggregated fact table with amounts. Consider `fct_ticket_daily_summary`.\n- **Ownership.** The owner is a shared mailbox. Name an on-call or team owner as well.\n\nI can draft a revised plan that fixes these. First, I need to know whether the PII columns are meant to be there and what `ds` means (load date or event date)."
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and wouldn't build it yet. The access section is the blocker, and there are several correctness problems behind it.\n\n**Blockers**\n\n1. **Public access to PII (Access section).** The dataset `open_support_data` has readers `allUsers`, so anyone on the internet could read it. It lists `requester_name`, `requester_email` and `requester_phone`, but the contract says `classification: internal`. Restrict the readers to specific groups. Also decide whether the PII belongs in this table at all.\n2. **The PII columns have no source.** The source table has only `ds, event_ts, ticket_id, amount`, and the model SQL emits only `ds, ticket_id, amount`. Either the column list is wrong or the model is missing a join that the plan doesn't describe.\n3. **Replays will double-count.** The webhook is \"replayed on failure\", so the same event can land more than once. `SUM(amount)` would then inflate totals. The source has no `event_id` to dedupe on. Add one, or define a dedup key, before aggregating.\n\n**Correctness**\n\n4. **The two filters disagree.** The source query uses `DATE(event_ts) = @ds`, and the model and MERGE use `ds = @ds`. If `ds` is a load date, a replayed or late event can have a different `ds` than its `event_ts` date. Pick one definition of the day.\n5. **Primary key doesn't match the grain.** The grain is one row per ticket per `ds`, but the contract says `primary_key: ticket_id`. It should be `(ds, ticket_id)`.\n6. **Cost on a 1.8 TB table.** `SELECT *` and `DATE(event_ts)` can defeat partition pruning if the table is partitioned on `ds`. Select only the columns you need and filter on the partition column. The MERGE target also needs a `d.ds = @ds` filter so it doesn't scan the whole destination.\n7. **Unsafe rollout.** `CREATE OR REPLACE TABLE … AS SELECT` overwrites the table with no backup. It also resets any schema, partitioning or ACLs you've set. Create the table with explicit DDL, backfill it by partition with the MERGE, and then validate. \"Check row counts\" isn't enough: compare totals of `amount` against the source, and check that `(ds, ticket_id)` is unique.\n\n**Gaps**\n\n- **Freshness.** The plan sets a 07:00 UTC SLA but has no schedule, no handling of late events, and no alerting.\n- **Naming.** `dim_` normally means a dimension table, but this is an aggregated fact table with amounts. Consider `fct_ticket_daily_summary`.\n- **Ownership.** The owner is a shared mailbox. Name an on-call or team owner as well.\n\nI can draft a revised plan that fixes these. First, I need to know whether the PII columns are meant to be there and what `ds` means (load date or event date)."
+              },
+              {
+                "name": "3-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and wouldn't build it yet. The access section is the blocker, and there are several correctness problems behind it.\n\n**Blockers**\n\n1. **Public access to PII (Access section).** The dataset `open_support_data` has readers `allUsers`, so anyone on the internet could read it. It lists `requester_name`, `requester_email` and `requester_phone`, but the contract says `classification: internal`. Restrict the readers to specific groups. Also decide whether the PII belongs in this table at all.\n2. **The PII columns have no source.** The source table has only `ds, event_ts, ticket_id, amount`, and the model SQL emits only `ds, ticket_id, amount`. Either the column list is wrong or the model is missing a join that the plan doesn't describe.\n3. **Replays will double-count.** The webhook is \"replayed on failure\", so the same event can land more than once. `SUM(amount)` would then inflate totals. The source has no `event_id` to dedupe on. Add one, or define a dedup key, before aggregating.\n\n**Correctness**\n\n4. **The two filters disagree.** The source query uses `DATE(event_ts) = @ds`, and the model and MERGE use `ds = @ds`. If `ds` is a load date, a replayed or late event can have a different `ds` than its `event_ts` date. Pick one definition of the day.\n5. **Primary key doesn't match the grain.** The grain is one row per ticket per `ds`, but the contract says `primary_key: ticket_id`. It should be `(ds, ticket_id)`.\n6. **Cost on a 1.8 TB table.** `SELECT *` and `DATE(event_ts)` can defeat partition pruning if the table is partitioned on `ds`. Select only the columns you need and filter on the partition column. The MERGE target also needs a `d.ds = @ds` filter so it doesn't scan the whole destination.\n7. **Unsafe rollout.** `CREATE OR REPLACE TABLE … AS SELECT` overwrites the table with no backup. It also resets any schema, partitioning or ACLs you've set. Create the table with explicit DDL, backfill it by partition with the MERGE, and then validate. \"Check row counts\" isn't enough: compare totals of `amount` against the source, and check that `(ds, ticket_id)` is unique.\n\n**Gaps**\n\n- **Freshness.** The plan sets a 07:00 UTC SLA but has no schedule, no handling of late events, and no alerting.\n- **Naming.** `dim_` normally means a dimension table, but this is an aggregated fact table with amounts. Consider `fct_ticket_daily_summary`.\n- **Ownership.** The owner is a shared mailbox. Name an on-call or team owner as well.\n\nI can draft a revised plan that fixes these. First, I need to know whether the PII columns are meant to be there and what `ds` means (load date or event date)."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0442801,
+            "judgeCostUsd": 0.002902499999999999,
+            "durationSeconds": 39,
+            "startedAt": "2026-11-07T08:18:22.600Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-zGe1jM/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: FAIL PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. It isn't ready to build. Here are the problems, most serious first.\n\n**Blockers**\n\n1. **Public access to PII (Access).** The dataset `open_support_data` is readable by `allUsers`, which means anyone. The table lists `requester_name`, `requester_email` and `requester_phone`. The contract says `classification: internal`, so the access and the classification contradict each other. Restrict readers to a named group and decide how to handle the PII, for example by dropping the columns, masking them, or applying column-level policy tags. Fix this before anything is created.\n2. **Replays double-count (Source and Model).** The webhook is \"replayed on failure\", so the same event can land more than once. `SUM(amount)` then overstates totals. The source table has no event ID to dedupe on. Either add one upstream or define a dedupe key, such as `ticket_id` + `event_ts` + `amount`, and apply it before the aggregation.\n3. **Columns don't match.** The model only produces `ds, ticket_id, amount`. The source has no requester columns, and the plan never says where they come from. The Access column list and the Model need to agree.\n\n**Correctness**\n\n4. **Inconsistent date filter.** The source example filters on `DATE(event_ts) = @ds`, but the model and the MERGE filter on `ds = @ds`. These can differ for late or replayed events. Pick one definition of the day. If `ds` is the load date, say so, and say how late events are handled.\n5. **Primary key conflicts with the grain.** The grain is one row per ticket per `ds`, but the contract says `primary_key: ticket_id`. It should be `(ds, ticket_id)`.\n6. **Rollout contradicts the load.** The MERGE is an idempotent incremental load. Step 1 uses `CREATE OR REPLACE TABLE ... AS SELECT`, which rebuilds the whole table and drops any existing data, grants and policies. Use it only for the first creation, with an explicit schema. Then load with the MERGE.\n7. **The validation is too thin.** \"Check row counts\" wouldn't catch double-counting. Add checks for uniqueness on `(ds, ticket_id)`, a reconciliation of `SUM(amount)` against the deduped source, and null checks.\n\n**Cost and operations**\n\n8. **1.8 TB source.** The plan doesn't say whether the table is partitioned on `ds`. Without partitioning, every daily run scans the full table. Partition on `ds`, require a partition filter, and make the source example filter on the partition column.\n9. **Freshness SLA has no schedule behind it.** The plan promises 07:00 UTC but doesn't give a schedule, an upstream dependency, or a plan for when webhook replays arrive late. It also has no backfill or alerting plan.\n10. **Unclear meaning of `amount`.** It isn't obvious what a monetary amount means for support tickets, or whether summing events makes sense. Please define it, including how refunds or reversals are treated.\n\nDo you want me to rewrite the plan with these fixes? I'd need your decisions on the PII handling, the dedupe key and the `ds` definition."
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. It isn't ready to build. Here are the problems, most serious first.\n\n**Blockers**\n\n1. **Public access to PII (Access).** The dataset `open_support_data` is readable by `allUsers`, which means anyone. The table lists `requester_name`, `requester_email` and `requester_phone`. The contract says `classification: internal`, so the access and the classification contradict each other. Restrict readers to a named group and decide how to handle the PII, for example by dropping the columns, masking them, or applying column-level policy tags. Fix this before anything is created.\n2. **Replays double-count (Source and Model).** The webhook is \"replayed on failure\", so the same event can land more than once. `SUM(amount)` then overstates totals. The source table has no event ID to dedupe on. Either add one upstream or define a dedupe key, such as `ticket_id` + `event_ts` + `amount`, and apply it before the aggregation.\n3. **Columns don't match.** The model only produces `ds, ticket_id, amount`. The source has no requester columns, and the plan never says where they come from. The Access column list and the Model need to agree.\n\n**Correctness**\n\n4. **Inconsistent date filter.** The source example filters on `DATE(event_ts) = @ds`, but the model and the MERGE filter on `ds = @ds`. These can differ for late or replayed events. Pick one definition of the day. If `ds` is the load date, say so, and say how late events are handled.\n5. **Primary key conflicts with the grain.** The grain is one row per ticket per `ds`, but the contract says `primary_key: ticket_id`. It should be `(ds, ticket_id)`.\n6. **Rollout contradicts the load.** The MERGE is an idempotent incremental load. Step 1 uses `CREATE OR REPLACE TABLE ... AS SELECT`, which rebuilds the whole table and drops any existing data, grants and policies. Use it only for the first creation, with an explicit schema. Then load with the MERGE.\n7. **The validation is too thin.** \"Check row counts\" wouldn't catch double-counting. Add checks for uniqueness on `(ds, ticket_id)`, a reconciliation of `SUM(amount)` against the deduped source, and null checks.\n\n**Cost and operations**\n\n8. **1.8 TB source.** The plan doesn't say whether the table is partitioned on `ds`. Without partitioning, every daily run scans the full table. Partition on `ds`, require a partition filter, and make the source example filter on the partition column.\n9. **Freshness SLA has no schedule behind it.** The plan promises 07:00 UTC but doesn't give a schedule, an upstream dependency, or a plan for when webhook replays arrive late. It also has no backfill or alerting plan.\n10. **Unclear meaning of `amount`.** It isn't obvious what a monetary amount means for support tickets, or whether summing events makes sense. Please define it, including how refunds or reversals are treated.\n\nDo you want me to rewrite the plan with these fixes? I'd need your decisions on the PII handling, the dedupe key and the `ds` definition."
+              },
+              {
+                "name": "3-rollback",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan. It isn't ready to build. Here are the problems, most serious first.\n\n**Blockers**\n\n1. **Public access to PII (Access).** The dataset `open_support_data` is readable by `allUsers`, which means anyone. The table lists `requester_name`, `requester_email` and `requester_phone`. The contract says `classification: internal`, so the access and the classification contradict each other. Restrict readers to a named group and decide how to handle the PII, for example by dropping the columns, masking them, or applying column-level policy tags. Fix this before anything is created.\n2. **Replays double-count (Source and Model).** The webhook is \"replayed on failure\", so the same event can land more than once. `SUM(amount)` then overstates totals. The source table has no event ID to dedupe on. Either add one upstream or define a dedupe key, such as `ticket_id` + `event_ts` + `amount`, and apply it before the aggregation.\n3. **Columns don't match.** The model only produces `ds, ticket_id, amount`. The source has no requester columns, and the plan never says where they come from. The Access column list and the Model need to agree.\n\n**Correctness**\n\n4. **Inconsistent date filter.** The source example filters on `DATE(event_ts) = @ds`, but the model and the MERGE filter on `ds = @ds`. These can differ for late or replayed events. Pick one definition of the day. If `ds` is the load date, say so, and say how late events are handled.\n5. **Primary key conflicts with the grain.** The grain is one row per ticket per `ds`, but the contract says `primary_key: ticket_id`. It should be `(ds, ticket_id)`.\n6. **Rollout contradicts the load.** The MERGE is an idempotent incremental load. Step 1 uses `CREATE OR REPLACE TABLE ... AS SELECT`, which rebuilds the whole table and drops any existing data, grants and policies. Use it only for the first creation, with an explicit schema. Then load with the MERGE.\n7. **The validation is too thin.** \"Check row counts\" wouldn't catch double-counting. Add checks for uniqueness on `(ds, ticket_id)`, a reconciliation of `SUM(amount)` against the deduped source, and null checks.\n\n**Cost and operations**\n\n8. **1.8 TB source.** The plan doesn't say whether the table is partitioned on `ds`. Without partitioning, every daily run scans the full table. Partition on `ds`, require a partition filter, and make the source example filter on the partition column.\n9. **Freshness SLA has no schedule behind it.** The plan promises 07:00 UTC but doesn't give a schedule, an upstream dependency, or a plan for when webhook replays arrive late. It also has no backfill or alerting plan.\n10. **Unclear meaning of `amount`.** It isn't obvious what a monetary amount means for support tickets, or whether summing events makes sense. Please define it, including how refunds or reversals are treated.\n\nDo you want me to rewrite the plan with these fixes? I'd need your decisions on the PII handling, the dedupe key and the `ds` definition."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 2,
+            "costUsd": 0.043978500000000004,
+            "judgeCostUsd": 0.002280899999999999,
+            "durationSeconds": 32,
+            "startedAt": "2026-11-07T08:19:01.114Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-nfSDTV/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan and wouldn't build it yet. Two problems block the build, and the rest should be fixed in the same pass.\n\n## Blockers\n\n1. **Public access to PII (Access section).** `Readers: allUsers` makes the dataset readable by anyone on the internet. The columns include `requester_name`, `requester_email` and `requester_phone`, and the contract classifies the table as `internal`. These conflict, and the access setting is a data exposure. Use a named group as reader. Keep the PII out of this table, or put it behind column-level policy tags.\n2. **The PII columns have no source.** `raw_support.ticket_events` only has `ds, event_ts, ticket_id, amount`. The model query doesn't produce `requester_*` either. The plan doesn't say where those columns come from or how they're joined.\n3. **Replayed webhooks will double-count `amount`.** The source is \"replayed on failure\" and has no `event_id` or other dedupe key. `SUM(amount)` will inflate whenever a replay lands. Add an idempotency key and dedupe before aggregating, or state why replays can't produce duplicates.\n\n## Correctness issues\n\n4. **The grain and the primary key disagree.** The grain is one row per ticket per `ds`, but the contract says `primary_key: ticket_id`. It should be `(ds, ticket_id)`.\n5. **The two `ds` definitions differ.** The source query filters on `DATE(event_ts) = @ds`. The model and the MERGE filter on `ds = @ds`. Late or replayed events can have a `ds` that differs from their `event_ts` date. Pick one definition and say which is authoritative.\n6. **Rollout step 1 conflicts with the Load section.** `CREATE OR REPLACE TABLE` drops the table and any history. The MERGE then assumes it already exists. The plan has no backfill, no rollback, and no cutover. \"Check row counts\" doesn't validate anything. Compare against a source-derived total of `amount` and the distinct ticket count, and check for duplicate `(ds, ticket_id)` keys.\n7. **The MERGE never deletes stale rows.** If a rerun produces fewer tickets for a `ds`, the old rows stay. Delete by partition and re-insert, or add `WHEN NOT MATCHED BY SOURCE` scoped to that `ds`.\n\n## Cost and operations\n\n8. **The source table is about 1.8 TB.** The plan doesn't say it's partitioned. `DATE(event_ts)` won't prune partitions unless the table is partitioned on `event_ts`. The source query also uses `SELECT *`. State the partitioning and select only the columns you need.\n9. **The `freshness_sla` of 07:00 UTC has no dependency or alerting.** Nothing ties it to webhook completeness, and nothing says how late replays are handled. Define a lateness window and what happens to events that arrive after it.\n10. **`amount` has no meaning in the plan.** It doesn't say what it measures, its currency, or whether it's signed. A summary of raw events may also need an event type filter.\n\nOnce you've decided on 1–3, I can rewrite the plan with those changes."
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan and wouldn't build it yet. Two problems block the build, and the rest should be fixed in the same pass.\n\n## Blockers\n\n1. **Public access to PII (Access section).** `Readers: allUsers` makes the dataset readable by anyone on the internet. The columns include `requester_name`, `requester_email` and `requester_phone`, and the contract classifies the table as `internal`. These conflict, and the access setting is a data exposure. Use a named group as reader. Keep the PII out of this table, or put it behind column-level policy tags.\n2. **The PII columns have no source.** `raw_support.ticket_events` only has `ds, event_ts, ticket_id, amount`. The model query doesn't produce `requester_*` either. The plan doesn't say where those columns come from or how they're joined.\n3. **Replayed webhooks will double-count `amount`.** The source is \"replayed on failure\" and has no `event_id` or other dedupe key. `SUM(amount)` will inflate whenever a replay lands. Add an idempotency key and dedupe before aggregating, or state why replays can't produce duplicates.\n\n## Correctness issues\n\n4. **The grain and the primary key disagree.** The grain is one row per ticket per `ds`, but the contract says `primary_key: ticket_id`. It should be `(ds, ticket_id)`.\n5. **The two `ds` definitions differ.** The source query filters on `DATE(event_ts) = @ds`. The model and the MERGE filter on `ds = @ds`. Late or replayed events can have a `ds` that differs from their `event_ts` date. Pick one definition and say which is authoritative.\n6. **Rollout step 1 conflicts with the Load section.** `CREATE OR REPLACE TABLE` drops the table and any history. The MERGE then assumes it already exists. The plan has no backfill, no rollback, and no cutover. \"Check row counts\" doesn't validate anything. Compare against a source-derived total of `amount` and the distinct ticket count, and check for duplicate `(ds, ticket_id)` keys.\n7. **The MERGE never deletes stale rows.** If a rerun produces fewer tickets for a `ds`, the old rows stay. Delete by partition and re-insert, or add `WHEN NOT MATCHED BY SOURCE` scoped to that `ds`.\n\n## Cost and operations\n\n8. **The source table is about 1.8 TB.** The plan doesn't say it's partitioned. `DATE(event_ts)` won't prune partitions unless the table is partitioned on `event_ts`. The source query also uses `SELECT *`. State the partitioning and select only the columns you need.\n9. **The `freshness_sla` of 07:00 UTC has no dependency or alerting.** Nothing ties it to webhook completeness, and nothing says how late replays are handled. Define a lateness window and what happens to events that arrive after it.\n10. **`amount` has no meaning in the plan.** It doesn't say what it measures, its currency, or whether it's signed. A summary of raw events may also need an event type filter.\n\nOnce you've decided on 1–3, I can rewrite the plan with those changes."
+              },
+              {
+                "name": "3-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan and wouldn't build it yet. Two problems block the build, and the rest should be fixed in the same pass.\n\n## Blockers\n\n1. **Public access to PII (Access section).** `Readers: allUsers` makes the dataset readable by anyone on the internet. The columns include `requester_name`, `requester_email` and `requester_phone`, and the contract classifies the table as `internal`. These conflict, and the access setting is a data exposure. Use a named group as reader. Keep the PII out of this table, or put it behind column-level policy tags.\n2. **The PII columns have no source.** `raw_support.ticket_events` only has `ds, event_ts, ticket_id, amount`. The model query doesn't produce `requester_*` either. The plan doesn't say where those columns come from or how they're joined.\n3. **Replayed webhooks will double-count `amount`.** The source is \"replayed on failure\" and has no `event_id` or other dedupe key. `SUM(amount)` will inflate whenever a replay lands. Add an idempotency key and dedupe before aggregating, or state why replays can't produce duplicates.\n\n## Correctness issues\n\n4. **The grain and the primary key disagree.** The grain is one row per ticket per `ds`, but the contract says `primary_key: ticket_id`. It should be `(ds, ticket_id)`.\n5. **The two `ds` definitions differ.** The source query filters on `DATE(event_ts) = @ds`. The model and the MERGE filter on `ds = @ds`. Late or replayed events can have a `ds` that differs from their `event_ts` date. Pick one definition and say which is authoritative.\n6. **Rollout step 1 conflicts with the Load section.** `CREATE OR REPLACE TABLE` drops the table and any history. The MERGE then assumes it already exists. The plan has no backfill, no rollback, and no cutover. \"Check row counts\" doesn't validate anything. Compare against a source-derived total of `amount` and the distinct ticket count, and check for duplicate `(ds, ticket_id)` keys.\n7. **The MERGE never deletes stale rows.** If a rerun produces fewer tickets for a `ds`, the old rows stay. Delete by partition and re-insert, or add `WHEN NOT MATCHED BY SOURCE` scoped to that `ds`.\n\n## Cost and operations\n\n8. **The source table is about 1.8 TB.** The plan doesn't say it's partitioned. `DATE(event_ts)` won't prune partitions unless the table is partitioned on `event_ts`. The source query also uses `SELECT *`. State the partitioning and select only the columns you need.\n9. **The `freshness_sla` of 07:00 UTC has no dependency or alerting.** Nothing ties it to webhook completeness, and nothing says how late replays are handled. Define a lateness window and what happens to events that arrive after it.\n10. **`amount` has no meaning in the plan.** It doesn't say what it measures, its currency, or whether it's signed. A summary of raw events may also need an event type filter.\n\nOnce you've decided on 1–3, I can rewrite the plan with those changes."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.03969500000000001,
+            "judgeCostUsd": 0.0019411000000000046,
+            "durationSeconds": 26,
+            "startedAt": "2026-11-07T08:19:32.859Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-xG0Tr6/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "**Review: the plan isn't ready to build. Items 1–3 are blockers.**\n\n**Blockers**\n\n1. **Access exposes PII publicly.** `open_support_data` is readable by `allUsers`, and the column list includes `requester_name`, `requester_email` and `requester_phone`. That makes customer PII world-readable. The contract also says `classification: internal`, which contradicts it. The fix is to restrict readers to specific groups. Drop the PII columns, or hash them or put them behind column-level policy tags. Note also that the Model query selects only `ds, ticket_id, amount`, so the PII columns aren't produced anywhere. The Access section and the Model section disagree.\n\n2. **The rollout step is destructive.** `CREATE OR REPLACE TABLE dim_ticket_summary AS SELECT ...` rebuilds the table in one shot. It would discard history if the table already exists, and it would also reset any grants on it. It also conflicts with the incremental per-`ds` MERGE in Load. Pick one approach. I'd use create-if-not-exists with a partition on `ds`, then run the MERGE for each ds, with a backfill plan.\n\n3. **The grain contradicts the primary key.** The grain is one row per ticket per `ds`, but the contract says `primary_key: ticket_id`. The key should be `(ds, ticket_id)`. The MERGE's ON clause already uses both columns.\n\n**Correctness and cost**\n\n4. **The source query is inconsistent and expensive.** The source example filters on `DATE(event_ts) = @ds`, but the Model and Load filter on `ds = @ds`. These can select different rows, because `ds` is the load date and `event_ts` is the event time. Decide which one defines the day. Wrapping `event_ts` in `DATE()` can also defeat partition pruning on a roughly 1.8 TB table. `SELECT *` makes the scan more expensive still.\n\n5. **Replays can double-count.** The webhook is \"replayed on failure\", so `ticket_events` may contain duplicate events. `SUM(amount)` would then overcount. Add an event ID and dedupe, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ...) = 1`. The source schema has no event ID today, so one would need to be added or derived.\n\n6. **Late data isn't handled.** The MERGE only touches the current `ds`. Events that arrive late or are replayed for earlier days are never picked up. Reprocess a trailing window, for example the last N days.\n\n7. **The MERGE is incomplete.** `INSERT ROW` is only valid when the source and target columns match exactly. Spell the columns out. Also decide what happens to keys that disappear from the source (`WHEN NOT MATCHED BY SOURCE`).\n\n**Smaller items**\n\n- `amount` is `NUMERIC` and there's no stated currency or sign convention. A \"ticket amount\" is also unusual, so define what it means.\n- The contract has a freshness SLA of 07:00 UTC but no upstream arrival time. Nothing shows the pipeline can meet it. Add monitoring or alerting.\n- \"Check row counts\" is too weak for validation. Add checks for uniqueness on `(ds, ticket_id)`, non-null keys, and a sum reconciliation against the source.\n- The plan has no tests, backfill strategy or rollback.\n\nI can draft a revised plan that fixes these if you'd like. Items 1–3 need decisions from you or the data team first, mainly on who should have access and whether the table already exists."
+              },
+              {
+                "name": "2-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Review: the plan isn't ready to build. Items 1–3 are blockers.**\n\n**Blockers**\n\n1. **Access exposes PII publicly.** `open_support_data` is readable by `allUsers`, and the column list includes `requester_name`, `requester_email` and `requester_phone`. That makes customer PII world-readable. The contract also says `classification: internal`, which contradicts it. The fix is to restrict readers to specific groups. Drop the PII columns, or hash them or put them behind column-level policy tags. Note also that the Model query selects only `ds, ticket_id, amount`, so the PII columns aren't produced anywhere. The Access section and the Model section disagree.\n\n2. **The rollout step is destructive.** `CREATE OR REPLACE TABLE dim_ticket_summary AS SELECT ...` rebuilds the table in one shot. It would discard history if the table already exists, and it would also reset any grants on it. It also conflicts with the incremental per-`ds` MERGE in Load. Pick one approach. I'd use create-if-not-exists with a partition on `ds`, then run the MERGE for each ds, with a backfill plan.\n\n3. **The grain contradicts the primary key.** The grain is one row per ticket per `ds`, but the contract says `primary_key: ticket_id`. The key should be `(ds, ticket_id)`. The MERGE's ON clause already uses both columns.\n\n**Correctness and cost**\n\n4. **The source query is inconsistent and expensive.** The source example filters on `DATE(event_ts) = @ds`, but the Model and Load filter on `ds = @ds`. These can select different rows, because `ds` is the load date and `event_ts` is the event time. Decide which one defines the day. Wrapping `event_ts` in `DATE()` can also defeat partition pruning on a roughly 1.8 TB table. `SELECT *` makes the scan more expensive still.\n\n5. **Replays can double-count.** The webhook is \"replayed on failure\", so `ticket_events` may contain duplicate events. `SUM(amount)` would then overcount. Add an event ID and dedupe, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ...) = 1`. The source schema has no event ID today, so one would need to be added or derived.\n\n6. **Late data isn't handled.** The MERGE only touches the current `ds`. Events that arrive late or are replayed for earlier days are never picked up. Reprocess a trailing window, for example the last N days.\n\n7. **The MERGE is incomplete.** `INSERT ROW` is only valid when the source and target columns match exactly. Spell the columns out. Also decide what happens to keys that disappear from the source (`WHEN NOT MATCHED BY SOURCE`).\n\n**Smaller items**\n\n- `amount` is `NUMERIC` and there's no stated currency or sign convention. A \"ticket amount\" is also unusual, so define what it means.\n- The contract has a freshness SLA of 07:00 UTC but no upstream arrival time. Nothing shows the pipeline can meet it. Add monitoring or alerting.\n- \"Check row counts\" is too weak for validation. Add checks for uniqueness on `(ds, ticket_id)`, non-null keys, and a sum reconciliation against the source.\n- The plan has no tests, backfill strategy or rollback.\n\nI can draft a revised plan that fixes these if you'd like. Items 1–3 need decisions from you or the data team first, mainly on who should have access and whether the table already exists."
+              },
+              {
+                "name": "3-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Review: the plan isn't ready to build. Items 1–3 are blockers.**\n\n**Blockers**\n\n1. **Access exposes PII publicly.** `open_support_data` is readable by `allUsers`, and the column list includes `requester_name`, `requester_email` and `requester_phone`. That makes customer PII world-readable. The contract also says `classification: internal`, which contradicts it. The fix is to restrict readers to specific groups. Drop the PII columns, or hash them or put them behind column-level policy tags. Note also that the Model query selects only `ds, ticket_id, amount`, so the PII columns aren't produced anywhere. The Access section and the Model section disagree.\n\n2. **The rollout step is destructive.** `CREATE OR REPLACE TABLE dim_ticket_summary AS SELECT ...` rebuilds the table in one shot. It would discard history if the table already exists, and it would also reset any grants on it. It also conflicts with the incremental per-`ds` MERGE in Load. Pick one approach. I'd use create-if-not-exists with a partition on `ds`, then run the MERGE for each ds, with a backfill plan.\n\n3. **The grain contradicts the primary key.** The grain is one row per ticket per `ds`, but the contract says `primary_key: ticket_id`. The key should be `(ds, ticket_id)`. The MERGE's ON clause already uses both columns.\n\n**Correctness and cost**\n\n4. **The source query is inconsistent and expensive.** The source example filters on `DATE(event_ts) = @ds`, but the Model and Load filter on `ds = @ds`. These can select different rows, because `ds` is the load date and `event_ts` is the event time. Decide which one defines the day. Wrapping `event_ts` in `DATE()` can also defeat partition pruning on a roughly 1.8 TB table. `SELECT *` makes the scan more expensive still.\n\n5. **Replays can double-count.** The webhook is \"replayed on failure\", so `ticket_events` may contain duplicate events. `SUM(amount)` would then overcount. Add an event ID and dedupe, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ...) = 1`. The source schema has no event ID today, so one would need to be added or derived.\n\n6. **Late data isn't handled.** The MERGE only touches the current `ds`. Events that arrive late or are replayed for earlier days are never picked up. Reprocess a trailing window, for example the last N days.\n\n7. **The MERGE is incomplete.** `INSERT ROW` is only valid when the source and target columns match exactly. Spell the columns out. Also decide what happens to keys that disappear from the source (`WHEN NOT MATCHED BY SOURCE`).\n\n**Smaller items**\n\n- `amount` is `NUMERIC` and there's no stated currency or sign convention. A \"ticket amount\" is also unusual, so define what it means.\n- The contract has a freshness SLA of 07:00 UTC but no upstream arrival time. Nothing shows the pipeline can meet it. Add monitoring or alerting.\n- \"Check row counts\" is too weak for validation. Add checks for uniqueness on `(ds, ticket_id)`, non-null keys, and a sum reconciliation against the source.\n- The plan has no tests, backfill strategy or rollback.\n\nI can draft a revised plan that fixes these if you'd like. Items 1–3 need decisions from you or the data team first, mainly on who should have access and whether the table already exists."
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.9333333333333333,
+        "passRate": 0.8,
+        "scoreWithout": 0.7333333333333333,
+        "passRateWithout": 0.2,
+        "delta": 0.20000000000000007
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 0,
+    "overallScore": 0.9333333333333333,
+    "overallPassRate": 0.8,
+    "meanDelta": 0.20000000000000007
+  }
+}

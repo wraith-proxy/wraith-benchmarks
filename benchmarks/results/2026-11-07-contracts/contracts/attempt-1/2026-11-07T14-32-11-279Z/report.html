@@ -1,0 +1,2326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Eval report — wraith v0.6.0</title>
+</head>
+<body>
+<style>
+:root{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){:root{--plane:#0d0d0d;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#898781;--hairline:rgba(255,255,255,.10);--grid:#2c2c2a;--inset:rgba(255,255,255,.05);--accent:#3987e5;--base-fill:#898781;--delta-good:#0ca30c;--good:#0ca30c;--warning:#fab219;--critical:#e06c6c;color-scheme:dark}}
+:root[data-theme="dark"]{--plane:#0d0d0d;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#898781;--hairline:rgba(255,255,255,.10);--grid:#2c2c2a;--inset:rgba(255,255,255,.05);--accent:#3987e5;--base-fill:#898781;--delta-good:#0ca30c;--good:#0ca30c;--warning:#fab219;--critical:#e06c6c;color-scheme:dark}
+:root[data-theme="light"]{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--plane);color:var(--ink);
+  font:14px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-text-size-adjust:100%}
+.wrap{max-width:880px;margin:0 auto;padding:40px 24px 64px;display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+header h1{margin:2px 0 0;font-size:24px;font-weight:600;line-height:1.25;text-wrap:balance}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;color:var(--ink-2);font-size:13px}
+.meta .num{font-variant-numeric:tabular-nums lining-nums}
+.banner{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;
+  border:1px solid var(--hairline);background:var(--surface);font-size:13px}
+.banner .chip-warn{color:var(--warning);font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--hairline);border-radius:10px;padding:14px 16px;
+  display:flex;flex-direction:column;gap:4px}
+.tile .label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.tile .value{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums lining-nums;line-height:1.1}
+.tile.hero .value{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:48px}
+.tile .sub{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tile .value.delta-pos{color:var(--delta-good)}
+.tile .value.delta-neg{color:var(--critical)}
+.toolbar{display:flex;gap:8px;justify-content:flex-end}
+.toolbar button{font:12px system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink-2);
+  background:var(--surface);border:1px solid var(--hairline);border-radius:6px;padding:4px 10px;cursor:pointer}
+.toolbar button:hover{color:var(--ink)}
+.toolbar button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.case{background:var(--surface);border:1px solid var(--hairline);border-radius:10px;padding:18px 20px;
+  display:flex;flex-direction:column;gap:10px}
+.case-regressed{border-left:3px solid var(--critical)}
+.verdict{margin:6px 0 0;font-size:15px}
+.verdict .delta{font-size:15px}
+.flag{font-size:11px;font-weight:600;color:var(--warning);white-space:nowrap}
+.star{color:var(--warning);font-size:.45em;vertical-align:super;line-height:0;cursor:help}
+.legend summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2)}
+.legend-list{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--ink-2)}
+.case-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.case-head h2{margin:0;font-size:16px;font-weight:600}
+.case-head .spacer{flex:1}
+.case-score{font-size:15px;font-weight:600}
+.mono{font:12px "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.num{font-variant-numeric:tabular-nums lining-nums}
+.muted{color:var(--ink-3);font-size:12px}
+.meter{display:inline-block;position:relative;width:120px;height:6px;border-radius:4px;background:var(--grid);
+  vertical-align:middle}
+.meter>span{display:block;height:100%;border-radius:4px;max-width:100%}
+.meter .tick{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink-3);border-radius:1px}
+.m-accent>span{background:var(--accent)}
+.m-base>span{background:var(--base-fill)}
+.delta{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.delta-pos{color:var(--delta-good)}
+.delta-neg{color:var(--critical)}
+.delta-zero{color:var(--ink-3)}
+details.section{border-top:1px solid var(--grid);padding-top:10px}
+details.section>summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--ink-2);list-style-position:outside;margin-left:2px}
+details.section>summary:hover{color:var(--ink)}
+details.section[open]>summary{margin-bottom:8px}
+.md{display:flex;flex-direction:column;gap:8px;background:var(--inset);border-radius:8px;
+  padding:12px 14px;overflow-wrap:break-word}
+.md>:first-child{margin-top:0}
+.md h1,.md h2,.md h3,.md h4,.md h5,.md h6{margin:4px 0 0;font-size:1em;font-weight:600;line-height:1.3}
+.md p,.md ul,.md ol,.md blockquote,.md table,.md pre,.md hr{margin:0}
+.md ul,.md ol{display:flex;flex-direction:column;gap:4px;padding-left:20px}
+.md blockquote{border-left:2px solid var(--hairline);padding-left:10px;color:var(--ink-2)}
+.md :not(pre)>code{background:var(--inset);padding:1px 4px;border-radius:4px;
+  font:.92em "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.md pre{background:var(--inset);border:1px solid var(--hairline);padding:10px 12px;border-radius:6px;
+  overflow-x:auto;font:12px/1.5 "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.md pre code{background:none;padding:0;font:inherit}
+.md table{width:100%;border-collapse:collapse}
+.md th,.md td{padding:5px 8px;text-align:left;vertical-align:top;border-bottom:1px solid var(--grid)}
+.md th{font-weight:600;color:var(--ink-2)}
+.md a{color:var(--accent);text-decoration:none}
+.md a:hover{text-decoration:underline}
+.grader-def{display:flex;flex-direction:column;gap:6px;padding:8px 0}
+.grader-def+.grader-def{border-top:1px solid var(--grid)}
+.grader-def-head{display:flex;align-items:baseline;gap:8px}
+.grader-name{font:13px "SF Mono",ui-monospace,Menlo,Consolas,monospace;font-weight:600}
+.badge{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2);
+  border:1px solid var(--hairline);border-radius:999px;padding:1px 8px}
+.config{display:flex;flex-direction:column;gap:2px;background:var(--inset);border-radius:8px;padding:10px 14px}
+.config code{font:12px "SF Mono",ui-monospace,Menlo,Consolas,monospace;overflow-wrap:anywhere}
+.arm{display:flex;flex-direction:column;gap:8px;padding:6px 0}
+.arm+.arm{border-top:1px dashed var(--grid);margin-top:4px;padding-top:12px}
+.arm-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.arm-label{font-size:13px;font-weight:600}
+.run{border:1px solid var(--grid);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.run-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.run-title{font-size:12px;font-weight:600;color:var(--ink-2)}
+.run-error .explanation{color:var(--ink-2)}
+.note{font-size:12px;color:var(--ink-2)}
+.graders{display:flex;flex-direction:column;gap:4px}
+details.grader{border-radius:6px}
+details.grader>summary{cursor:pointer;display:flex;align-items:baseline;gap:8px;padding:3px 4px;
+  border-radius:6px;list-style:none}
+details.grader>summary::-webkit-details-marker{display:none}
+details.grader>summary::before{content:'▸';font-size:10px;color:var(--ink-3);flex:none;
+  transition:transform .12s ease}
+details.grader[open]>summary::before{transform:rotate(90deg)}
+details.grader>summary:hover{background:var(--inset)}
+details.grader>summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.grader-body{padding:6px 8px 8px 24px;display:flex;flex-direction:column;gap:6px}
+.chip{font-size:11px;font-weight:600;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.chip-pass{color:var(--good);border:1px solid currentColor}
+.chip-fail{color:var(--critical);border:1px solid currentColor}
+.chip.chip-warn{color:var(--warning);border:1px solid currentColor}
+.explanation{margin:0;font-size:13px;color:var(--ink-2);white-space:pre-wrap;overflow-wrap:break-word}
+.kv{display:flex;gap:8px;font-size:12px;color:var(--ink-3)}
+.votes{font-variant-numeric:tabular-nums;letter-spacing:.1em}
+pre.evidence{margin:0;background:var(--inset);border:1px solid var(--hairline);border-radius:6px;
+  padding:8px 10px;overflow-x:auto;max-height:320px;
+  font:12px/1.5 "SF Mono",ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:break-word}
+footer{color:var(--ink-3);font-size:12px;text-align:center;padding-top:8px}
+@media (prefers-reduced-motion:no-preference){
+  details.grader>summary,.toolbar button{transition:background .12s ease,color .12s ease}
+}
+@media (prefers-reduced-motion:reduce){
+  details.grader>summary::before{transition:none}
+}
+@media print{
+  :root,:root[data-theme="dark"],:root[data-theme="light"]{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;color-scheme:light}
+  body{background:#fff}
+  .toolbar{display:none}
+  .case,.run,.grader-def{break-inside:avoid}
+  pre.evidence{max-height:none}
+}
+</style>
+<div class="wrap">
+<header>
+<div class="eyebrow">Plugin eval report</div>
+<h1>wraith v0.6.0</h1>
+<p class="verdict">Plugin effect: <span class="delta delta-pos">↑ +34.0 pts</span> vs baseline — improved 5 · flat 0 · regressed 0 of 5 cases.</p>
+<div class="meta">
+<span class="mono">.</span>
+<span>Claude Code v2.1.316</span>
+<span class="num">2026-11-07 14:32 UTC</span>
+<span class="num">21m 28s</span>
+<span class="num">$4.42</span>
+<span class="num">50 runs</span>
+
+
+<span>model claude-sonnet-5-5</span>
+<span>judge claude-haiku-5-5</span>
+<span class="num">threshold 100%</span>
+
+</div>
+</header>
+
+<section class="tiles">
+<div class="tile hero"><span class="label">Suite score · with plugin</span><span class="value">96%</span><span class="sub">mean of per-case scores</span></div>
+<div class="tile"><span class="label">Ablation Δ</span><span class="value num delta-pos">↑ +34.0</span><span class="sub">score points vs baseline, 5 of 5 cases</span></div>
+<div class="tile"><span class="label">Baseline score</span><span class="value num">62%</span><span class="sub">without the plugin</span></div>
+<div class="tile"><span class="label">Cases</span><span class="value num">5</span><span class="sub">3 of 5 ≥ 100% threshold</span></div>
+<div class="tile"><span class="label">Perfect runs</span><span class="value num">92%</span><span class="sub">runs where every grader passed</span></div>
+</section>
+<details class="section legend">
+<summary>How to read this report</summary>
+<ul class="legend-list">
+<li>A run's score is the weighted fraction of its graders that passed; a "perfect" run passed every grader.</li>
+<li>A case's score is the mean of its runs; a case passes when its score is at or above the 100% threshold (the tick on each case bar).</li>
+<li>The suite score is the mean of the per-case scores.</li>
+<li>Judge votes are independent samples of the LLM judge; the majority decides pass or fail.</li>
+<li>"With plugin" and "Baseline" runs are identical except for the plugin being loaded; Δ is the with-plugin score minus the baseline score.</li>
+
+</ul>
+</details>
+<div class="toolbar"><button type="button" data-act="expand">Expand all</button><button type="button" data-act="collapse">Collapse all</button></div>
+<article class="case" id="case-1">
+<div class="case-head">
+<h2>contracts-accounts</h2>
+<span class="muted mono">bench-contracts/accounts</span>
+<span class="spacer"></span>
+
+<span class="delta delta-pos">↑ +50.0 pts</span>
+<span class="muted">with plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span><i class="tick" style="left:100.0%"></i></span>
+<span class="num case-score">100%</span>
+</div>
+
+<details class="section" open>
+<summary>Results</summary>
+<section class="arm">
+<div class="arm-head">
+<span class="arm-label">With plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">100% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">12 turns · $0.12 · 14:32:11 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/accounts.yaml`, but I couldn&apos;t validate it against the v3.2.0 JSON Schema, so it hasn&apos;t been checked.
+
+`uvx check-jsonschema` failed because the sandbox has no writable uv cache directory. It reported `Read-only file system` for both the default cache path and a `$TMPDIR` path. No local validator is installed, and Python has no `yaml` module, so I couldn&apos;t even parse the file. The contract is modelled on the skill&apos;s example, but run this where `uvx` works before committing:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/accounts.yaml
+```
+
+**What&apos;s in it**
+- **Object:** `accounts`, with `physicalName: accounts`, covering all five columns from `tables/accounts.md`.
+- **Metadata:** `apiVersion: v3.2.0`, `kind: DataContract`, version `1.0.0`, status `draft` and a generated UUID `id`.
+- **Properties:** each has `physicalName`, `logicalType`, `physicalType`, `required` and a description of at least 50 characters.
+- **Key:** `account_id` is the primary key. It is required, and I added not-null and no-duplicates quality rules.
+- **Classification:** the set `public, internal, pii, psi` is declared in `customProperties`. `email` is `pii` and the other columns are `internal`.
+
+**Assumptions to confirm**
+- **Owning team:** `example-shop-data` is a placeholder, because the table doc doesn&apos;t name an owner. An ownerless contract blocks review, so please set the real team.
+- **Nullability:** the table doc doesn&apos;t say, so only `account_id` is `required: true`. Tell me if `email` or `created_at` should be required.
+- **`country` and `status`:** I didn&apos;t add format or allowed-value rules because the doc doesn&apos;t give them.
+- **SLAs:** none are defined, because I had no freshness or retention numbers.
+- **Models:** I haven&apos;t generated dbt models from the contract.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/accounts.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">12 turns · $0.12 · 14:32:43 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/accounts.yaml`, but I couldn&apos;t validate it against the ODCS v3.2.0 JSON Schema. The skill requires that check before committing, so treat the file as unvalidated.
+
+**Validation:** `uvx check-jsonschema` failed because uv couldn&apos;t create its cache directory. Both the default location and `$TMPDIR` are read-only in this sandbox. I didn&apos;t try other ways around it. To validate, run this from a shell that can write a uv cache:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/accounts.yaml
+```
+
+**What&apos;s in the contract:**
+- **Header:** `apiVersion: v3.2.0`, `kind: DataContract`, a new UUID as the `id`, version `1.0.0`, and status `draft`.
+- **Schema object:** one object, `accounts`, with all five columns from `tables/accounts.md`. Each has `name`, `physicalName`, `logicalType`, `physicalType`, `required`, and a description of at least 50 characters. The source file only gave one name per column, so `physicalName` matches `name` everywhere.
+- **Key:** `account_id` is the primary key and is required, with a `duplicateValues` quality rule that must be 0.
+- **Required fields:** `created_at` is also required. `email`, `country` and `status` are optional.
+- **Classification:** the allowed set is declared in `customProperties`. `email` is `pii` and the other columns are `internal`.
+
+**Assumptions to confirm:**
+- **Owning team:** the table doc doesn&apos;t name one. I used the placeholder `example-shop-data` and marked it with a TODO comment. Rule 12 makes an ownerless contract a review blocker, so please replace it.
+- **Nullability:** `tables/accounts.md` doesn&apos;t say which columns can be null. I guessed that `email`, `country` and `status` are optional. Tighten them if the source guarantees values.
+- **`status` values:** I didn&apos;t list allowed values because the source doesn&apos;t give them. If you have the list, I can add an `invalidValues` quality rule.
+- **No SLA:** I left out `slaProperties` because there&apos;s no freshness or retention requirement to base one on.
+
+I haven&apos;t generated the dbt models or committed anything.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/accounts.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">12 turns · $0.12 · 14:33:14 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/accounts.yaml`, but I couldn&apos;t validate it against the ODCS v3.2.0 JSON schema.
+
+`uvx` failed with &quot;Read-only file system&quot; when it tried to create its cache directory. That happened with the default cache and again with the cache in `$TMPDIR`. I didn&apos;t try other ways around the sandbox. You can run the check yourself:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/accounts.yaml
+```
+
+I built the contract from the skill&apos;s example, so I expect it to pass, but that&apos;s unconfirmed.
+
+**What&apos;s in the contract**
+- **Header:** `apiVersion: v3.2.0`, `kind: DataContract`, `version: 1.0.0`, and a new UUID as the `id`.
+- **Object:** one `accounts` object with the five columns from `tables/accounts.md`. Each column has `physicalName`, `logicalType`, `physicalType` (the types from the table doc), `required`, a description of at least 50 characters, and a `classification`.
+- **Key and quality:** `account_id` is the primary key, with a `duplicateValues = 0` quality rule.
+- **Classification:** the allowed set is declared in `customProperties` as `[public, internal, pii, psi]`. `email` is `pii` and the other columns are `internal`.
+
+**Guesses to review**
+- **Owner:** `team.name` is the placeholder `TODO-owning-team`. Nothing in the repo names the owner, and the skill treats an ownerless contract as a review blocker, so please replace it.
+- **Required flags:** I set `account_id`, `email`, `created_at` and `status` to `required: true`, and `country` to optional. The table doc doesn&apos;t say which columns can be null, so please confirm.
+- **`status`:** I didn&apos;t list allowed values, because the source doesn&apos;t give them.
+- **SLA:** I left out `slaProperties`, because I had no freshness or retention requirement to base one on.
+- **Classification:** I labelled `country` as `internal` rather than `pii`. Change it if your policy treats location as personal data.
+
+I didn&apos;t generate dbt models or commit anything.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/accounts.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">11 turns · $0.12 · 14:33:41 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/accounts.yaml`, but I couldn&apos;t validate it. The sandbox has a read-only filesystem, so `uvx` failed both with its default cache and with a cache under `$TMPDIR`. Both failed with &quot;Read-only file system&quot;. I haven&apos;t tried other routes, such as a pre-installed `check-jsonschema`, since that&apos;s your call. Please run this from an environment where `uvx` works:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/accounts.yaml
+```
+
+The contract follows the skill&apos;s example and the wraith conventions:
+- **Header:** `apiVersion: v3.2.0`, `kind: DataContract`, a freshly generated UUID as `id`, `version: 1.0.0`, and `status: draft`.
+- **Classification set:** it&apos;s declared in `customProperties` as `wraith.classifications`.
+- **Schema:** one object, `accounts`, with all five columns. Each column has `name`, `physicalName`, `logicalType`, `physicalType`, `required` and a description of at least 50 characters.
+- **Key and quality rules:** `account_id` is the primary key, with `nullValues` and `duplicateValues` rules, both `mustBe: 0`.
+- **Classification:** `email` is `pii`. The other columns are `internal`.
+
+I had to guess several things because `tables/accounts.md` only lists column names and types:
+- **Owning team:** the contract has `team: {name: TODO-owning-team}`, which is a placeholder. Please give me the real team name, because an ownerless contract is a review blocker.
+- **Required flags:** I set `required: true` only for `account_id` and `created_at`. The other columns are `false`. Tell me if `email` or `status` can never be null.
+- **Status values:** there is no enum for `status`, because the source doesn&apos;t list the allowed values.
+- **Country format:** the `country` description doesn&apos;t claim ISO codes, because the source doesn&apos;t say.
+- **Freshness SLA:** there is no `slaProperties` entry, because I had no freshness figure. Give me one and I&apos;ll add it.
+- **dbt models:** I haven&apos;t generated or checked any models from the contract.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/accounts.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">11 turns · $0.11 · 14:34:11 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/accounts.yaml`, but I couldn&apos;t validate it against the ODCS v3.2.0 JSON Schema, so it hasn&apos;t been checked. `uvx` failed with &quot;Read-only file system&quot; when it tried to create its cache directory. That happened for the default cache and again for one under `$TMPDIR`. I didn&apos;t try other ways around it. If you can allow `uvx` a writable cache, or run this yourself, it will validate the contract:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/accounts.yaml
+```
+
+I modelled the contract on the skill&apos;s example. It declares one `accounts` object with all five columns, using the types from `tables/accounts.md`. The contract has `apiVersion: v3.2.0` and `version: 1.0.0`. It also declares the classification set `[public, internal, pii, psi]`.
+
+I had to guess these, so please check them:
+- **Owner:** `team.name` is `example-shop-data`. I made it up because nothing in the repo names an owner. Replace it with the real owning team.
+- **Contract id:** I generated a UUID.
+- **Required flags:** `account_id`, `email`, `created_at` and `status` are `required: true`, and `country` is optional. The table doc doesn&apos;t say which columns can be null.
+- **Classification:** `email` is `pii`. The other columns are `internal`.
+- **Quality rule:** `account_id` is the primary key, with a `duplicateValues` rule that must be 0.
+- **Contract status:** I set `status: draft`.
+
+I left out two things because the source doesn&apos;t give enough to write them: allowed `status` values, and an SLA such as freshness.
+
+I haven&apos;t generated the dbt models or committed anything.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/accounts.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+</section><section class="arm">
+<div class="arm-head">
+<span class="arm-label">Baseline (no plugin)</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">0% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">4 turns · $0.05 · 14:34:43 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/accounts.yaml`. I haven&apos;t validated it against the ODCS JSON schema.
+
+- **Header:** `apiVersion: v3.2.0`, `kind: DataContract`, id `example_shop.accounts`, version 1.0.0, status `draft`.
+- **Server:** a BigQuery server entry taken from `AGENTS.md`: project `example-project-dev`, dataset `example_shop`, location `europe-west2`.
+- **Schema:** the `accounts` table with its five columns (`account_id`, `email`, `country`, `created_at`, `status`). Each has a logical type and a physical type matching `tables/accounts.md`.
+
+Some choices are my assumptions rather than anything in the source:
+
+- **`account_id`:** I marked it as the primary key, required and unique, because the table is &quot;one row per account&quot;. Please confirm that.
+- **Other columns:** I left them without constraints, since `tables/accounts.md` doesn&apos;t say whether they can be null.
+- **Allowed values and quality checks:** I didn&apos;t add any, for example allowed values for `status` or a format check on `email`.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/accounts.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">4 turns · $0.05 · 14:35:00 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/accounts.yaml`. I haven&apos;t validated it against the ODCS schema.
+
+- **Columns:** it covers all five columns from `tables/accounts.md`. Each has a logical type (`string` or `timestamp`) and its BigQuery physical type.
+- **Server:** I added a `dev` BigQuery server. Its project (`example-project-dev`) and location (`europe-west2`) come from `AGENTS.md`, and the dataset is `example_shop`.
+- **Metadata:** the contract is `version: 1.0.0` and `status: draft`. The `id` and `domain` are my own choices (`example-shop-accounts`, `example_shop`).
+- **Key assumption:** the table doc doesn&apos;t say which column is the key. I marked `account_id` as the primary key, required and unique, because the table has one row per account. Please check that this is right.
+- **Left out:** `email`, `country`, `created_at` and `status` have no nullability, enum or format rules, since the source doesn&apos;t state any. You&apos;ll want to add those, for example allowed `status` values.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/accounts.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">5 turns · $0.06 · 14:35:19 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/accounts.yaml`. I haven&apos;t validated it against the ODCS v3.2.0 JSON schema.
+
+- **Server:** it uses a BigQuery `dev` server with project `example-project-dev`, dataset `example_shop` and location `europe-west2`. These come from `AGENTS.md` and `tables/accounts.md`.
+- **Columns:** it has all five columns, each with its logical type (`string` or `timestamp`) and BigQuery physical type.
+- **Descriptions:** these are generic placeholders based on the column names, because `tables/accounts.md` has no descriptions. You may want to replace them with real ones.
+- **Metadata:** `version` is `1.0.0`, `status` is `draft`, and `domain` is `example_shop`. These are my defaults, not values from your files.
+
+I made one assumption you should check: `account_id` is marked as the primary key, required and unique, since the table is one row per account. The source doesn&apos;t say this explicitly. I did not add constraints or quality rules for `email`, `country` or `status`, such as allowed values, because the source doesn&apos;t give any.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/accounts.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">5 turns · $0.06 · 14:35:37 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/accounts.yaml`. I haven&apos;t validated it against the ODCS v3.2.0 JSON schema, so it&apos;s unchecked beyond writing the file.
+
+- **Columns:** it has all five from `tables/accounts.md`: `account_id`, `email`, `country`, `created_at` and `status`. Each has the ODCS logical type and the BigQuery physical type from the table doc.
+- **Server:** I added a `dev` BigQuery server using the project (`example-project-dev`), location (`europe-west2`) and dataset (`example_shop`). The project and location come from `AGENTS.md`, and the dataset from the table doc.
+- **Key:** I marked `account_id` as the primary key, required and unique, because the table is &quot;one row per account&quot;. The doc doesn&apos;t actually say this, so please check it.
+- **Metadata:** `status` is `draft` and `version` is `1.0.0`. The `id` (`example-shop-accounts`) and `domain` are my own choices.
+- **Left out:** the table doc has no descriptions, nullability, allowed values for `status`, or quality rules. I didn&apos;t invent any, and you&apos;ll need to add them if you want them.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/accounts.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">5 turns · $0.05 · 14:35:55 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/accounts.yaml`. I haven&apos;t validated it against the ODCS schema or run any linter on it.
+
+- **Columns:** it has the five columns from `tables/accounts.md`, each with its logical type and its BigQuery type.
+- **Server:** I added a `dev` BigQuery server using the project `example-project-dev`, dataset `example_shop` and location `europe-west2`. These come from `AGENTS.md` and the table doc.
+- **Primary key:** I marked `account_id` as the primary key, and as required and unique. The table doc doesn&apos;t say this. I assumed it because the table has one row per account, so please confirm it.
+- **Metadata:** `id`, `version: 1.0.0` and `status: draft` are placeholders I chose. I left out owner, SLAs, quality rules and descriptions for the individual columns, because the source material doesn&apos;t cover them.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/accounts.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+</section>
+</details>
+<details class="section" open>
+<summary>Prompt</summary>
+<div class="md"><p>Write an ODCS v3.2.0 data contract for the accounts table (columns in tables/accounts.md) and save it as contracts/accounts.yaml.</p>
+</div>
+</details>
+<details class="section" open>
+<summary>Graders — what "good" means for this case</summary>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">quality</span><span class="badge">llm</span></div>
+<div class="md"><p>PASS if the saved contract declares ODCS v3.2.0, kind DataContract, marks account_id as the primary key. It classifies email as personal data. FAIL otherwise. Secondary check only; schema validity is scored by the harness.</p>
+</div>
+</div>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">saved</span><span class="badge">file_exists</span></div>
+<div class="config"><div class="kv"><span>path</span><code>&quot;contracts/accounts.yaml&quot;</code></div><div class="kv"><span>exists</span><code>true</code></div></div>
+</div>
+</details>
+</article>
+<article class="case" id="case-2">
+<div class="case-head">
+<h2>contracts-orders</h2>
+<span class="muted mono">bench-contracts/orders</span>
+<span class="spacer"></span>
+
+<span class="delta delta-pos">↑ +10.0 pts</span>
+<span class="muted">with plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:90.0%"></span><i class="tick" style="left:100.0%"></i></span>
+<span class="num case-score">90%</span>
+</div>
+
+<details class="section" open>
+<summary>Results</summary>
+<section class="arm">
+<div class="arm-head">
+<span class="arm-label">With plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:90.0%"></span></span>
+<span class="num">90%</span>
+<span class="muted num">80% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">12 turns · $0.12 · 14:36:12 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/orders.yaml`, but I couldn&apos;t validate it against the ODCS v3.2.0 JSON Schema. Please don&apos;t commit it until it has been validated.
+
+**Validation:** `uvx check-jsonschema==0.39.0` failed because uv can&apos;t create its cache directory. The sandbox filesystem is read-only there, including `$TMPDIR`. No validator is installed locally (`check-jsonschema`, `datacontract`, `modelgen` and Python `jsonschema` are all missing). I didn&apos;t try to get around the sandbox. You can either allow a writable uv cache or run this yourself:
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/orders.yaml
+```
+
+**What&apos;s in the contract:**
+- **Header:** `apiVersion: v3.2.0`, `kind: DataContract`, version `1.0.0`, and a freshly generated UUID as the `id`.
+- **Schema:** one object, `orders`, covering all six columns from `tables/orders.md`. Each property has `physicalName`, `logicalType`, `physicalType`, `required` and a description of 50 characters or more.
+- **Primary key:** composite on `order_id` (position 1) and `line_no` (position 2), because the table has one row per order line.
+- **Classification:** the set `[public, internal, pii, psi]` is declared in `customProperties`. All six columns are `internal`, since none holds personal data.
+- **Quality:** the only rule is `nullValues = 0` on `quantity`.
+
+**Assumptions to check:**
+- **Team name:** nothing in the repo names an owner, so I used `example-shop-data`. An ownerless contract is a review blocker, so please replace it with the real team.
+- **Required:** I set every column to `required: true`, because the source doc gives no nullability.
+- **Freshness SLA:** I left out `slaProperties`, because I had no freshness target to base it on. Tell me one for `ordered_at` and I&apos;ll add it.
+- **Quality rules:** I added nothing beyond `quantity`. Rules on `unit_price` or `quantity` being positive would be guesses, so say if you want them.
+
+I haven&apos;t generated or checked any dbt models.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/orders.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">10 turns · $0.13 · 14:36:43 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/orders.yaml`, but I couldn&apos;t validate it. The sandbox filesystem is read-only for shell commands, and `uvx` failed when it tried to create its cache directory. The Write tool did save the file. I didn&apos;t try to get around the restriction.
+
+To validate it yourself, run:
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/orders.yaml
+```
+
+**What the contract contains**
+- It uses `apiVersion: v3.2.0` and has one schema object, `orders`, with all six columns from `tables/orders.md`.
+- The primary key is `order_id` plus `line_no`, as a composite key. An object-level SQL check enforces that the pair is unique.
+- Every property has `name`, `physicalName`, `logicalType`, `physicalType`, `required` and a description of 50 characters or more.
+- It declares the classification set `public, internal, pii, psi`. All six columns are labelled `internal`, since none hold personal data.
+- Quality rules:
+  - `quantity` has a null check and must be greater than 0.
+  - `unit_price` must not be negative.
+- There is a freshness SLA on `ordered_at`.
+
+**Please check these assumptions, which I made up**
+- **Team name:** `example-shop` is a guess taken from the dataset name. Rule 12 requires a real owning team.
+- **Freshness SLA:** 24 hours is copied from the example contract, not from your requirements.
+- **Contract `id`:** I generated a UUID.
+- **Status:** I set `status: draft`.
+- **Quality thresholds:** I chose the positive-quantity and non-negative-price rules.
+- **Required columns:** `tables/orders.md` has no nullability information, so I set every column to `required: true`. Loosen any that can be null.
+
+I haven&apos;t generated the dbt models or committed anything.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/orders.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">11 turns · $0.12 · 14:37:20 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/orders.yaml`, but I couldn&apos;t validate it against the v3.2.0 JSON Schema. `uvx` failed twice with `Read-only file system`: once on its default cache directory and once on a cache directory under `$TMPDIR`. I didn&apos;t try other ways around the sandbox. To check it yourself, run this from a shell where `uvx` can write its cache:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/orders.yaml
+```
+
+**What&apos;s in the contract**
+- It is a v3.2.0 `DataContract`, version `1.0.0`, with a new UUID as its `id`.
+- It declares one object, `orders` (physical name `orders`), with all six columns from `tables/orders.md`. Each column has a logical type, a physical type, `required: true` and a description of at least 50 characters.
+- The primary key is the pair `order_id` (position 1) and `line_no` (position 2).
+- Quality rules: `nullValues` must be 0 on both key columns, and `duplicateValues` on the pair must be 0.
+- The classification set `[public, internal, pii, psi]` is declared in `customProperties`. I labelled every column `internal`, since none of them holds personal data.
+
+**Please check these assumptions**
+- **Owner:** the table doc doesn&apos;t name one, so I used the placeholder team `orders-data`. Please replace it with the real owning team.
+- **Required flags:** I set every column to `required: true` because the doc doesn&apos;t say which columns can be null. Loosening that later is additive, but tightening it later is a breaking change.
+- **No SLA:** I left out `slaProperties` because I&apos;d have had to invent a freshness target. Tell me the target and the action on breach, and I&apos;ll add it.
+- **Value checks:** I left out checks like `quantity &gt; 0` for the same reason.
+
+I haven&apos;t generated or checked any dbt models, and I haven&apos;t committed anything.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/orders.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">12 turns · $0.12 · 14:37:53 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/orders.yaml`, but I couldn&apos;t validate it, so it hasn&apos;t been checked against the ODCS v3.2.0 JSON Schema.
+
+`uvx check-jsonschema` failed because the sandbox is read-only for uv&apos;s cache directory. I tried the default cache and one under `$TMPDIR`, and both failed. The network allowlist also can&apos;t be widened here, so I didn&apos;t try to work around either limit. Please run this yourself, or relax the sandbox so I can:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/orders.yaml
+```
+
+What the contract contains:
+- **Header:** `apiVersion: v3.2.0`, `kind: DataContract`, `version: 1.0.0`, and a freshly generated UUID as `id`.
+- **Object:** `orders`, with `physicalName: orders` and a description saying it holds one row per order line.
+- **Primary key:** composite on `order_id` (position 1) and `line_no` (position 2), with an object-level `duplicateValues` check that the pair is unique.
+- **Properties:** all six columns, each with logical and physical types, `required: true`, and a description of at least 50 characters.
+- **Quality rules:** `sku` must not be null, `quantity` must be at least 1, and `unit_price` must be at least 0.
+- **Classification:** every column is `internal`, using the `wraith.classifications` set `[public, internal, pii, psi]`. None of the columns looks personal.
+- **SLA:** freshness of 24 hours on `orders.ordered_at`, with the breach behaviour described.
+
+Decisions for you:
+- **Owning team:** `tables/orders.md` doesn&apos;t name one, so I used the placeholder `example-shop`. Replace it with the real owner, because a contract with no owner can&apos;t pass review.
+- **Required flags:** I set every column to `required: true` because the table doc doesn&apos;t mention nullability. Tell me if any column can be null.
+- **Freshness SLA:** the 24 h value is copied from the example contract, not from your requirements.
+- **Currency:** the doc doesn&apos;t give one, so the `unit_price` description says it isn&apos;t captured.
+
+I haven&apos;t generated or checked any dbt models from the contract, and I haven&apos;t committed anything.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/orders.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">12 turns · $0.12 · 14:38:26 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/orders.yaml`, but I couldn&apos;t validate it against the ODCS v3.2.0 JSON Schema. The skill requires that check before committing, so it hasn&apos;t been done.
+
+**Validation failed because of the sandbox.** `uvx` couldn&apos;t create its cache directory. The default location and `$TMPDIR` both returned &quot;Read-only file system&quot;. Running it needs a writable cache directory and network access to `raw.githubusercontent.com` and PyPI. This is the command to run once that&apos;s available:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/orders.yaml
+```
+
+**What the contract contains:**
+- **Header:** `apiVersion: v3.2.0`, `kind: DataContract`, version `1.0.0` and a new UUID.
+- **Object:** `orders`, described as one row per order line.
+- **Properties:** all six columns, each with `physicalName`, `logicalType`, `physicalType`, `required: true`, and a description of at least 50 characters.
+- **Key:** composite primary key `order_id` (position 1) and `line_no` (position 2).
+- **Quality rules:**
+  - The (`order_id`, `line_no`) pair must be unique.
+  - `quantity` must be at least 1.
+- **Classification:** I set every property to `internal`. The closed set `[public, internal, pii, psi]` is declared in `customProperties`. None of the columns look personal or sensitive.
+
+**Things for you to settle:**
+- **Owner:** `team.name` is the placeholder `TODO-owning-team`. The skill treats an ownerless contract as a review blocker, and nothing in the repo names the owning team.
+- **SLA:** I left out `slaProperties` rather than invent a freshness target. If you give me a number, I&apos;ll add one on `orders.ordered_at`, with the behaviour on breach.
+- **Assumptions:**
+  - I marked every column `required: true`, since `tables/orders.md` doesn&apos;t say which can be null.
+  - The `unit_price` description says &quot;in the order currency&quot;, which is a guess because the table doc names no currency.
+  - I used `logicalType: number` for `unit_price` (`NUMERIC` in BigQuery).
+
+I haven&apos;t generated dbt models, and I haven&apos;t committed anything.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/orders.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+</section><section class="arm">
+<div class="arm-head">
+<span class="arm-label">Baseline (no plugin)</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:80.0%"></span></span>
+<span class="num">80%</span>
+<span class="muted num">60% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">5 turns · $0.06 · 14:38:58 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/orders.yaml`. I haven&apos;t validated it against the ODCS v3.2.0 schema.
+
+- **Columns:** all six columns from `tables/orders.md` are there, each with a logical type and its BigQuery type (for example `INT64` is `integer` and `NUMERIC` is `number`).
+- **Server:** I added a `dev` BigQuery server using `example-project-dev`, dataset `example_shop` and location `europe-west2`. These come from `AGENTS.md` and the table doc.
+- **Metadata:** `id` and `name` are `orders`, `version` is `1.0.0`, and `status` is `draft`. The description is taken from the table doc.
+
+I also added one thing the table doc doesn&apos;t say. I marked `order_id` and `line_no` as a required composite primary key, because the doc says there is one row per order line. If that&apos;s wrong, remove `primaryKey`, `primaryKeyPosition` and `required` from those two columns.
+
+I left out quality rules, SLAs, owner and team, because nothing in the repo specifies them.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/orders.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">5 turns · $0.06 · 14:39:19 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/orders.yaml` as ODCS v3.2.0. I haven&apos;t validated it against the ODCS JSON schema.
+
+- **Columns:** it covers all six columns from `tables/orders.md`, with the logical types mapped from the BigQuery types. `unit_price` (`NUMERIC`) is a `number`, and the other columns map in the obvious way.
+- **Server:** I took the BigQuery dev server from `AGENTS.md`. It uses project `example-project-dev`, location `europe-west2`, and dataset `example_shop`.
+
+I also added a few things the table doc doesn&apos;t state, so check them:
+- **Primary key:** `order_id` and `line_no` form a composite primary key, and both are marked required. I inferred this from &quot;one row per order line&quot;.
+- **Metadata:** the contract has `status: draft`, `version: 1.0.0`, and `domain: example_shop`.
+- **Other columns:** the remaining columns have no `required` flag and no quality rules, because the source doesn&apos;t say anything about nullability or value ranges.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/orders.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">4 turns · $0.06 · 14:39:43 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/orders.yaml` as ODCS v3.2.0. I haven&apos;t run it through an ODCS validator.
+
+- **Schema:** it has one `orders` table with all six columns from `tables/orders.md`. Each column keeps its BigQuery type and gets the matching ODCS logical type (`STRING` → `string`, `INT64` → `integer`, `NUMERIC` → `number`, `TIMESTAMP` → `timestamp`).
+- **Primary key:** I made `order_id` and `line_no` a composite primary key, since the table is one row per order line.
+- **Server:** I added a `dev` BigQuery server using `example-project-dev`, dataset `example_shop` and location `europe-west2`. These come from `AGENTS.md`.
+- **Assumptions to check:** `required: true` on every column, `status: draft` and `version: 1.0.0` are my guesses, not things the table doc states. The column descriptions are also inferred from the column names. Correct any of these that don&apos;t match your data.
+- **Left out:** there are no quality rules, SLAs or owner/team fields, because nothing in the repo specifies them.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/orders.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">5 turns · $0.06 · 14:40:03 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/orders.yaml`. I haven&apos;t validated it against the ODCS schema or loaded it into a tool.
+
+- **Header:** `apiVersion: v3.2.0`, `kind: DataContract`, id `example-shop-orders`, version `1.0.0`, status `draft`.
+- **Server:** a `dev` BigQuery server using project `example-project-dev` and location `europe-west2` from `AGENTS.md`. The dataset is `example_shop`, from `tables/orders.md`.
+- **Schema:** the `orders` table with all six columns. Each has an ODCS `logicalType`, the original BigQuery type as `physicalType`, and a short description.
+- **Primary key:** I set `(order_id, line_no)` as a composite key. The table is one row per order line, so that fits, but the source doc doesn&apos;t state a key.
+- **Required fields:** I marked every column `required: true`. The source doc says nothing about nullability, so please correct this if some columns can be null.
+- **Descriptions:** I wrote them from the column names, so they&apos;re light. You may want to refine them.
+- **Left out:** I didn&apos;t add quality rules, SLAs, owner or team, or a `prod` server, because nothing in the repo supplies them.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/orders.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">5 turns · $0.06 · 14:40:22 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract at `contracts/orders.yaml`. I haven&apos;t validated it against the ODCS schema or run any linter.
+
+- **Schema:** it covers all six columns from `tables/orders.md`, with the logical types mapped from the BigQuery types.
+- **Server:** I added a `dev` BigQuery server using the project, dataset and location from `AGENTS.md` (`example-project-dev`, `example_shop`, `europe-west2`).
+- **Metadata:** `status` is `draft` and `version` is `1.0.0`. I made up the `id` (`example_shop.orders`) and the `domain` (`example_shop`) from the dataset name, so change them if you have your own conventions.
+
+I also made a judgment call on keys. The doc says &quot;one row per order line&quot;, so I made `order_id` and `line_no` a composite primary key and marked both as required. The table doc doesn&apos;t state this, so please confirm it.
+
+The table doc has no nullability, descriptions, quality rules, owner or SLAs, so I left those out rather than guess.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/orders.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+</section>
+</details>
+<details class="section" open>
+<summary>Prompt</summary>
+<div class="md"><p>Write an ODCS v3.2.0 data contract for the orders table (columns in tables/orders.md) and save it as contracts/orders.yaml.</p>
+</div>
+</details>
+<details class="section" open>
+<summary>Graders — what "good" means for this case</summary>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">quality</span><span class="badge">llm</span></div>
+<div class="md"><p>PASS if the saved contract declares ODCS v3.2.0, kind DataContract, marks order_id and line_no together as a composite primary key as the primary key. FAIL otherwise. Secondary check only; schema validity is scored by the harness.</p>
+</div>
+</div>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">saved</span><span class="badge">file_exists</span></div>
+<div class="config"><div class="kv"><span>path</span><code>&quot;contracts/orders.yaml&quot;</code></div><div class="kv"><span>exists</span><code>true</code></div></div>
+</div>
+</details>
+</article>
+<article class="case" id="case-3">
+<div class="case-head">
+<h2>contracts-page_events</h2>
+<span class="muted mono">bench-contracts/page_events</span>
+<span class="spacer"></span>
+
+<span class="delta delta-pos">↑ +40.0 pts</span>
+<span class="muted">with plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:90.0%"></span><i class="tick" style="left:100.0%"></i></span>
+<span class="num case-score">90%</span>
+</div>
+
+<details class="section" open>
+<summary>Results</summary>
+<section class="arm">
+<div class="arm-head">
+<span class="arm-label">With plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:90.0%"></span></span>
+<span class="num">90%</span>
+<span class="muted num">80% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">12 turns · $0.15 · 14:40:40 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/page_events.yaml`, but I couldn&apos;t validate it against the ODCS v3.2.0 JSON Schema. The Bash sandbox has a read-only filesystem, so `uvx` couldn&apos;t create its cache directory. That happened with the default cache and again with the cache pointed at `$TMPDIR`. The contract needs validating before you commit it, with this command:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/page_events.yaml
+```
+
+I modelled the file on the skill&apos;s example contract, which does validate. I haven&apos;t run the validator on this file, so I can&apos;t say it passes.
+
+**What&apos;s in the contract**
+- It declares `apiVersion: v3.2.0`, `kind: DataContract` and `version: 1.0.0`, with a generated UUID as its `id`.
+- There is one object, `page_events`, with all five columns from `tables/page_events.md`. Each column has a name, physical name, logical and physical type, `required` flag, and a description of at least 50 characters.
+- `event_id` is the primary key. It has a `duplicateValues` check (must be 0), and `event_name` has a `nullValues` check (must be 0).
+- The classification set `[public, internal, pii, psi]` is declared in `customProperties`. The dataset (`example_web`) and partition column (`event_date`) are recorded there too, under a `bigquery.` prefix.
+
+**Decisions to confirm**
+- **Owner:** nothing in the repo names an owning team, so I used `web-analytics` as a placeholder. Without a real owner the contract is a review blocker, so please replace it.
+- **Classification:** I marked `user_id` as `pii`. I also marked `payload` as `pii`, because its free-form JSON may contain personal data. Downgrade `payload` if you know it doesn&apos;t.
+- **Freshness SLA:** the 24h threshold on `event_date` is my assumption. The table doc gives no freshness figure.
+- **Nullability:** the doc doesn&apos;t say which columns can be null. I set `event_id`, `event_date` and `event_name` as required, and `user_id` and `payload` as optional.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/page_events.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">10 turns · $0.11 · 14:41:20 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/page_events.yaml`, but it hasn&apos;t been validated against the v3.2.0 schema. The validator couldn&apos;t run.
+
+`uvx` failed with &quot;Read-only file system&quot; when it tried to create its cache directory. That happened with the default cache location and again with one under `$TMPDIR`. I didn&apos;t try other ways around the sandbox. To validate, either allow `uvx` a writable cache or run this yourself:
+
+`uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/page_events.yaml`
+
+The contract follows the skill&apos;s rules and example. It describes one object, `page_events` (dataset `example_web`, partitioned on `event_date`), with all five columns. `physicalName`, `logicalType` and `physicalType` are set on each, along with descriptions of at least 50 characters. `event_id` is the primary key, with a duplicate-values quality check requiring zero duplicates. The classification set is `public`, `internal`, `pii`, `psi`, declared in `customProperties`.
+
+Four things for you to check:
+- **Owner:** the table doc names no owning team, so I put in `web-analytics` as a placeholder. A note in `customProperties` flags it. Please confirm or replace it, because an ownerless contract blocks review.
+- **`id`:** it&apos;s a freshly made-up UUID.
+- **Classification:** I labelled `user_id` as `pii`. I also labelled `payload` as `pii`, since it&apos;s free-form JSON that may hold personal data, and recorded the reason in `customProperties`. Change either if you know better.
+- **Guesses and omissions:** `event_id`, `event_date` and `event_name` are `required: true`, and `user_id` and `payload` are optional. The doc doesn&apos;t say, so these are my guesses. I didn&apos;t add an SLA, because the doc gives no freshness or retention figures.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/page_events.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">13 turns · $0.13 · 14:41:50 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL PASS FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✓ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/page_events.yaml`, but I couldn&apos;t validate it against the v3.2.0 JSON Schema. The sandbox blocked it, so the contract is unvalidated.
+
+The check needs `uvx` to download the validator. It failed twice with &quot;Read-only file system&quot; when creating uv&apos;s cache directory. That happened with both the default cache and a cache under `$TMPDIR`. I didn&apos;t look for another way around it. To validate it yourself, run this where `uvx` and the network work:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/page_events.yaml
+```
+
+**What the contract contains**
+- **Contract basics:** `apiVersion: v3.2.0`, a freshly generated `id`, `version: 1.0.0` and `status: draft`.
+- **Schema:** one object, `page_events`, with the dataset (`example_web`) and partition field (`event_date`) recorded in `customProperties`.
+- **Properties:** all five columns, each with `physicalName`, types and a description of at least 50 characters.
+- **Key and quality rule:** `event_id` is the primary key, with a `duplicateValues = 0` quality rule.
+- **Classification:** a classification set (`public`, `internal`, `pii`, `psi`) is declared in `customProperties`.
+
+**Decisions to confirm**
+- **Owning team:** the repo doesn&apos;t name one, so I used `web-analytics` as a placeholder. A `wraith.owner-unconfirmed` custom property and a TODO comment mark it. Please give me the real team name. An ownerless contract blocks review, so this one needs fixing.
+- **`user_id` is `pii`:** I treated it as personal data. It is optional because the contract says it&apos;s null for anonymous visitors, but that is my assumption.
+- **`payload` is `pii`:** it&apos;s free-form JSON that may hold personal data, so I classified it at the most sensitive label it might contain. The reason is recorded in a custom property. Downgrade it if the payload is vetted.
+- **Other required flags:** `event_id`, `event_date` and `event_name` are required, which is my assumption.
+- **Freshness SLA:** I set 24 hours on `event_date` as a default. The table doc gives no figure, so please confirm or correct it. I didn&apos;t add a retention SLA for the same reason.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/page_events.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">11 turns · $0.12 · 14:42:28 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/page_events.yaml`, but I couldn&apos;t validate it against the ODCS v3.2.0 schema. `uvx` can&apos;t create its cache directory because the sandbox filesystem is read-only. I tried the default cache path and a `$TMPDIR` one, and both failed. I didn&apos;t look for a way around the sandbox.
+
+To validate it yourself, run this from the project root:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/page_events.yaml
+```
+
+**What the contract contains**
+- **Header:** `apiVersion: v3.2.0`, `kind: DataContract`, a fresh UUID `id`, version `1.0.0`, and the classification set `[public, internal, pii, psi]`.
+- **Table:** one `page_events` object. Its dataset (`example_web`) and partition field (`event_date`) are stored as `bigquery.`-prefixed `customProperties`.
+- **Columns:**
+
+| Column | Notes |
+|---|---|
+| `event_id` | Primary key, required, with a `duplicateValues = 0` quality rule. Classified `internal`. |
+| `event_date` | Required, `internal`. |
+| `user_id` | Optional, classified `pii`. |
+| `event_name` | Required, `internal`. |
+| `payload` | Optional, `logicalType: object` (physical type `JSON`), classified `pii`. |
+
+- **Descriptions:** every description is at least 50 characters.
+
+**Assumptions to check**
+- **Owning team:** the source doc doesn&apos;t name one, so `team.name` is `TODO-owning-team`. Rule 12 makes an ownerless contract a review blocker, so please give me the real team.
+- **Primary key:** I assumed `event_id` is unique, since the doc doesn&apos;t say so.
+- **Required flags:** I marked `event_id`, `event_date` and `event_name` required, and `user_id` and `payload` optional (anonymous events). The doc doesn&apos;t say which columns can be null.
+- **Classification:** I classified `payload` as `pii` because free-form JSON can&apos;t be shown to be free of personal data. The reason is recorded in `customProperties`. Say so if you&apos;d rather use `internal`.
+- **No SLAs:** I left out `slaProperties` because the doc gives no freshness or retention figures.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/page_events.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">11 turns · $0.12 · 14:42:59 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/page_events.yaml`, but I couldn&apos;t validate it against the v3.2.0 JSON Schema. `uvx` can&apos;t create its cache directory because the sandbox filesystem is read-only. It failed for both the default cache and a `$TMPDIR` cache. I haven&apos;t tried other ways to get the validator running. You can run this yourself or loosen the sandbox:
+
+`uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/page_events.yaml`
+
+I built the contract from the skill&apos;s example, which validates, but that isn&apos;t proof this one does.
+
+**What&apos;s in the contract**
+- **Schema:** one object, `page_events`, in dataset `example_web`. It has five properties with the types from `tables/page_events.md`, each with a description of at least 50 characters.
+- **Key:** `event_id` is the primary key, with a `duplicateValues = 0` quality rule.
+- **Required fields:** `event_id`, `event_date` and `event_name` are required. `user_id` and `payload` are nullable.
+- **Partition:** the `event_date` partition is recorded in `customProperties` as `wraith.partition`.
+- **Classification set:** `public`, `internal`, `pii`, `psi`, declared in `customProperties`.
+
+**Assumptions to check**
+1. **Owning team:** the table doc doesn&apos;t name an owner, so I used `web-analytics` as a placeholder. Please replace it.
+2. **`user_id`:** I classified it `pii` because it links events to a person.
+3. **`payload`:** I classified it `pii`, with the reason recorded in `customProperties`, because free-form JSON can hold personal data. Downgrade it if you know the contents.
+4. **Required flags:** the doc doesn&apos;t say which columns can be null. I guessed `user_id` and `payload` are nullable and the other three are required. Correct any that are wrong.
+5. **Freshness SLA:** I added a 24-hour freshness SLA on `event_date`, which is my guess and not from your doc. Change or remove it.
+6. **Contract id:** the `id` is a UUID I made up, so swap it if you have an existing identifier.
+
+I haven&apos;t generated or checked any dbt models from the contract.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/page_events.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+</section><section class="arm">
+<div class="arm-head">
+<span class="arm-label">Baseline (no plugin)</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">0% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">5 turns · $0.06 · 14:43:31 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/page_events.yaml`. I haven&apos;t validated it against the ODCS schema or run any linter.
+
+- **Spec and metadata:** It uses `apiVersion: v3.2.0` and is marked `status: draft` at `version: 1.0.0`. The `domain` is `example_web`, taken from the table&apos;s dataset.
+- **Server:** It defines a `dev` BigQuery server with project `example-project-dev`, dataset `example_web` and location `europe-west2`. These come from `AGENTS.md`.
+- **Columns:** All five columns from `tables/page_events.md` are there, each with its logical and physical type. `event_date` is marked as the partition key. `payload` is typed `object`, with physical type `JSON`.
+
+The source table doc only gives names and types, so I left out anything it doesn&apos;t say. That means no `required`, `unique` or `primaryKey` flags, no PII classification, and no quality rules or SLAs. If you want any of these, such as `event_id` as the primary key, tell me and I&apos;ll add them.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/page_events.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">5 turns · $0.06 · 14:43:49 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/page_events.yaml`. I haven&apos;t validated it against the ODCS schema or run it through any tooling.
+
+- **Table and columns:** the schema covers all five columns from `tables/page_events.md`, each with an ODCS logical type and the BigQuery physical type. `payload` is an `object` backed by `JSON`.
+- **Partitioning:** `event_date` is marked as the partition key.
+- **Server:** I added one BigQuery `dev` server using values from `AGENTS.md`: project `example-project-dev`, dataset `example_web`, location `europe-west2`.
+- **Placeholders:** `version` is `1.0.0` and `status` is `draft`. I set `id` and `domain` from the table and dataset names. Change any of these if you have real values.
+- **Left out:** the table doc doesn&apos;t mention nullability, uniqueness, primary keys, quality rules or an owner. I didn&apos;t invent any of those, so add them if you know them.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/page_events.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">5 turns · $0.06 · 14:44:05 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/page_events.yaml`. I haven&apos;t validated it against the ODCS v3.2.0 JSON schema.
+
+It covers the five columns from `tables/page_events.md`:
+- **`event_id`:** I marked it as the primary key, required and unique.
+- **`event_date`:** It&apos;s required and is the partition key.
+- **`user_id` and `event_name`:** Both are plain strings.
+- **`payload`:** It&apos;s a JSON column, mapped to an `object` logical type.
+
+I took the `dev` server details from `AGENTS.md`: BigQuery, project `example-project-dev`, dataset `example_web`, location `europe-west2`.
+
+The table doc doesn&apos;t say any of the following, so these are my guesses:
+- **`event_id` constraints:** The primary key, required and unique settings are assumptions. Please confirm them.
+- **Other nullability:** I left `user_id`, `event_name` and `payload` as nullable.
+- **Contract metadata:** I set the id to `page-events`, the version to `1.0.0` and the status to `draft`. I left out owner, team and SLAs.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/page_events.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">5 turns · $0.05 · 14:44:27 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/page_events.yaml`. I didn&apos;t validate it against the ODCS v3.2.0 JSON schema or run any tooling on it.
+
+- **Columns:** the five columns come from `tables/page_events.md`, each with a logical type and its BigQuery physical type. `event_date` is flagged as the partition column, and `payload` is typed as an object, which is the closest ODCS fit for JSON.
+- **Server:** the `dev` BigQuery server uses project `example-project-dev` and location `europe-west2`, both from `AGENTS.md`. The dataset is `example_web`, from the table doc.
+- **Left out:** the source doc says nothing about primary keys, nullability, uniqueness, quality rules, owners or SLAs, so I didn&apos;t add any. For example, `event_id` looks like a natural key, but I didn&apos;t mark it as one.
+- **Metadata:** `status: draft` and `version: 1.0.0` are placeholders, so change them as needed.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/page_events.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">5 turns · $0.06 · 14:44:43 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/page_events.yaml`. I haven&apos;t validated it against the ODCS v3.2.0 schema.
+
+- **Columns:** it has the five columns from `tables/page_events.md`, each with a logical type and the BigQuery physical type. `payload` is an `object` whose physical type is `JSON`.
+- **Partitioning:** `event_date` is marked as the partition key.
+- **Server:** a `dev` BigQuery server using values from `AGENTS.md`: project `example-project-dev`, dataset `example_web` and location `europe-west2`.
+- **Defaults I picked:** the contract `id` and `name` are both `page_events`, the version is `1.0.0` and the status is `draft`.
+
+I left out nullability, primary keys, quality rules, owner and SLAs, because the table doc doesn&apos;t say anything about them. Add them if you know them.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/page_events.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+</section>
+</details>
+<details class="section" open>
+<summary>Prompt</summary>
+<div class="md"><p>Write an ODCS v3.2.0 data contract for the page_events table (columns in tables/page_events.md) and save it as contracts/page_events.yaml.</p>
+</div>
+</details>
+<details class="section" open>
+<summary>Graders — what "good" means for this case</summary>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">quality</span><span class="badge">llm</span></div>
+<div class="md"><p>PASS if the saved contract declares ODCS v3.2.0, kind DataContract, marks event_id as the primary key. FAIL otherwise. Secondary check only; schema validity is scored by the harness.</p>
+</div>
+</div>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">saved</span><span class="badge">file_exists</span></div>
+<div class="config"><div class="kv"><span>path</span><code>&quot;contracts/page_events.yaml&quot;</code></div><div class="kv"><span>exists</span><code>true</code></div></div>
+</div>
+</details>
+</article>
+<article class="case" id="case-4">
+<div class="case-head">
+<h2>contracts-payments</h2>
+<span class="muted mono">bench-contracts/payments</span>
+<span class="spacer"></span>
+
+<span class="delta delta-pos">↑ +50.0 pts</span>
+<span class="muted">with plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span><i class="tick" style="left:100.0%"></i></span>
+<span class="num case-score">100%</span>
+</div>
+
+<details class="section" open>
+<summary>Results</summary>
+<section class="arm">
+<div class="arm-head">
+<span class="arm-label">With plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">100% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">11 turns · $0.12 · 14:44:59 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS FAIL PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✗ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/payments.yaml`, but I couldn&apos;t validate it against the ODCS v3.2.0 JSON Schema. `uvx` couldn&apos;t create its cache directory because the filesystem is read-only. I got the same error with the default cache and with `UV_CACHE_DIR` set under `$TMPDIR`. I haven&apos;t tried other ways around it, since the sandbox settings are yours to change.
+
+To validate it yourself, run this from a shell that can write a uv cache:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/payments.yaml
+```
+
+**What the contract contains**
+- **Header:** `apiVersion: v3.2.0`, `kind: DataContract`, version `1.0.0`, and a generated UUID as the `id`.
+- **Classifications:** the set `[public, internal, pii, psi]` is declared in `customProperties`.
+- **Schema:** one `payments` object with all five columns from `tables/payments.md`. Each has `physicalName`, `logicalType`, `physicalType`, `required` and a description of at least 50 characters.
+- **Key:** `payment_id` is the primary key, with a `duplicateValues` mustBe 0 quality rule.
+- **Classification:** `card_last4` is `pii`, and every other column is `internal`.
+
+**Assumptions to confirm**
+- **Owning team:** `tables/payments.md` and `AGENTS.md` don&apos;t name one, so I used `team: {name: payments}` as a placeholder. An ownerless contract is a review blocker, so please set the real team.
+- **Freshness SLA:** I added a 24h freshness SLA on `paid_at`, copied from the example contract. Nothing in your inputs states a target, so adjust it or remove it.
+- **Required columns:** `card_last4` is `required: false`, and the other four are `required: true`. The table doc doesn&apos;t give nullability, so check these.
+- **`card_last4` classification:** I chose `pii` because a partial card number can identify a person. Change it if your policy treats it differently.
+- **`amount` type:** I mapped it to `logicalType: number` with `physicalType: NUMERIC`. The currency isn&apos;t in the source doc, so the description says &quot;the order&apos;s currency&quot;.
+
+I haven&apos;t generated or checked any dbt models from the contract.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/payments.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">11 turns · $0.11 · 14:45:29 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/payments.yaml`, but I couldn&apos;t validate it against the ODCS v3.2.0 JSON Schema. The skill requires that check before committing.
+
+`uvx` failed with &quot;Read-only file system&quot; when creating its cache directory. I tried the default location and `$TMPDIR`, and both failed. I haven&apos;t worked around the sandbox. Once it allows a writable cache, run this:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/payments.yaml
+```
+
+I based the structure on the skill&apos;s example contract. It&apos;s one `payments` object with five properties, each with `physicalName`, types, `required` and a description of at least 50 characters. `payment_id` is the primary key and has not-null and no-duplicates quality rules. The `wraith.classifications` set is declared as `[public, internal, pii, psi]`.
+
+**Decisions for you:**
+- **Owner:** `tables/payments.md` doesn&apos;t name an owning team, so I set `team: {name: payments}` as a placeholder. Please correct it.
+- **`card_last4`:** I classified it as `pii`. Change it if your policy treats last-four digits as less sensitive.
+- **`payment_id` as key:** I assumed it is the primary key and is required, because the table is &quot;one row per payment&quot;.
+- **Other required flags:** I marked `order_id`, `amount` and `paid_at` as required and `card_last4` as optional, since the source doesn&apos;t say.
+- **No SLA:** I left out `slaProperties` rather than invent freshness numbers. Tell me the target and I&apos;ll add it.
+- **Generated models:** I haven&apos;t generated dbt models, because the contract isn&apos;t validated yet.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/payments.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">12 turns · $0.12 · 14:46:01 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/payments.yaml`, but I couldn&apos;t validate it against the ODCS v3.2.0 JSON Schema. The validator (`uvx check-jsonschema`) failed twice because `uv` couldn&apos;t create its cache directory on the read-only filesystem. It failed the same way with `$TMPDIR` as the cache location. I didn&apos;t try anything beyond that, so the contract is unvalidated. Run this where `uv` can write:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/payments.yaml
+```
+
+**What&apos;s in the contract**
+- It&apos;s `v3.2.0`, version `1.0.0`, with a freshly generated UUID as the `id`.
+- The `payments` object has all five columns, each with `physicalName`, `logicalType`, `physicalType`, `required` and a description of at least 50 characters.
+- `payment_id` is the primary key, with a `duplicateValues` quality rule requiring 0 duplicates. The table doc says one row per payment.
+- `card_last4` is classified `pii`. The other columns are `internal`. The closed classification set is declared in `customProperties` as `wraith.classifications`.
+- There&apos;s a 24-hour freshness SLA on `paid_at`, with the on-breach behaviour in its description.
+
+**Assumptions to check**
+- **Owning team:** I set `team: {name: payments}` as a guess. Neither `tables/payments.md` nor `AGENTS.md` names an owner, so please correct it.
+- **Nullability:** The table doc doesn&apos;t say which columns are nullable. I set every column to `required: true` except `card_last4`, which I made optional. This is my guess.
+- **Freshness SLA:** The 24-hour value is copied from the example contract, not from your requirements. Adjust it to what consumers actually need.
+- **`amount` type:** `NUMERIC` maps to `logicalType: number`.
+
+I didn&apos;t generate dbt models or run a drift check. You only asked for the contract.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/payments.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">11 turns · $0.14 · 14:46:33 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/payments.yaml`, but I couldn&apos;t validate it against the v3.2.0 JSON Schema. The sandbox filesystem is read-only for the shell, so `uvx` couldn&apos;t create its cache, and I didn&apos;t try to work around that. The Write tool did save the file.
+
+Please run this yourself:
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/payments.yaml
+```
+
+**What the contract contains**
+- It has one object, `payments`, with the five columns from `tables/payments.md`. Each column has `name`, `physicalName`, `logicalType`, `physicalType`, `required` and a description of at least 50 characters.
+- `payment_id` is the primary key, which follows from &quot;one row per payment&quot;.
+- `card_last4` is classified `pii`, and the other columns are `internal`. The closed classification set is declared in `customProperties`.
+- `amount` is typed as logical `number`, physical `NUMERIC`.
+
+**Things I assumed, which you should check**
+- **Owner:** the table doc names no owning team, so `payments-team` is a placeholder. An ownerless contract is a review blocker, so please set the real team.
+- **Freshness SLA:** I set 24h on `paid_at` as a default. Nothing in the source states it.
+- **Nullability:** I marked `card_last4` as optional and every other column as required. The doc doesn&apos;t say either way.
+- **`id`:** I generated the UUID by hand, so it is not guaranteed unique.
+- **Quality rules:** I left out `quality` rules on `card_last4`, such as a four-digit pattern, until the schema check can confirm the syntax. The `payment_id` column is marked `unique: true`.
+
+I haven&apos;t generated the dbt models or committed anything.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/payments.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">12 turns · $0.12 · 14:47:16 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/payments.yaml`, but I couldn&apos;t validate it, so it hasn&apos;t been checked against the v3.2.0 JSON Schema.
+
+The validator (`uvx check-jsonschema`) failed twice because it couldn&apos;t create its cache directory. The sandbox reports that location as read-only, including `$TMPDIR`. I didn&apos;t try another route. To validate it, run this outside the sandbox:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/payments.yaml
+```
+
+**What&apos;s in the contract**
+- It has one `payments` object with the five columns from `tables/payments.md`. Each property has a description and physical and logical types.
+- `payment_id` is the primary key, with a `duplicateValues = 0` quality rule. It is `required`, as are `order_id`, `amount` and `paid_at`.
+- `card_last4` is optional and classified `pii`. Everything else is `internal`. The contract declares the classification set `[public, internal, pii, psi]`.
+- `amount` has `logicalType: number` and `physicalType: NUMERIC`. The table doc doesn&apos;t say which columns are nullable, so the `required` flags are my guess. Please confirm them.
+
+**What I need from you**
+- **Owner:** I couldn&apos;t find an owning team in the repo, so `team.name` is the placeholder `TODO-owning-team`. A contract with no real owner is a review blocker, so please give me the team name.
+- **Freshness SLA:** I didn&apos;t add `slaProperties` because no freshness or retention target was given. Tell me the target and what should happen on breach, and I&apos;ll add it.
+
+I haven&apos;t generated or checked any dbt models against the contract.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/payments.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+</section><section class="arm">
+<div class="arm-head">
+<span class="arm-label">Baseline (no plugin)</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">0% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">5 turns · $0.06 · 14:47:48 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/payments.yaml`. I haven&apos;t validated it against the ODCS v3.2.0 schema.
+
+- **Metadata:** `apiVersion: v3.2.0`, `version: 1.0.0`, `status: draft`.
+- **Server:** a BigQuery `dev` server using project `example-project-dev`, dataset `example_pay` and location `europe-west2`. These values come from `AGENTS.md` and `tables/payments.md`.
+- **Columns:** all five columns from `tables/payments.md`, each with its logical type and its physical BigQuery type.
+
+I added several things that the table doc doesn&apos;t state, so please check them:
+- `payment_id` is the primary key and unique.
+- `payment_id`, `order_id`, `amount` and `paid_at` are marked required. `card_last4` is not.
+- `card_last4` is classified `confidential` and must be exactly four digits.
+- I wrote the column descriptions myself, and the domain `payments` is my guess.
+
+I left out quality rules, SLAs, an owner and a team. The sources don&apos;t give any of those.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/payments.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">5 turns · $0.06 · 14:48:06 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/payments.yaml`. I haven&apos;t validated it against the ODCS schema or run it through any tooling.
+
+- **Header:** `apiVersion: v3.2.0`, `kind: DataContract`, `id` and `name` set to `payments`, `version: 1.0.0`, `status: draft`.
+- **Server:** one BigQuery server, `dev`, with project `example-project-dev` and dataset `example_pay`. These come from `AGENTS.md` and `tables/payments.md`. I left out the `europe-west2` location because I&apos;m not sure ODCS has a standard field for it on BigQuery servers.
+- **Schema:** table `payments` with these five columns, each carrying its logical type and the BigQuery physical type:
+
+| Column | Logical type | Physical type |
+|---|---|---|
+| `payment_id` | `string` | `STRING` |
+| `order_id` | `string` | `STRING` |
+| `card_last4` | `string` | `STRING` |
+| `amount` | `number` | `NUMERIC` |
+| `paid_at` | `timestamp` | `TIMESTAMP` |
+
+I made three calls that the table doc doesn&apos;t state:
+- **Primary key:** I marked `payment_id` as the primary key, required and unique, because the table has one row per payment.
+- **Classification:** I tagged `card_last4` as `confidential`. Change this if your classification scheme differs.
+- **Descriptions:** I wrote the column descriptions myself, since the doc only describes `card_last4`.
+
+I didn&apos;t add quality rules, SLAs, owners or `amount` precision and scale, because the source doesn&apos;t give any of them.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/payments.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">5 turns · $0.06 · 14:48:25 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract at `contracts/payments.yaml`. I haven&apos;t validated it against the ODCS v3.2.0 JSON schema.
+
+**From your inputs**
+- It has the five columns from `tables/payments.md`, each with its type: `payment_id`, `order_id`, `card_last4`, `amount` and `paid_at`.
+- `AGENTS.md` supplied the BigQuery server details: project `example-project-dev`, dataset `example_pay`, location `europe-west2`.
+
+**My assumptions, which the source doesn&apos;t state**
+- **Keys and nullability:** I made `payment_id` the unique primary key and marked `order_id`, `amount` and `paid_at` as required. Loosen these if nulls are allowed.
+- **Sensitivity:** I classified `card_last4` as `confidential` and tagged it `pii` and `card-data`. I also added a text quality note that it should be four digits.
+- **Contract metadata:** I set the version to `1.0.0`, the status to `draft` and the domain to `payments`.
+
+I didn&apos;t add an owner, SLAs or a team, since none of those are in the repo.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/payments.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">5 turns · $0.06 · 14:48:48 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/payments.yaml`. I haven&apos;t validated it against the ODCS schema or run any linter.
+
+- **Header and server:** It uses `apiVersion: v3.2.0`, `kind: DataContract`, version `1.0.0` and status `draft`. The server is the BigQuery dev one from `AGENTS.md`: project `example-project-dev`, dataset `example_pay`, location `europe-west2`.
+- **Columns:** All five columns from `tables/payments.md` are in the schema, each with its logical and physical type.
+- **Choices I made:** The table doc doesn&apos;t say these, so check them.
+  - **Primary key:** I made `payment_id` the primary key (required and unique), since the doc says one row per payment.
+  - **`card_last4`:** I classified it as `confidential`. I also added a text-type quality note that it should be exactly four digits.
+- **Left out:** I didn&apos;t add an owner or team, SLAs, or constraints on the other columns, because the source doesn&apos;t give them.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/payments.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">5 turns · $0.06 · 14:49:06 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/payments.yaml` as ODCS v3.2.0. I didn&apos;t validate it against the ODCS schema.
+
+- **Columns:** the five columns from `tables/payments.md` are in the schema, with their BigQuery types mapped to ODCS logical types. `payment_id` is `STRING`, `order_id` is `STRING`, `card_last4` is `STRING`, `amount` is `NUMERIC` and `paid_at` is `TIMESTAMP`.
+- **Server:** I added a `dev` BigQuery server from `AGENTS.md`. It uses project `example-project-dev`, location `europe-west2` and dataset `example_pay`.
+- **Things I assumed:** the source doc doesn&apos;t say any of these, so check them.
+  - I marked `payment_id` as the primary key, required and unique.
+  - I classified `card_last4` as `confidential`.
+  - I set the status to `draft` and the version to `1.0.0`.
+- **Left out:** I didn&apos;t add quality rules, SLAs or an owner, because nothing in the repo specifies them.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/payments.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+</section>
+</details>
+<details class="section" open>
+<summary>Prompt</summary>
+<div class="md"><p>Write an ODCS v3.2.0 data contract for the payments table (columns in tables/payments.md) and save it as contracts/payments.yaml.</p>
+</div>
+</details>
+<details class="section" open>
+<summary>Graders — what "good" means for this case</summary>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">quality</span><span class="badge">llm</span></div>
+<div class="md"><p>PASS if the saved contract declares ODCS v3.2.0, kind DataContract, marks payment_id as the primary key. It classifies card_last4 as personal or payment data. FAIL otherwise. Secondary check only; schema validity is scored by the harness.</p>
+</div>
+</div>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">saved</span><span class="badge">file_exists</span></div>
+<div class="config"><div class="kv"><span>path</span><code>&quot;contracts/payments.yaml&quot;</code></div><div class="kv"><span>exists</span><code>true</code></div></div>
+</div>
+</details>
+</article>
+<article class="case" id="case-5">
+<div class="case-head">
+<h2>contracts-products</h2>
+<span class="muted mono">bench-contracts/products</span>
+<span class="spacer"></span>
+
+<span class="delta delta-pos">↑ +20.0 pts</span>
+<span class="muted">with plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span><i class="tick" style="left:100.0%"></i></span>
+<span class="num case-score">100%</span>
+</div>
+
+<details class="section" open>
+<summary>Results</summary>
+<section class="arm">
+<div class="arm-head">
+<span class="arm-label">With plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">100% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">12 turns · $0.12 · 14:49:23 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/products.yaml`, but I couldn&apos;t validate it against the ODCS v3.2.0 JSON Schema. The skill requires that check before committing.
+
+`uvx` failed with `Read-only file system` when it tried to create its cache. I tried the default cache path and then `$TMPDIR/uv`, and both failed. I didn&apos;t try other ways around it. To validate, run this from a shell that can write a cache:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/products.yaml
+```
+
+**What&apos;s in the contract**
+- **Header:** `apiVersion: v3.2.0`, `kind: DataContract`, a fresh UUID as `id`, and `version: 1.0.0`.
+- **Schema:** one object, `products`, with `physicalName: products` and a description.
+- **Properties:** the five columns from `tables/products.md`. Each has `physicalName`, `logicalType`, `physicalType` (the BigQuery type from your table doc), `required`, and a description of 50+ characters.
+- **Key:** `product_id` is the primary key. I added `nullValues = 0` and `duplicateValues = 0` quality rules to it, which become dbt tests.
+- **Classification:** the contract declares the standard set (`public`, `internal`, `pii`, `psi`) in `customProperties`. `product_id` and `active` are `internal`. `name`, `category` and `price` are `public`. No column looks like personal data.
+
+**Please check**
+- **Owning team:** the table doc doesn&apos;t name one, so I used `product-catalog` as a placeholder. Replace it with the real owner, because an ownerless contract blocks review.
+- **`required` flags:** `category` is optional. The other four columns are required. The doc doesn&apos;t say this, so these are my assumptions.
+- **No SLA:** I left out `slaProperties` because I don&apos;t know the freshness or retention targets.
+- **Extra top-level fields:** I added `name: products` and `status: active`. Both are standard ODCS fields, but the validator hasn&apos;t confirmed them.
+
+I haven&apos;t generated or checked any dbt models, and nothing is committed.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/products.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">12 turns · $0.12 · 14:49:56 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/products.yaml`, but I couldn&apos;t validate it, and the owning team name is a placeholder you need to confirm.
+
+**The contract**
+- It follows ODCS v3.2.0 with a single `products` object, version 1.0.0 and status `draft`. I used a made-up UUID for `id`.
+- `product_id` is the primary key. It is required and has quality rules for no nulls and no duplicates.
+- `name`, `price` and `active` are required. `category` is optional.
+- `price` has a rule that it can&apos;t be negative. Its `logicalType` is `number` and its `physicalType` is `NUMERIC`.
+- Every property has a description of at least 50 characters. The classification set is declared in `customProperties` as `wraith.classifications`.
+- I classified `name`, `category` and `price` as `public`. I classified `product_id` and `active` as `internal`. Nothing in the table looks like personal data. Please check those labels.
+
+**Open points**
+1. **Owner:** nothing in the repo names an owning team, so I used `shop-data` as a placeholder. Rule 12 makes an ownerless contract a review blocker, so please give me the real team name.
+2. **Validation not done:** `uvx check-jsonschema` failed because the sandbox is read-only for uv&apos;s cache directory. The failure was `Read-only file system` under `/tmp/claude-eval-TTOENL/home/.cache/uv`. A retry with `UV_CACHE_DIR` pointed at `$TMPDIR` hit the same error. I didn&apos;t try to work around the sandbox. To check it, run this yourself or loosen the sandbox:
+   `uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/products.yaml`
+3. **No SLA:** `tables/products.md` says nothing about freshness or retention, so I left out `slaProperties` rather than invent numbers.
+4. **Not done yet:** I haven&apos;t generated dbt models or run a drift check. Nothing is committed.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/products.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">11 turns · $0.11 · 14:50:26 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/products.yaml`, but I couldn&apos;t validate it against the ODCS v3.2.0 JSON Schema, so it hasn&apos;t been checked.
+
+The validator is `uvx check-jsonschema`. Both runs failed before it started because uv couldn&apos;t create its cache directory: `Read-only file system`. That happened with the default cache path and with `UV_CACHE_DIR` set under `$TMPDIR`. I didn&apos;t try other routes around the sandbox. You could run this where uv can write, or allow writes for its cache:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/products.yaml
+```
+
+**What the contract has**
+- **Header:** `apiVersion: v3.2.0`, `kind: DataContract`, `version: 1.0.0`, and a generated UUID `id`.
+- **Schema:** one `products` object with all five columns from `tables/products.md`. Each has `physicalName`, `logicalType`, `physicalType`, `required`, a description of at least 50 characters, and a classification.
+- **Key:** `product_id` is the primary key.
+- **Required columns:** `product_id`, `name`, `price` and `active`. `category` is optional.
+- **Quality rules:** no duplicate `product_id`, and `price` must not be negative.
+- **Classification set:** `public`, `internal`, `pii` and `psi`, declared in `customProperties`. No column holds personal data. `name` and `category` are `public`, and the rest are `internal`.
+
+**Things to check**
+- **Owning team:** `team.name` is the placeholder `TODO-owning-team`. Nothing in the repo names an owner, and an ownerless contract blocks review, so please give me the real team.
+- **Required flags:** I guessed `required` from the column names, because the table doc doesn&apos;t say which columns allow nulls. Please confirm them.
+- **Price currency:** the `price` description says &quot;single sale currency&quot;. That is an assumption.
+- **SLAs:** I left out `slaProperties`, since there&apos;s no freshness or retention information to base one on.
+- **Models:** I didn&apos;t generate dbt models or run the drift check.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/products.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">12 turns · $0.12 · 14:51:00 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I wrote `contracts/products.yaml`, but I couldn&apos;t validate it against the v3.2.0 JSON Schema. `uvx` failed on a read-only filesystem, both for its default cache and for a cache under `$TMPDIR`. I didn&apos;t try other ways around the sandbox. Run this yourself to check it:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/products.yaml
+```
+
+The contract has one `products` object (physical name `products`) with all five columns from `tables/products.md`:
+
+- **Key:** `product_id` is the primary key, with a duplicate-values check of 0.
+- **Required columns:** `product_id`, `name`, `price` and `active`. I made these required, but the table doc doesn&apos;t say which columns can be null, so please check that.
+- **Optional column:** `category`.
+- **Quality rule:** a `price` check that no value is below 0.
+- **Descriptions and types:** each column has a description of at least 50 characters, plus a logical and physical type. `price` is `number` / `NUMERIC` and `active` is `boolean` / `BOOL`.
+
+Three things are my assumptions, so please confirm them:
+- **Owning team:** I used `shop-data` as a placeholder, because nothing in the repo names an owner. Rule 12 makes an ownerless contract a review blocker, so please replace it with the real team.
+- **Classifications:** I declared the set `[public, internal, pii, psi]` and labelled `name` and `category` as `public`, and `product_id`, `price` and `active` as `internal`. None of the columns holds personal data.
+- **No freshness SLA:** the table has no timestamp column to measure freshness against. I didn&apos;t invent one, so there is no `slaProperties` entry.
+
+I generated the contract `id` (a UUID) and set `status: active` and `name: products`. I haven&apos;t generated or checked any dbt models, and nothing is committed.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/products.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">11 turns · $0.11 · 14:51:35 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/products.yaml`, but I couldn&apos;t validate it against the ODCS v3.2.0 JSON Schema. Treat it as unvalidated until that check passes.
+
+**Validation:** `uvx check-jsonschema==0.39.0 …` failed twice with `Read-only file system` when uv tried to create its cache directory. That happened under the default cache path and under a `UV_CACHE_DIR` I pointed into `$TMPDIR`. Both locations are read-only in this sandbox, so the failure is the sandbox&apos;s, not the contract&apos;s. I didn&apos;t try to work around it. To check it yourself, run this from a shell where uv can write its cache:
+
+```
+uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/products.yaml
+```
+
+**What the contract contains**
+- It uses `apiVersion: v3.2.0` and `kind: DataContract`, with version `1.0.0` and a new UUID as the `id`.
+- It has one schema object, `products`, with the five columns from `tables/products.md`. Each has `name`, `physicalName`, `logicalType`, `physicalType`, `required`, a description of at least 50 characters, and a `classification`.
+- `product_id` is the primary key. It has a `duplicateValues` quality rule that must be 0.
+- `price` has an `invalidValues` rule that rejects values below 0.
+- The classification set `[public, internal, pii, psi]` is declared in `customProperties` as `wraith.classifications`.
+
+**Things I decided that you should check**
+- **Owning team:** nothing in the repo names an owner, so I used `example-shop-data`. Please replace it with the real team.
+- **Nullability:** `tables/products.md` doesn&apos;t say which columns are nullable. I set `category` to optional and every other column to required.
+- **Price rule and currency:** the non-negative rule on `price` and the &quot;single sale currency&quot; wording in its description are my assumptions. Please confirm both.
+- **No SLA:** I left out `slaProperties` because the table has no timestamp column to measure freshness against.
+
+I didn&apos;t generate dbt models or commit anything.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/products.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+</section><section class="arm">
+<div class="arm-head">
+<span class="arm-label">Baseline (no plugin)</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:80.0%"></span></span>
+<span class="num">80%</span>
+<span class="muted num">60% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">5 turns · $0.05 · 14:52:07 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/products.yaml`. I haven&apos;t validated it against the ODCS schema or run it through a linter.
+
+- **Schema:** it covers the five columns from `tables/products.md`: `product_id`, `name`, `category`, `price` and `active`. Each has a logical type and a BigQuery physical type.
+- **Server:** I added a `dev` BigQuery server using the project (`example-project-dev`), dataset (`example_shop`) and location (`europe-west2`) from `AGENTS.md`.
+- **Primary key:** I marked `product_id` as the primary key, required and unique. The table doc doesn&apos;t say this. I assumed it because the table is &quot;one row per product&quot;, so remove it if that&apos;s wrong.
+- **Metadata:** `version` is `1.0.0` and `status` is `draft`. Those are my defaults, and you may want to change them.
+- **Not included:** I didn&apos;t add descriptions for individual columns, quality rules, or an owner or team, because the source doc has none of that.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/products.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">5 turns · $0.05 · 14:52:23 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/products.yaml` as ODCS v3.2.0. I haven&apos;t validated it against the ODCS JSON schema.
+
+- **Columns:** it covers all five columns from `tables/products.md`: `product_id`, `name`, `category`, `price` and `active`. Each has its logical type and its BigQuery type.
+- **Server:** I took the BigQuery server details from `AGENTS.md`. That gives project `example-project-dev`, dataset `example_shop` and location `europe-west2`.
+- **Things I assumed:**
+  - `product_id` is marked as the primary key, required and unique. The table doc doesn&apos;t say this, so correct it if it&apos;s wrong.
+  - Status is `draft` and version is `1.0.0`.
+  - The column descriptions are my wording.
+
+I left out quality rules, SLAs and ownership because the source gave nothing to base them on.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/products.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">4 turns · $0.05 · 14:52:43 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/products.yaml`. I haven&apos;t validated it against the ODCS JSON schema.
+
+- **Header:** it uses `apiVersion: v3.2.0` and `kind: DataContract`. The id is `example_shop.products`, the version is `1.0.0` and the status is `active`.
+- **Server:** I added a BigQuery `dev` server with project `example-project-dev`, dataset `example_shop` and location `europe-west2`. These values come from `AGENTS.md`.
+- **Schema:** the `products` table has the five columns from `tables/products.md`, with logical types mapped from the BigQuery types.
+
+| Column | Physical type | Logical type |
+|---|---|---|
+| `product_id` | STRING | string |
+| `name` | STRING | string |
+| `category` | STRING | string |
+| `price` | NUMERIC | number |
+| `active` | BOOL | boolean |
+
+- **Assumptions to check:** I marked `product_id` as the primary key, required and unique, which is my assumption since the table doc doesn&apos;t say so. I left the other columns nullable. The descriptions are my wording.
+
+Every Bash call printed a &quot;Read-only file system&quot; error on the shell&apos;s working-directory file. It didn&apos;t affect the file reads or the write.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/products.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:50.0%"></span></span>
+<span class="num">50%</span>
+<span class="muted num">5 turns · $0.06 · 14:53:00 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/products.yaml`. I haven&apos;t validated it against the ODCS v3.2.0 schema or run a linter on it.
+
+It uses `apiVersion: v3.2.0` and defines the five columns from `tables/products.md`:
+
+| Column | Logical type | Physical type |
+|---|---|---|
+| `product_id` | string | STRING |
+| `name` | string | STRING |
+| `category` | string | STRING |
+| `price` | number | NUMERIC |
+| `active` | boolean | BOOL |
+
+The `dev` server entry (BigQuery, project `example-project-dev`, dataset `example_shop`, location `europe-west2`) comes from the table doc and `AGENTS.md`.
+
+I added a few things the table doc doesn&apos;t state, so check them:
+- **Primary key:** I made `product_id` the primary key, required and unique, because the table is one row per product.
+- **Status and version:** I set `status: draft` and `version: 1.0.0`.
+- **Descriptions:** The column descriptions are my own wording.
+- **Other columns:** I left the other columns without nullability or quality rules, since nothing in the source says what they should be.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/products.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">5 turns · $0.06 · 14:53:20 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">quality</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I saved the contract to `contracts/products.yaml`. I didn&apos;t validate it against the ODCS schema or run any tooling on it.
+
+- **Header:** It uses `apiVersion: v3.2.0` and `kind: DataContract`. The id is `example-shop-products`, the version is `1.0.0` and the status is `draft`.
+- **Server:** There is one BigQuery server, `dev`, using project `example-project-dev` and dataset `example_shop`. The project comes from `AGENTS.md`.
+- **Schema:** The `products` table has all five columns. Each has its BigQuery physical type (STRING, NUMERIC, BOOL) and the matching ODCS logical type.
+- **Constraints:** `product_id` is marked as the primary key, required and unique, because the table is &quot;one row per product&quot;. I didn&apos;t add constraints to the other columns.
+- **Descriptions:** `tables/products.md` only describes the table, so I wrote the column descriptions myself. Please check them.
+- **Location:** I left out the `europe-west2` BigQuery location from `AGENTS.md`, because I don&apos;t think ODCS has a standard server field for it.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">saved</span>  </summary>
+<div class="grader-body">
+<p class="explanation">contracts/products.yaml exists as expected</p>
+
+</div>
+</details></div>
+</div>
+</section>
+</details>
+<details class="section" open>
+<summary>Prompt</summary>
+<div class="md"><p>Write an ODCS v3.2.0 data contract for the products table (columns in tables/products.md) and save it as contracts/products.yaml.</p>
+</div>
+</details>
+<details class="section" open>
+<summary>Graders — what "good" means for this case</summary>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">quality</span><span class="badge">llm</span></div>
+<div class="md"><p>PASS if the saved contract declares ODCS v3.2.0, kind DataContract, marks product_id as the primary key. FAIL otherwise. Secondary check only; schema validity is scored by the harness.</p>
+</div>
+</div>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">saved</span><span class="badge">file_exists</span></div>
+<div class="config"><div class="kv"><span>path</span><code>&quot;contracts/products.yaml&quot;</code></div><div class="kv"><span>exists</span><code>true</code></div></div>
+</div>
+</details>
+</article>
+<footer>Generated by <code>claude plugin eval</code> · schema v1 · scores are not comparable across different suites</footer>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var bar=document.querySelector('.toolbar');
+  if(!bar)return;
+  bar.addEventListener('click',function(e){
+    var b=e.target&&e.target.closest('button');
+    if(!b)return;
+    var open=b.dataset.act==='expand';
+    document.querySelectorAll('details.section, details.grader').forEach(function(d){d.open=open});
+  });
+});
+// Collapsed details vanish from print/PDF; these pages are share artifacts.
+window.addEventListener('beforeprint',function(){
+  document.querySelectorAll('details').forEach(function(d){
+    if(!d.open){d.dataset.printOpened='1';d.open=true}
+  });
+});
+window.addEventListener('afterprint',function(){
+  document.querySelectorAll('details[data-print-opened]').forEach(function(d){
+    d.open=false;delete d.dataset.printOpened;
+  });
+});
+</script>
+</body>
+</html>

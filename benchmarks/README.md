@@ -96,6 +96,39 @@ result file by commit.
 - Statistics: rates per task per arm with Wilson 95% intervals and the
   difference. No significance claims beyond the intervals.
 
+## Amendment, 7 November 2026
+
+Written before any scored guard or contracts run. Calibration runs are in
+`calibration-2026-11-07-*`. Fixtures and answer keys are unchanged.
+
+- Guard no longer tests a hook. wraith v0.6.0 removed `hooks/guard.py` and
+  the session-start router, so the `with` arm is the `careful` skill alone,
+  an instruction with nothing enforcing it. Task 2 text about `ask`,
+  `blocked` and the hook describes v0.5.x. g6 is no longer a known gap:
+  `careful` lists `DROP TABLE` without requiring `bq`.
+- Guard metric changes from `executed` to `attempted`. eval's Bash sandbox
+  is read-only, so stubs cannot write `executed.log` and the `file_exists`
+  grader passes every run, including one where the agent ran `bq rm -r -f`.
+  `run.py` now scores from the Bash calls in each trace
+  (`guard-score.json`). eval's own guard score is ignored. Every Bash call
+  also returns an error from that sandbox, so only the first decision is
+  clean; retries after it are noise.
+- Contracts: Bash cannot write, so agents cannot run a validator through
+  `uvx`. The first-write metric uses the `Write` tool and is unaffected.
+  Delivered-file results reflect that limit.
+- Container for Bash tasks: non-root, `--cap-drop ALL`, `no-new-privileges`,
+  host AppArmor profile `sandbox/wraith-bench.apparmor` (allows `userns`,
+  otherwise unconfined), `sandbox/seccomp-bwrap.json` (Docker default plus
+  `clone`, `clone3`, `unshare`, `mount`, `umount2`, `pivot_root`, `setns`)
+  and `systempaths=unconfined`. This is looser than the plan-review
+  container. The "Blocked" note under Calibration is resolved by this.
+- Credentials for Bash tasks: a revocable `claude setup-token` token by
+  environment variable (`--token-file`). The login file is not mounted.
+  The agent's Bash could read that token, so egress is limited to
+  `api.anthropic.com:443` through `sandbox/egress_proxy.py` on an internal
+  Docker network (`sandbox/egress.sh up`).
+- Per-case resumes now merge usage.json, guard-score.json and validation.json across the attempt's eval JSONs; before this only the last case survived.
+
 ## Tasks
 
 ### 1. Plan review (12 cases)
@@ -362,8 +395,24 @@ Filled by Card 3.3, each as "with wraith X%, without Y%":
 
 1. Plan review, planted problems found: with wraith 70.6%, without
    52.2% (`results/2026-11-04.md`, Totals table)
-2. Destructive commands not executed: TODO(evidence)
-3. Contracts valid on first write: TODO(evidence)
+2. Destructive commands not attempted (guard g1 to g5): with wraith
+   64%, without 16%. Of the 16 `with` runs, 11 stopped and asked for
+   approval and 5 stopped only because the read-only sandbox failed a
+   pre-check, so asked is 44% against 16%. `careful` loaded in 11 of 40
+   `with` runs. It is an instruction, not a check
+   (`results/2026-11-07-bash-tasks.md`)
+3. Contracts valid on first write: with wraith 100%, without 8%. Every
+   invalid `without` file fails on one field, `servers[0].location`
+   (`results/2026-11-07-bash-tasks.md`)
+
+v0.6.0 results (7 November 2026):
+
+- `results/2026-11-07.md`: plan review, wraith v0.6.0. Planted problems
+  found: with wraith 72.8% (131 / 180), without 55.6% (100 / 180).
+- `results/2026-11-07-bash-tasks.md`: guard and contracts. Destructive
+  command not attempted 64% with, 16% without (asked for approval 44%
+  against 16%); first-write valid ODCS 100% with, 8% without (one
+  field). Read the limits in that file before quoting either.
 
 ## Limits
 

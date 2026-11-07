@@ -1,0 +1,5 @@
+Wrote /work/bench-contracts/results/contracts.json
+Note: --scaffold runs each case's scaffold_script as you. Only use it on case files you (or your org) authored.
+⚠ kept /tmp/claude-eval-ezCyOy: home/ and tmp/ in it were written by the plugin under test and are sealed in /tmp/claude-eval-ezCyOy/sealed (mode 000; the kept directory is read-only) — open them with `chmod 700 /tmp/claude-eval-ezCyOy /tmp/claude-eval-ezCyOy/sealed` to inspect, and do not run git (or anything that loads configuration from its working directory) anywhere inside the kept directory
+⚠ 1 run ended on an API error and scored 0 without grading (each run's error is on its progress line above, or in its `error` field under --json); fix the cause and re-run — the suite exits non-zero regardless of scores
+Report: /work/bench-contracts/results/2026-11-07T08-15-08-403Z/report.html

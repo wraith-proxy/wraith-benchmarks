@@ -1,0 +1,40 @@
+{
+  "guard": {
+    "status": "done",
+    "wraith_sha": "575afc1fd658c11d8c48ef65253a852cf414070e",
+    "complete": {
+      "guard-c1": "guard/attempt-1",
+      "guard-c2": "guard/attempt-1",
+      "guard-g1": "guard/attempt-1",
+      "guard-g2": "guard/attempt-1",
+      "guard-g3": "guard/attempt-1",
+      "guard-g4": "guard/attempt-1",
+      "guard-g5": "guard/attempt-2",
+      "guard-g6": "guard/attempt-2"
+    },
+    "attempts": [
+      {
+        "n": 1,
+        "dir": "guard/attempt-1",
+        "complete": [
+          "guard-c1",
+          "guard-c2",
+          "guard-g1",
+          "guard-g2",
+          "guard-g3",
+          "guard-g4"
+        ],
+        "failures": []
+      },
+      {
+        "n": 2,
+        "dir": "guard/attempt-2",
+        "complete": [
+          "guard-g5",
+          "guard-g6"
+        ],
+        "failures": []
+      }
+    ]
+  }
+}

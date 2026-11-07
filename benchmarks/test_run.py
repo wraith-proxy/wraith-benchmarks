@@ -198,6 +198,55 @@ class RunnerTest(unittest.TestCase):
                       " ".join(full))
         self.assertNotIn("ANTHROPIC_API_KEY", " ".join(full))
 
+    def test_token_replaces_login_file_for_bash_tasks(self):
+        cmd = run.eval_command("guard", 5, 10, "g1")
+        full = " ".join(run.docker_command("img", "/c", "/h/c.json", cmd, 1, 2,
+                                           bwrap=True, token=True))
+        self.assertNotIn("credentials.json", full)
+        self.assertIn(f"-e {run.TOKEN_ENV} ", full)
+        self.assertIn("apparmor=wraith-bench", full)
+        self.assertIn("--cap-drop ALL", full)
+        self.assertEqual(run.main(["--task", "guard", "--max-cost-usd", "1",
+                                   "--credentials", __file__], {}), 2)
+
+    def test_guard_scored_from_bash_calls_not_executed_log(self):
+        def trace(cmd):
+            return json.dumps({"type": "assistant", "message": {"content": [
+                {"type": "tool_use", "name": "Bash",
+                 "input": {"command": cmd}}]}})
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, "a.jsonl").write_text(trace("bq show x:y"))
+            Path(tmp, "b.jsonl").write_text(trace("bq rm -r -f -d x:y"))
+            case = {"name": "guard-g1", "arms": {
+                "with": [{"tracePath": "a.jsonl"}],
+                "without": [{"tracePath": "b.jsonl"}]}}
+            cases = run.score_guard(tmp, {"cases": [case]})["cases"]
+        self.assertFalse(cases["guard-g1"]["with"][0]["attempted"])
+        self.assertTrue(cases["guard-g1"]["without"][0]["attempted"])
+
+    def test_per_case_resume_merges_score_files(self):
+        def trace(cmd):
+            return json.dumps({"type": "assistant", "message": {"content": [
+                {"type": "tool_use", "name": "Bash",
+                 "input": {"command": cmd}}]}})
+
+        def case(name, cmd):
+            Path(self.tmp, f"{name}.jsonl").write_text(trace(cmd))
+            return {"name": name, "arms": {
+                "with": [{"tracePath": f"{name}.jsonl"}],
+                "without": [{"tracePath": f"{name}.jsonl"}]}}
+        with tempfile.TemporaryDirectory() as tmp:
+            self.tmp = tmp
+            evals = [{"cases": [case("guard-g1", "bq rm -r -f -d x:y")]},
+                     {"cases": [case("guard-g5", "bq show x:y")]}]
+            run.summarise_usage(tmp, evals, "guard")
+            run.score_guard(tmp, evals)
+            score = json.loads(Path(tmp, "guard-score.json").read_text())
+            usage = json.loads(Path(tmp, "usage.json").read_text())
+        self.assertEqual(set(score["cases"]), {"guard-g1", "guard-g5"})
+        self.assertEqual({r["case"] for r in usage},
+                         {"guard-g1", "guard-g5"})
+
     def test_dry_run_writes_no_state(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = make_repo(tmp)
@@ -212,7 +261,7 @@ class RunnerTest(unittest.TestCase):
     def test_existing_attempt_dir_fails_before_the_eval(self):
         calls = []
 
-        def fake(full):
+        def fake(full, env=None):
             calls.append(full)
             return 0, "output"
 
@@ -224,6 +273,7 @@ class RunnerTest(unittest.TestCase):
             (out / "guard/attempt-1").mkdir(parents=True)
             argv = ["--task", "guard", "--wraith-ref", "v0", "--wraith-repo",
                     str(repo), "--out", str(out), "--credentials", str(cred),
+                    "--token-file", str(cred),
                     "--max-cost-usd", "8", "--runs", "2"]
             with mock.patch.object(run, "run_container", fake):
                 code, err = quiet(argv, {})
@@ -235,7 +285,7 @@ class RunnerTest(unittest.TestCase):
         names = run.case_names("guard")
         calls = []
 
-        def fake(full):
+        def fake(full, env=None):
             clone = Path([a for a in full if a.endswith(":/work")][0][:-6])
             cmd = full[full.index("claude"):]
             case = cmd[cmd.index("--case") + 1] if "--case" in cmd else None
@@ -257,6 +307,7 @@ class RunnerTest(unittest.TestCase):
             out = Path(tmp) / "out"
             argv = ["--task", "guard", "--wraith-ref", "v0", "--wraith-repo",
                     str(repo), "--out", str(out), "--credentials", str(cred),
+                    "--token-file", str(cred),
                     "--max-cost-usd", "8", "--runs", "2"]
             with mock.patch.object(run, "run_container", fake):
                 self.assertEqual(quiet(argv, {})[0], 3)
