@@ -1,0 +1,5 @@
+Wrote /work/bench-contracts/results/contracts.json
+Note: --scaffold runs each case's scaffold_script as you. Only use it on case files you (or your org) authored.
+⚠ kept /tmp/claude-eval-hALHPQ: home/ and tmp/ in it were written by the plugin under test and are sealed in /tmp/claude-eval-hALHPQ/sealed (mode 000; the kept directory is read-only) — open them with `chmod 700 /tmp/claude-eval-hALHPQ /tmp/claude-eval-hALHPQ/sealed` to inspect, and do not run git (or anything that loads configuration from its working directory) anywhere inside the kept directory
+⚠ kept /tmp/claude-eval-qF2umo: home/ and tmp/ in it were written by the plugin under test and are sealed in /tmp/claude-eval-qF2umo/sealed (mode 000; the kept directory is read-only) — open them with `chmod 700 /tmp/claude-eval-qF2umo /tmp/claude-eval-qF2umo/sealed` to inspect, and do not run git (or anything that loads configuration from its working directory) anywhere inside the kept directory
+Report: /work/bench-contracts/results/2026-11-07T08-27-58-314Z/report.html

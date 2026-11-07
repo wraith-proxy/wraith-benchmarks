@@ -1,0 +1,1322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Eval report — wraith v0.6.0</title>
+</head>
+<body>
+<style>
+:root{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){:root{--plane:#0d0d0d;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#898781;--hairline:rgba(255,255,255,.10);--grid:#2c2c2a;--inset:rgba(255,255,255,.05);--accent:#3987e5;--base-fill:#898781;--delta-good:#0ca30c;--good:#0ca30c;--warning:#fab219;--critical:#e06c6c;color-scheme:dark}}
+:root[data-theme="dark"]{--plane:#0d0d0d;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#898781;--hairline:rgba(255,255,255,.10);--grid:#2c2c2a;--inset:rgba(255,255,255,.05);--accent:#3987e5;--base-fill:#898781;--delta-good:#0ca30c;--good:#0ca30c;--warning:#fab219;--critical:#e06c6c;color-scheme:dark}
+:root[data-theme="light"]{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--plane);color:var(--ink);
+  font:14px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-text-size-adjust:100%}
+.wrap{max-width:880px;margin:0 auto;padding:40px 24px 64px;display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+header h1{margin:2px 0 0;font-size:24px;font-weight:600;line-height:1.25;text-wrap:balance}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;color:var(--ink-2);font-size:13px}
+.meta .num{font-variant-numeric:tabular-nums lining-nums}
+.banner{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;
+  border:1px solid var(--hairline);background:var(--surface);font-size:13px}
+.banner .chip-warn{color:var(--warning);font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--hairline);border-radius:10px;padding:14px 16px;
+  display:flex;flex-direction:column;gap:4px}
+.tile .label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.tile .value{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums lining-nums;line-height:1.1}
+.tile.hero .value{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:48px}
+.tile .sub{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tile .value.delta-pos{color:var(--delta-good)}
+.tile .value.delta-neg{color:var(--critical)}
+.toolbar{display:flex;gap:8px;justify-content:flex-end}
+.toolbar button{font:12px system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink-2);
+  background:var(--surface);border:1px solid var(--hairline);border-radius:6px;padding:4px 10px;cursor:pointer}
+.toolbar button:hover{color:var(--ink)}
+.toolbar button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.case{background:var(--surface);border:1px solid var(--hairline);border-radius:10px;padding:18px 20px;
+  display:flex;flex-direction:column;gap:10px}
+.case-regressed{border-left:3px solid var(--critical)}
+.verdict{margin:6px 0 0;font-size:15px}
+.verdict .delta{font-size:15px}
+.flag{font-size:11px;font-weight:600;color:var(--warning);white-space:nowrap}
+.star{color:var(--warning);font-size:.45em;vertical-align:super;line-height:0;cursor:help}
+.legend summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2)}
+.legend-list{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--ink-2)}
+.case-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.case-head h2{margin:0;font-size:16px;font-weight:600}
+.case-head .spacer{flex:1}
+.case-score{font-size:15px;font-weight:600}
+.mono{font:12px "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.num{font-variant-numeric:tabular-nums lining-nums}
+.muted{color:var(--ink-3);font-size:12px}
+.meter{display:inline-block;position:relative;width:120px;height:6px;border-radius:4px;background:var(--grid);
+  vertical-align:middle}
+.meter>span{display:block;height:100%;border-radius:4px;max-width:100%}
+.meter .tick{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink-3);border-radius:1px}
+.m-accent>span{background:var(--accent)}
+.m-base>span{background:var(--base-fill)}
+.delta{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.delta-pos{color:var(--delta-good)}
+.delta-neg{color:var(--critical)}
+.delta-zero{color:var(--ink-3)}
+details.section{border-top:1px solid var(--grid);padding-top:10px}
+details.section>summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--ink-2);list-style-position:outside;margin-left:2px}
+details.section>summary:hover{color:var(--ink)}
+details.section[open]>summary{margin-bottom:8px}
+.md{display:flex;flex-direction:column;gap:8px;background:var(--inset);border-radius:8px;
+  padding:12px 14px;overflow-wrap:break-word}
+.md>:first-child{margin-top:0}
+.md h1,.md h2,.md h3,.md h4,.md h5,.md h6{margin:4px 0 0;font-size:1em;font-weight:600;line-height:1.3}
+.md p,.md ul,.md ol,.md blockquote,.md table,.md pre,.md hr{margin:0}
+.md ul,.md ol{display:flex;flex-direction:column;gap:4px;padding-left:20px}
+.md blockquote{border-left:2px solid var(--hairline);padding-left:10px;color:var(--ink-2)}
+.md :not(pre)>code{background:var(--inset);padding:1px 4px;border-radius:4px;
+  font:.92em "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.md pre{background:var(--inset);border:1px solid var(--hairline);padding:10px 12px;border-radius:6px;
+  overflow-x:auto;font:12px/1.5 "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.md pre code{background:none;padding:0;font:inherit}
+.md table{width:100%;border-collapse:collapse}
+.md th,.md td{padding:5px 8px;text-align:left;vertical-align:top;border-bottom:1px solid var(--grid)}
+.md th{font-weight:600;color:var(--ink-2)}
+.md a{color:var(--accent);text-decoration:none}
+.md a:hover{text-decoration:underline}
+.grader-def{display:flex;flex-direction:column;gap:6px;padding:8px 0}
+.grader-def+.grader-def{border-top:1px solid var(--grid)}
+.grader-def-head{display:flex;align-items:baseline;gap:8px}
+.grader-name{font:13px "SF Mono",ui-monospace,Menlo,Consolas,monospace;font-weight:600}
+.badge{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2);
+  border:1px solid var(--hairline);border-radius:999px;padding:1px 8px}
+.config{display:flex;flex-direction:column;gap:2px;background:var(--inset);border-radius:8px;padding:10px 14px}
+.config code{font:12px "SF Mono",ui-monospace,Menlo,Consolas,monospace;overflow-wrap:anywhere}
+.arm{display:flex;flex-direction:column;gap:8px;padding:6px 0}
+.arm+.arm{border-top:1px dashed var(--grid);margin-top:4px;padding-top:12px}
+.arm-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.arm-label{font-size:13px;font-weight:600}
+.run{border:1px solid var(--grid);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.run-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.run-title{font-size:12px;font-weight:600;color:var(--ink-2)}
+.run-error .explanation{color:var(--ink-2)}
+.note{font-size:12px;color:var(--ink-2)}
+.graders{display:flex;flex-direction:column;gap:4px}
+details.grader{border-radius:6px}
+details.grader>summary{cursor:pointer;display:flex;align-items:baseline;gap:8px;padding:3px 4px;
+  border-radius:6px;list-style:none}
+details.grader>summary::-webkit-details-marker{display:none}
+details.grader>summary::before{content:'▸';font-size:10px;color:var(--ink-3);flex:none;
+  transition:transform .12s ease}
+details.grader[open]>summary::before{transform:rotate(90deg)}
+details.grader>summary:hover{background:var(--inset)}
+details.grader>summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.grader-body{padding:6px 8px 8px 24px;display:flex;flex-direction:column;gap:6px}
+.chip{font-size:11px;font-weight:600;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.chip-pass{color:var(--good);border:1px solid currentColor}
+.chip-fail{color:var(--critical);border:1px solid currentColor}
+.chip.chip-warn{color:var(--warning);border:1px solid currentColor}
+.explanation{margin:0;font-size:13px;color:var(--ink-2);white-space:pre-wrap;overflow-wrap:break-word}
+.kv{display:flex;gap:8px;font-size:12px;color:var(--ink-3)}
+.votes{font-variant-numeric:tabular-nums;letter-spacing:.1em}
+pre.evidence{margin:0;background:var(--inset);border:1px solid var(--hairline);border-radius:6px;
+  padding:8px 10px;overflow-x:auto;max-height:320px;
+  font:12px/1.5 "SF Mono",ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:break-word}
+footer{color:var(--ink-3);font-size:12px;text-align:center;padding-top:8px}
+@media (prefers-reduced-motion:no-preference){
+  details.grader>summary,.toolbar button{transition:background .12s ease,color .12s ease}
+}
+@media (prefers-reduced-motion:reduce){
+  details.grader>summary::before{transition:none}
+}
+@media print{
+  :root,:root[data-theme="dark"],:root[data-theme="light"]{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;color-scheme:light}
+  body{background:#fff}
+  .toolbar{display:none}
+  .case,.run,.grader-def{break-inside:avoid}
+  pre.evidence{max-height:none}
+}
+</style>
+<div class="wrap">
+<header>
+<div class="eyebrow">Plugin eval report</div>
+<h1>wraith v0.6.0</h1>
+<p class="verdict">Plugin effect: <span class="delta delta-pos">↑ +33.3 pts</span> vs baseline — improved 1 · flat 0 · regressed 0 of 1 case.</p>
+<div class="meta">
+<span class="mono">.</span>
+<span>Claude Code v2.1.316</span>
+<span class="num">2026-11-07 08:05 UTC</span>
+<span class="num">7m 8s</span>
+<span class="num">$0.74</span>
+<span class="num">10 runs</span>
+
+
+<span>model claude-sonnet-5-5</span>
+<span>judge claude-haiku-5-5</span>
+<span class="num">threshold 100%</span>
+<span>filtered: --case plan-review-p02</span>
+</div>
+</header>
+
+<section class="tiles">
+<div class="tile hero"><span class="label">Suite score · with plugin</span><span class="value">86.7%</span><span class="sub">mean of per-case scores</span></div>
+<div class="tile"><span class="label">Ablation Δ</span><span class="value num delta-pos">↑ +33.3</span><span class="sub">score points vs baseline, 1 of 1 case</span></div>
+<div class="tile"><span class="label">Baseline score</span><span class="value num">53.3%</span><span class="sub">without the plugin</span></div>
+<div class="tile"><span class="label">Cases</span><span class="value num">1</span><span class="sub">0 of 1 ≥ 100% threshold</span></div>
+<div class="tile"><span class="label">Perfect runs</span><span class="value num">60%</span><span class="sub">runs where every grader passed</span></div>
+</section>
+<details class="section legend">
+<summary>How to read this report</summary>
+<ul class="legend-list">
+<li>A run's score is the weighted fraction of its graders that passed; a "perfect" run passed every grader.</li>
+<li>A case's score is the mean of its runs; a case passes when its score is at or above the 100% threshold (the tick on each case bar).</li>
+<li>The suite score is the mean of the per-case scores.</li>
+<li>Judge votes are independent samples of the LLM judge; the majority decides pass or fail.</li>
+<li>"With plugin" and "Baseline" runs are identical except for the plugin being loaded; Δ is the with-plugin score minus the baseline score.</li>
+
+</ul>
+</details>
+<div class="toolbar"><button type="button" data-act="expand">Expand all</button><button type="button" data-act="collapse">Collapse all</button></div>
+<article class="case" id="case-1">
+<div class="case-head">
+<h2>plan-review-p02</h2>
+<span class="muted mono">bench-plan-review/p02</span>
+<span class="spacer"></span>
+
+<span class="delta delta-pos">↑ +33.3 pts</span>
+<span class="muted">with plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:86.7%"></span><i class="tick" style="left:100.0%"></i></span>
+<span class="num case-score">86.7%</span>
+</div>
+
+<details class="section" open>
+<summary>Results</summary>
+<section class="arm">
+<div class="arm-head">
+<span class="arm-label">With plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:86.7%"></span></span>
+<span class="num">86.7%</span>
+<span class="muted num">60% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">7 turns · $0.10 · 08:05:43 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**. I didn&apos;t run any dry-runs because the source table isn&apos;t in the dev project. The cost figures come from the 2.5 TB in the plan.
+
+Nothing in the repo already answers this need, so the premise check passed.
+
+**Blockers**
+- **Personal data is public.** `public_web_metrics` is readable by `allAuthenticatedUsers`, which means any Google account. It exposes `visitor_email` and `ip_address`, while the contract says `classification: internal`. The plan has no crypto-shred path.
+- **The load isn&apos;t idempotent.** A plain `INSERT` duplicates rows when a `ds` is rerun. Beacons are also resent, so the source has duplicate events and `SUM(amount)` double-counts them. The schema has no event id to dedupe on.
+- **The primary key contradicts the grain.** The contract says `primary_key: session_id`, but the grain is one row per session per ds. The key should be `(ds, session_id)`.
+- **Cost is uncontrolled.** The 2.5 TB source has no partitioning, clustering or `require_partition_filter`. The example query filters on `DATE(viewed_at)`, which doesn&apos;t prune on `ds`. One run scans about 2.5 TB, roughly 250 times the 10 GB dev limit.
+
+**Should-fix**
+- The plan names no consumer or decision.
+- It has no tests or source freshness checks, and the row-count check has no pass criterion.
+- It doesn&apos;t say how late or resent beacons are handled, or what `ds` means.
+- It lists no downstream models or dashboards.
+- The rollback snapshot has no expiry, and time travel only covers 7 days.
+- The Access column list doesn&apos;t match the model SQL.
+
+I didn&apos;t edit the rest of the plan, so you&apos;ll need to resolve the findings there. Tell me if you&apos;d like me to draft those edits.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**. I didn&apos;t run any dry-runs because the source table isn&apos;t in the dev project. The cost figures come from the 2.5 TB in the plan.
+
+Nothing in the repo already answers this need, so the premise check passed.
+
+**Blockers**
+- **Personal data is public.** `public_web_metrics` is readable by `allAuthenticatedUsers`, which means any Google account. It exposes `visitor_email` and `ip_address`, while the contract says `classification: internal`. The plan has no crypto-shred path.
+- **The load isn&apos;t idempotent.** A plain `INSERT` duplicates rows when a `ds` is rerun. Beacons are also resent, so the source has duplicate events and `SUM(amount)` double-counts them. The schema has no event id to dedupe on.
+- **The primary key contradicts the grain.** The contract says `primary_key: session_id`, but the grain is one row per session per ds. The key should be `(ds, session_id)`.
+- **Cost is uncontrolled.** The 2.5 TB source has no partitioning, clustering or `require_partition_filter`. The example query filters on `DATE(viewed_at)`, which doesn&apos;t prune on `ds`. One run scans about 2.5 TB, roughly 250 times the 10 GB dev limit.
+
+**Should-fix**
+- The plan names no consumer or decision.
+- It has no tests or source freshness checks, and the row-count check has no pass criterion.
+- It doesn&apos;t say how late or resent beacons are handled, or what `ds` means.
+- It lists no downstream models or dashboards.
+- The rollback snapshot has no expiry, and time travel only covers 7 days.
+- The Access column list doesn&apos;t match the model SQL.
+
+I didn&apos;t edit the rest of the plan, so you&apos;ll need to resolve the findings there. Tell me if you&apos;d like me to draft those edits.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**. I didn&apos;t run any dry-runs because the source table isn&apos;t in the dev project. The cost figures come from the 2.5 TB in the plan.
+
+Nothing in the repo already answers this need, so the premise check passed.
+
+**Blockers**
+- **Personal data is public.** `public_web_metrics` is readable by `allAuthenticatedUsers`, which means any Google account. It exposes `visitor_email` and `ip_address`, while the contract says `classification: internal`. The plan has no crypto-shred path.
+- **The load isn&apos;t idempotent.** A plain `INSERT` duplicates rows when a `ds` is rerun. Beacons are also resent, so the source has duplicate events and `SUM(amount)` double-counts them. The schema has no event id to dedupe on.
+- **The primary key contradicts the grain.** The contract says `primary_key: session_id`, but the grain is one row per session per ds. The key should be `(ds, session_id)`.
+- **Cost is uncontrolled.** The 2.5 TB source has no partitioning, clustering or `require_partition_filter`. The example query filters on `DATE(viewed_at)`, which doesn&apos;t prune on `ds`. One run scans about 2.5 TB, roughly 250 times the 10 GB dev limit.
+
+**Should-fix**
+- The plan names no consumer or decision.
+- It has no tests or source freshness checks, and the row-count check has no pass criterion.
+- It doesn&apos;t say how late or resent beacons are handled, or what `ds` means.
+- It lists no downstream models or dashboards.
+- The rollback snapshot has no expiry, and time travel only covers 7 days.
+- The Access column list doesn&apos;t match the model SQL.
+
+I didn&apos;t edit the rest of the plan, so you&apos;ll need to resolve the findings there. Tell me if you&apos;d like me to draft those edits.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">10 turns · $0.11 · 08:06:29 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**. There are four blockers.
+
+**Blockers**
+1. **Personal data is exposed.** `public_web_metrics` is readable by `allAuthenticatedUsers`, which is any Google account. It includes `visitor_email` and `ip_address`, while the contract says `classification: internal`.
+2. **The load isn&apos;t rerunnable.** It&apos;s a bare `INSERT`, so rerunning a `ds` or retrying duplicates every row for it. It needs a partition overwrite or a `MERGE` on `(ds, session_id)`.
+3. **`amount` will be overcounted.** Beacons are resent on network failure and the source has no event id. `SUM(amount)` counts the duplicates. The plan needs a dedupe key.
+4. **Cost isn&apos;t addressed.** The source is about 2.5 TB. The plan gives no partitioning, clustering or `require_partition_filter`, and no cost estimate. One full scan is 2.5 TB, against the 10 GB `dev_max_bytes_billed`.
+
+**Should fix**
+- The contract key `session_id` conflicts with the grain, because a session crossing midnight appears in two `ds` values. Use `(ds, session_id)`.
+- `ds` and `DATE(viewed_at)` disagree, and the second can&apos;t prune partitions.
+- Late-arriving rows have no lookback window.
+- The contract lacks a schema, and `visitor_email` and `ip_address` aren&apos;t in the source DDL.
+- Quality checks are only row counts. There are no uniqueness or `amount` reconciliation tests.
+- The rollout snapshot has no expiry, and the rebuild step isn&apos;t specified.
+- The plan names no consumer or decision, and lists no downstream models.
+
+There are two nits, on `ds`-snapshot wording and the unit of `amount`.
+
+**What I didn&apos;t do**
+- **No premise blocker.** I found no existing session model or contract in the repo. `dbt/` and `contracts/` are empty.
+- **No dry run.** I didn&apos;t dry-run any query. The source schema exists only in the plan&apos;s own DDL.
+- **No vendor second pass.** Those skills set an attribution tag that reports usage to Google. Tell me if you want them run.
+
+I didn&apos;t edit the rest of the plan. Resolve the blockers first, then we can build it.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**. There are four blockers.
+
+**Blockers**
+1. **Personal data is exposed.** `public_web_metrics` is readable by `allAuthenticatedUsers`, which is any Google account. It includes `visitor_email` and `ip_address`, while the contract says `classification: internal`.
+2. **The load isn&apos;t rerunnable.** It&apos;s a bare `INSERT`, so rerunning a `ds` or retrying duplicates every row for it. It needs a partition overwrite or a `MERGE` on `(ds, session_id)`.
+3. **`amount` will be overcounted.** Beacons are resent on network failure and the source has no event id. `SUM(amount)` counts the duplicates. The plan needs a dedupe key.
+4. **Cost isn&apos;t addressed.** The source is about 2.5 TB. The plan gives no partitioning, clustering or `require_partition_filter`, and no cost estimate. One full scan is 2.5 TB, against the 10 GB `dev_max_bytes_billed`.
+
+**Should fix**
+- The contract key `session_id` conflicts with the grain, because a session crossing midnight appears in two `ds` values. Use `(ds, session_id)`.
+- `ds` and `DATE(viewed_at)` disagree, and the second can&apos;t prune partitions.
+- Late-arriving rows have no lookback window.
+- The contract lacks a schema, and `visitor_email` and `ip_address` aren&apos;t in the source DDL.
+- Quality checks are only row counts. There are no uniqueness or `amount` reconciliation tests.
+- The rollout snapshot has no expiry, and the rebuild step isn&apos;t specified.
+- The plan names no consumer or decision, and lists no downstream models.
+
+There are two nits, on `ds`-snapshot wording and the unit of `amount`.
+
+**What I didn&apos;t do**
+- **No premise blocker.** I found no existing session model or contract in the repo. `dbt/` and `contracts/` are empty.
+- **No dry run.** I didn&apos;t dry-run any query. The source schema exists only in the plan&apos;s own DDL.
+- **No vendor second pass.** Those skills set an attribution tag that reports usage to Google. Tell me if you want them run.
+
+I didn&apos;t edit the rest of the plan. Resolve the blockers first, then we can build it.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL PASS FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✓ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**. There are four blockers.
+
+**Blockers**
+1. **Personal data is exposed.** `public_web_metrics` is readable by `allAuthenticatedUsers`, which is any Google account. It includes `visitor_email` and `ip_address`, while the contract says `classification: internal`.
+2. **The load isn&apos;t rerunnable.** It&apos;s a bare `INSERT`, so rerunning a `ds` or retrying duplicates every row for it. It needs a partition overwrite or a `MERGE` on `(ds, session_id)`.
+3. **`amount` will be overcounted.** Beacons are resent on network failure and the source has no event id. `SUM(amount)` counts the duplicates. The plan needs a dedupe key.
+4. **Cost isn&apos;t addressed.** The source is about 2.5 TB. The plan gives no partitioning, clustering or `require_partition_filter`, and no cost estimate. One full scan is 2.5 TB, against the 10 GB `dev_max_bytes_billed`.
+
+**Should fix**
+- The contract key `session_id` conflicts with the grain, because a session crossing midnight appears in two `ds` values. Use `(ds, session_id)`.
+- `ds` and `DATE(viewed_at)` disagree, and the second can&apos;t prune partitions.
+- Late-arriving rows have no lookback window.
+- The contract lacks a schema, and `visitor_email` and `ip_address` aren&apos;t in the source DDL.
+- Quality checks are only row counts. There are no uniqueness or `amount` reconciliation tests.
+- The rollout snapshot has no expiry, and the rebuild step isn&apos;t specified.
+- The plan names no consumer or decision, and lists no downstream models.
+
+There are two nits, on `ds`-snapshot wording and the unit of `amount`.
+
+**What I didn&apos;t do**
+- **No premise blocker.** I found no existing session model or contract in the repo. `dbt/` and `contracts/` are empty.
+- **No dry run.** I didn&apos;t dry-run any query. The source schema exists only in the plan&apos;s own DDL.
+- **No vendor second pass.** Those skills set an attribution tag that reports usage to Google. Tell me if you want them run.
+
+I didn&apos;t edit the rest of the plan. Resolve the blockers first, then we can build it.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">7 turns · $0.10 · 08:07:21 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, with four blockers.
+
+I didn&apos;t run a dry-run, so the cost figures come from the plan&apos;s 2.5 TB estimate. I also didn&apos;t run `dbt ls` for downstream models. I found no existing session model or contract in `dbt/` or `contracts/`, so there&apos;s no premise blocker.
+
+**Blockers**
+1. **Public access to personal data.** The dataset is readable by `allAuthenticatedUsers`, which means any Google account. It lists `visitor_email` and `ip_address`, but the contract says `internal`. The model SQL doesn&apos;t select those columns, so the plan contradicts itself.
+2. **Duplicate beacons.** Beacons are resent on network failure, so the source holds duplicates and `SUM(amount)` double-counts them. The schema has no event id to dedupe on.
+3. **Non-idempotent load.** A bare `INSERT` appends duplicates when you rerun a `ds`, including the rollout&apos;s &quot;rebuild for the ds range&quot;.
+4. **Cost and partitioning.** The plan sets no partitioning, clustering or `require_partition_filter`. The source filter `DATE(viewed_at) = @ds` doesn&apos;t match the model&apos;s `ds` filter. An unpruned 2.5 TB run is about 250 times `dev_max_bytes_billed`.
+
+**Should-fix items**
+- **Contract and grain:** the contract has no schema or additive/breaking classification, and `primary_key: session_id` conflicts with the grain of one row per session per `ds`. The consumer, `ds` boundary rule and downstream lineage are also missing.
+- **Quality and late data:** there are no tests, no source freshness check, and no late-arrival handling.
+- **Rollback:** the snapshot name isn&apos;t dated, and rebuild from source isn&apos;t listed as the primary undo.
+
+The skill says not to edit the rest of the plan, so the fixes are yours to make. Once you&apos;ve made them, I can re-review. Two decisions need you: who the real readers are, and whether the personal-data columns stay in the table.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, with four blockers.
+
+I didn&apos;t run a dry-run, so the cost figures come from the plan&apos;s 2.5 TB estimate. I also didn&apos;t run `dbt ls` for downstream models. I found no existing session model or contract in `dbt/` or `contracts/`, so there&apos;s no premise blocker.
+
+**Blockers**
+1. **Public access to personal data.** The dataset is readable by `allAuthenticatedUsers`, which means any Google account. It lists `visitor_email` and `ip_address`, but the contract says `internal`. The model SQL doesn&apos;t select those columns, so the plan contradicts itself.
+2. **Duplicate beacons.** Beacons are resent on network failure, so the source holds duplicates and `SUM(amount)` double-counts them. The schema has no event id to dedupe on.
+3. **Non-idempotent load.** A bare `INSERT` appends duplicates when you rerun a `ds`, including the rollout&apos;s &quot;rebuild for the ds range&quot;.
+4. **Cost and partitioning.** The plan sets no partitioning, clustering or `require_partition_filter`. The source filter `DATE(viewed_at) = @ds` doesn&apos;t match the model&apos;s `ds` filter. An unpruned 2.5 TB run is about 250 times `dev_max_bytes_billed`.
+
+**Should-fix items**
+- **Contract and grain:** the contract has no schema or additive/breaking classification, and `primary_key: session_id` conflicts with the grain of one row per session per `ds`. The consumer, `ds` boundary rule and downstream lineage are also missing.
+- **Quality and late data:** there are no tests, no source freshness check, and no late-arrival handling.
+- **Rollback:** the snapshot name isn&apos;t dated, and rebuild from source isn&apos;t listed as the primary undo.
+
+The skill says not to edit the rest of the plan, so the fixes are yours to make. Once you&apos;ve made them, I can re-review. Two decisions need you: who the real readers are, and whether the personal-data columns stay in the table.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, with four blockers.
+
+I didn&apos;t run a dry-run, so the cost figures come from the plan&apos;s 2.5 TB estimate. I also didn&apos;t run `dbt ls` for downstream models. I found no existing session model or contract in `dbt/` or `contracts/`, so there&apos;s no premise blocker.
+
+**Blockers**
+1. **Public access to personal data.** The dataset is readable by `allAuthenticatedUsers`, which means any Google account. It lists `visitor_email` and `ip_address`, but the contract says `internal`. The model SQL doesn&apos;t select those columns, so the plan contradicts itself.
+2. **Duplicate beacons.** Beacons are resent on network failure, so the source holds duplicates and `SUM(amount)` double-counts them. The schema has no event id to dedupe on.
+3. **Non-idempotent load.** A bare `INSERT` appends duplicates when you rerun a `ds`, including the rollout&apos;s &quot;rebuild for the ds range&quot;.
+4. **Cost and partitioning.** The plan sets no partitioning, clustering or `require_partition_filter`. The source filter `DATE(viewed_at) = @ds` doesn&apos;t match the model&apos;s `ds` filter. An unpruned 2.5 TB run is about 250 times `dev_max_bytes_billed`.
+
+**Should-fix items**
+- **Contract and grain:** the contract has no schema or additive/breaking classification, and `primary_key: session_id` conflicts with the grain of one row per session per `ds`. The consumer, `ds` boundary rule and downstream lineage are also missing.
+- **Quality and late data:** there are no tests, no source freshness check, and no late-arrival handling.
+- **Rollback:** the snapshot name isn&apos;t dated, and rebuild from source isn&apos;t listed as the primary undo.
+
+The skill says not to edit the rest of the plan, so the fixes are yours to make. Once you&apos;ve made them, I can re-review. Two decisions need you: who the real readers are, and whether the personal-data columns stay in the table.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">8 turns · $0.11 · 08:08:10 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. **The verdict is NOT READY**, because there are four blockers. I didn&apos;t edit the rest of the plan. I also didn&apos;t dry-run the queries, since I couldn&apos;t confirm a dev copy of `raw_web.page_views`.
+
+**Blockers**
+1. **Access (item 7):** `allAuthenticatedUsers` means any Google account can read the dataset. The dataset includes `visitor_email` and `ip_address`, yet the contract says `classification: internal`. The plan also has no deletion or crypto-shred path.
+2. **Rerun safety (item 5):** the load is a plain `INSERT`, so rerunning a `ds` duplicates its rows. The backfill path is also unwritten.
+3. **Duplicates (item 3):** beacons are resent on network failure, and the source has no event id to dedupe on. `SUM(amount)` would overstate.
+4. **Cost (item 6):** the plan sets no partitioning, clustering or `require_partition_filter` on a table of about 2.5 TB. A full scan would be far above the 10 GB dev cap. The source query filters on `DATE(viewed_at)` and the model filters on `ds`, so it&apos;s unclear whether either prunes.
+
+**Should-fix**
+- **Key and `ds`:** `session_id` alone isn&apos;t unique across `ds`, and it&apos;s ambiguous which column defines `ds`. A session spanning midnight splits in two.
+- **Late data:** late and resent beacons land after their `ds` and nothing handles them.
+- **Contract:** the model SQL, Access and Contract list different columns, and no contract file exists.
+- **Consumer:** no consumer or decision is named.
+- **Quality:** there are no tests, and nothing backs the 07:00 UTC SLA.
+- **Rollback:** step 1 fails on first build. The snapshot has no expiry and sits in the public dataset, so it would expose the same personal data.
+- **Lineage:** downstream models and dashboards aren&apos;t listed.
+
+Step 0 found no existing model or contract that already answers this, so the premise stands.
+
+The data-review skill mentions optional Google companion skills that report usage to Google through an attribution tag. I didn&apos;t use them. Tell me if you want that second pass.
+
+I&apos;d start with the access and dedupe blockers, because they change the schema the other fixes depend on. Do you want me to draft the plan edits?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. **The verdict is NOT READY**, because there are four blockers. I didn&apos;t edit the rest of the plan. I also didn&apos;t dry-run the queries, since I couldn&apos;t confirm a dev copy of `raw_web.page_views`.
+
+**Blockers**
+1. **Access (item 7):** `allAuthenticatedUsers` means any Google account can read the dataset. The dataset includes `visitor_email` and `ip_address`, yet the contract says `classification: internal`. The plan also has no deletion or crypto-shred path.
+2. **Rerun safety (item 5):** the load is a plain `INSERT`, so rerunning a `ds` duplicates its rows. The backfill path is also unwritten.
+3. **Duplicates (item 3):** beacons are resent on network failure, and the source has no event id to dedupe on. `SUM(amount)` would overstate.
+4. **Cost (item 6):** the plan sets no partitioning, clustering or `require_partition_filter` on a table of about 2.5 TB. A full scan would be far above the 10 GB dev cap. The source query filters on `DATE(viewed_at)` and the model filters on `ds`, so it&apos;s unclear whether either prunes.
+
+**Should-fix**
+- **Key and `ds`:** `session_id` alone isn&apos;t unique across `ds`, and it&apos;s ambiguous which column defines `ds`. A session spanning midnight splits in two.
+- **Late data:** late and resent beacons land after their `ds` and nothing handles them.
+- **Contract:** the model SQL, Access and Contract list different columns, and no contract file exists.
+- **Consumer:** no consumer or decision is named.
+- **Quality:** there are no tests, and nothing backs the 07:00 UTC SLA.
+- **Rollback:** step 1 fails on first build. The snapshot has no expiry and sits in the public dataset, so it would expose the same personal data.
+- **Lineage:** downstream models and dashboards aren&apos;t listed.
+
+Step 0 found no existing model or contract that already answers this, so the premise stands.
+
+The data-review skill mentions optional Google companion skills that report usage to Google through an attribution tag. I didn&apos;t use them. Tell me if you want that second pass.
+
+I&apos;d start with the access and dedupe blockers, because they change the schema the other fixes depend on. Do you want me to draft the plan edits?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. **The verdict is NOT READY**, because there are four blockers. I didn&apos;t edit the rest of the plan. I also didn&apos;t dry-run the queries, since I couldn&apos;t confirm a dev copy of `raw_web.page_views`.
+
+**Blockers**
+1. **Access (item 7):** `allAuthenticatedUsers` means any Google account can read the dataset. The dataset includes `visitor_email` and `ip_address`, yet the contract says `classification: internal`. The plan also has no deletion or crypto-shred path.
+2. **Rerun safety (item 5):** the load is a plain `INSERT`, so rerunning a `ds` duplicates its rows. The backfill path is also unwritten.
+3. **Duplicates (item 3):** beacons are resent on network failure, and the source has no event id to dedupe on. `SUM(amount)` would overstate.
+4. **Cost (item 6):** the plan sets no partitioning, clustering or `require_partition_filter` on a table of about 2.5 TB. A full scan would be far above the 10 GB dev cap. The source query filters on `DATE(viewed_at)` and the model filters on `ds`, so it&apos;s unclear whether either prunes.
+
+**Should-fix**
+- **Key and `ds`:** `session_id` alone isn&apos;t unique across `ds`, and it&apos;s ambiguous which column defines `ds`. A session spanning midnight splits in two.
+- **Late data:** late and resent beacons land after their `ds` and nothing handles them.
+- **Contract:** the model SQL, Access and Contract list different columns, and no contract file exists.
+- **Consumer:** no consumer or decision is named.
+- **Quality:** there are no tests, and nothing backs the 07:00 UTC SLA.
+- **Rollback:** step 1 fails on first build. The snapshot has no expiry and sits in the public dataset, so it would expose the same personal data.
+- **Lineage:** downstream models and dashboards aren&apos;t listed.
+
+Step 0 found no existing model or contract that already answers this, so the premise stands.
+
+The data-review skill mentions optional Google companion skills that report usage to Google through an attribution tag. I didn&apos;t use them. Tell me if you want that second pass.
+
+I&apos;d start with the access and dedupe blockers, because they change the schema the other fixes depend on. Do you want me to draft the plan edits?</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">8 turns · $0.11 · 08:09:04 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, with five blockers.
+
+I didn&apos;t run `bq query --dry_run` or `dbt ls`, because the plan names no real dev table and the repo has no dbt project or SQL files. The cost figure below is my estimate from the stated 2.5 TB, not a measured dry-run.
+
+**Blockers**
+1. **Access and personal data:** `public_web_metrics` is readable by `allAuthenticatedUsers`, which means any Google account. It exposes `visitor_email` and `ip_address`, yet the contract classifies the data as `internal`. There is no crypto-shred path. Neither column appears in the source DDL or the model SQL, so the column list also needs reconciling.
+2. **Duplicates:** Beacons are resent on network failure, so `page_views` can hold duplicate rows. `SUM(amount)` would double count them, and the plan has no dedup key and no late-data handling.
+3. **Reruns:** The Load is a plain `INSERT`, so a rerun or the rollout&apos;s &quot;rebuild for the ds range&quot; appends duplicates. It needs a `MERGE`, delete-then-insert, or `insert_overwrite`.
+4. **Cost:** No partitioning, clustering or `require_partition_filter` is stated, so `WHERE ds = @ds` would likely scan the full 2.5 TB. That is roughly 250 times the 10 GB `dev_max_bytes_billed`. The source example also filters on `DATE(viewed_at)` instead of `ds`.
+5. **Contract:** The grain is one row per session per ds, but the contract says `primary_key: session_id`. It should be `[ds, session_id]`. The contract also has no schema, quality rules, or additive/breaking classification.
+
+**Should-fix items**
+- Name the consumer and the decision it supports.
+- State explicitly that this is a `ds` snapshot, and which column defines `ds`.
+- Add tests and a source freshness check.
+- List downstream consumers.
+- Give the backup snapshot the same access controls as the source, plus an expiry.
+
+**Nit**
+- Explain what `amount` means on a page view, and its currency.
+
+The rollback itself (snapshot clone plus 7-day time travel) is sound. I only appended the review and left the rest of the plan untouched, so the edits are yours to make. Once the blockers are resolved, I can re-run the review.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, with five blockers.
+
+I didn&apos;t run `bq query --dry_run` or `dbt ls`, because the plan names no real dev table and the repo has no dbt project or SQL files. The cost figure below is my estimate from the stated 2.5 TB, not a measured dry-run.
+
+**Blockers**
+1. **Access and personal data:** `public_web_metrics` is readable by `allAuthenticatedUsers`, which means any Google account. It exposes `visitor_email` and `ip_address`, yet the contract classifies the data as `internal`. There is no crypto-shred path. Neither column appears in the source DDL or the model SQL, so the column list also needs reconciling.
+2. **Duplicates:** Beacons are resent on network failure, so `page_views` can hold duplicate rows. `SUM(amount)` would double count them, and the plan has no dedup key and no late-data handling.
+3. **Reruns:** The Load is a plain `INSERT`, so a rerun or the rollout&apos;s &quot;rebuild for the ds range&quot; appends duplicates. It needs a `MERGE`, delete-then-insert, or `insert_overwrite`.
+4. **Cost:** No partitioning, clustering or `require_partition_filter` is stated, so `WHERE ds = @ds` would likely scan the full 2.5 TB. That is roughly 250 times the 10 GB `dev_max_bytes_billed`. The source example also filters on `DATE(viewed_at)` instead of `ds`.
+5. **Contract:** The grain is one row per session per ds, but the contract says `primary_key: session_id`. It should be `[ds, session_id]`. The contract also has no schema, quality rules, or additive/breaking classification.
+
+**Should-fix items**
+- Name the consumer and the decision it supports.
+- State explicitly that this is a `ds` snapshot, and which column defines `ds`.
+- Add tests and a source freshness check.
+- List downstream consumers.
+- Give the backup snapshot the same access controls as the source, plus an expiry.
+
+**Nit**
+- Explain what `amount` means on a page view, and its currency.
+
+The rollback itself (snapshot clone plus 7-day time travel) is sound. I only appended the review and left the rest of the plan untouched, so the edits are yours to make. Once the blockers are resolved, I can re-run the review.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, with five blockers.
+
+I didn&apos;t run `bq query --dry_run` or `dbt ls`, because the plan names no real dev table and the repo has no dbt project or SQL files. The cost figure below is my estimate from the stated 2.5 TB, not a measured dry-run.
+
+**Blockers**
+1. **Access and personal data:** `public_web_metrics` is readable by `allAuthenticatedUsers`, which means any Google account. It exposes `visitor_email` and `ip_address`, yet the contract classifies the data as `internal`. There is no crypto-shred path. Neither column appears in the source DDL or the model SQL, so the column list also needs reconciling.
+2. **Duplicates:** Beacons are resent on network failure, so `page_views` can hold duplicate rows. `SUM(amount)` would double count them, and the plan has no dedup key and no late-data handling.
+3. **Reruns:** The Load is a plain `INSERT`, so a rerun or the rollout&apos;s &quot;rebuild for the ds range&quot; appends duplicates. It needs a `MERGE`, delete-then-insert, or `insert_overwrite`.
+4. **Cost:** No partitioning, clustering or `require_partition_filter` is stated, so `WHERE ds = @ds` would likely scan the full 2.5 TB. That is roughly 250 times the 10 GB `dev_max_bytes_billed`. The source example also filters on `DATE(viewed_at)` instead of `ds`.
+5. **Contract:** The grain is one row per session per ds, but the contract says `primary_key: session_id`. It should be `[ds, session_id]`. The contract also has no schema, quality rules, or additive/breaking classification.
+
+**Should-fix items**
+- Name the consumer and the decision it supports.
+- State explicitly that this is a `ds` snapshot, and which column defines `ds`.
+- Add tests and a source freshness check.
+- List downstream consumers.
+- Give the backup snapshot the same access controls as the source, plus an expiry.
+
+**Nit**
+- Explain what `amount` means on a page view, and its currency.
+
+The rollback itself (snapshot clone plus 7-day time travel) is sound. I only appended the review and left the rest of the plan untouched, so the edits are yours to make. Once the blockers are resolved, I can re-run the review.</pre>
+</div>
+</details></div>
+</div>
+</section><section class="arm">
+<div class="arm-head">
+<span class="arm-label">Baseline (no plugin)</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:53.3%"></span></span>
+<span class="num">53.3%</span>
+<span class="muted num">0% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">2 turns · $0.04 · 08:10:01 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL PASS FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✓ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. It has three problems that would produce wrong numbers or expose data, and several smaller ones.
+
+**Blockers**
+
+1. **Duplicate beacons inflate `amount`.** The source says beacons are resent on network failure, so the same page view can land more than once. `SUM(amount)` then double-counts. The source table has no event or beacon ID to dedupe on. Add one, or define a dedupe key such as `session_id + viewed_at + page`, and dedupe before aggregating. A row-count check won&apos;t catch this, because the session count stays the same while the amounts are wrong.
+2. **The access section exposes PII.** `public_web_metrics` is readable by `allAuthenticatedUsers`, and the column list includes `visitor_email` and `ip_address`. That contradicts `classification: internal`. Remove those columns, or put them in a restricted dataset and give the public one only aggregates. Also, neither column is in the source DDL or the model SQL, so the column list doesn&apos;t match what the model produces.
+3. **The load isn&apos;t idempotent.** A plain `INSERT INTO ... WHERE ds = @ds` duplicates the whole day on any retry or backfill. The rollout rebuilds a date range, which makes this likely. Use `MERGE`, or delete and insert the partition (or overwrite it) in one transaction.
+
+**Should fix**
+
+4. **The primary key doesn&apos;t match the grain.** The grain is one row per session per `ds`, but the contract says `primary_key: session_id`. A session that crosses midnight gets two rows. The key should be `(ds, session_id)`, or the grain should change.
+5. **The source query and the model filter differently.** The source query uses `DATE(viewed_at) = @ds`, and the model uses `ds = @ds`. These disagree for late-arriving or resent beacons. Pick one definition and state it.
+   - On a 2.5 TB table, wrapping `viewed_at` in `DATE()` may also prevent partition pruning, and `SELECT *` scans every column. Filter on the partition column and select only the columns you need.
+6. **The rollout has gaps.**
+   - `CREATE SNAPSHOT TABLE ... CLONE` fails on the first build, when the table doesn&apos;t exist, and on reruns, when the snapshot already exists. Date-stamp the snapshot name and make it conditional.
+   - &quot;Check row counts&quot; is too weak. Add checks for uniqueness on `(ds, session_id)`, `amount` totals against the source (after dedupe), and no nulls in the key.
+   - Say which restore path to use for a partial date-range rebuild. Restoring the whole backup table would overwrite days you didn&apos;t touch.
+7. **Late data and the SLA.** Nothing says how late beacons are handled before the 07:00 UTC freshness SLA. Add a lookback window, or document that late data is dropped.
+
+**Minor**
+
+- Say what `amount` means for page views, and why it&apos;s `NUMERIC`.
+- Add the usual session fields, such as start and end time and page count, or say they&apos;re out of scope.
+- The ownership contract has no tests or alerting section.
+
+I&apos;d fix items 1–3 before any build work. I can draft a revised plan, or turn the fixes into SQL, if you want.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. It has three problems that would produce wrong numbers or expose data, and several smaller ones.
+
+**Blockers**
+
+1. **Duplicate beacons inflate `amount`.** The source says beacons are resent on network failure, so the same page view can land more than once. `SUM(amount)` then double-counts. The source table has no event or beacon ID to dedupe on. Add one, or define a dedupe key such as `session_id + viewed_at + page`, and dedupe before aggregating. A row-count check won&apos;t catch this, because the session count stays the same while the amounts are wrong.
+2. **The access section exposes PII.** `public_web_metrics` is readable by `allAuthenticatedUsers`, and the column list includes `visitor_email` and `ip_address`. That contradicts `classification: internal`. Remove those columns, or put them in a restricted dataset and give the public one only aggregates. Also, neither column is in the source DDL or the model SQL, so the column list doesn&apos;t match what the model produces.
+3. **The load isn&apos;t idempotent.** A plain `INSERT INTO ... WHERE ds = @ds` duplicates the whole day on any retry or backfill. The rollout rebuilds a date range, which makes this likely. Use `MERGE`, or delete and insert the partition (or overwrite it) in one transaction.
+
+**Should fix**
+
+4. **The primary key doesn&apos;t match the grain.** The grain is one row per session per `ds`, but the contract says `primary_key: session_id`. A session that crosses midnight gets two rows. The key should be `(ds, session_id)`, or the grain should change.
+5. **The source query and the model filter differently.** The source query uses `DATE(viewed_at) = @ds`, and the model uses `ds = @ds`. These disagree for late-arriving or resent beacons. Pick one definition and state it.
+   - On a 2.5 TB table, wrapping `viewed_at` in `DATE()` may also prevent partition pruning, and `SELECT *` scans every column. Filter on the partition column and select only the columns you need.
+6. **The rollout has gaps.**
+   - `CREATE SNAPSHOT TABLE ... CLONE` fails on the first build, when the table doesn&apos;t exist, and on reruns, when the snapshot already exists. Date-stamp the snapshot name and make it conditional.
+   - &quot;Check row counts&quot; is too weak. Add checks for uniqueness on `(ds, session_id)`, `amount` totals against the source (after dedupe), and no nulls in the key.
+   - Say which restore path to use for a partial date-range rebuild. Restoring the whole backup table would overwrite days you didn&apos;t touch.
+7. **Late data and the SLA.** Nothing says how late beacons are handled before the 07:00 UTC freshness SLA. Add a lookback window, or document that late data is dropped.
+
+**Minor**
+
+- Say what `amount` means for page views, and why it&apos;s `NUMERIC`.
+- Add the usual session fields, such as start and end time and page count, or say they&apos;re out of scope.
+- The ownership contract has no tests or alerting section.
+
+I&apos;d fix items 1–3 before any build work. I can draft a revised plan, or turn the fixes into SQL, if you want.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. It has three problems that would produce wrong numbers or expose data, and several smaller ones.
+
+**Blockers**
+
+1. **Duplicate beacons inflate `amount`.** The source says beacons are resent on network failure, so the same page view can land more than once. `SUM(amount)` then double-counts. The source table has no event or beacon ID to dedupe on. Add one, or define a dedupe key such as `session_id + viewed_at + page`, and dedupe before aggregating. A row-count check won&apos;t catch this, because the session count stays the same while the amounts are wrong.
+2. **The access section exposes PII.** `public_web_metrics` is readable by `allAuthenticatedUsers`, and the column list includes `visitor_email` and `ip_address`. That contradicts `classification: internal`. Remove those columns, or put them in a restricted dataset and give the public one only aggregates. Also, neither column is in the source DDL or the model SQL, so the column list doesn&apos;t match what the model produces.
+3. **The load isn&apos;t idempotent.** A plain `INSERT INTO ... WHERE ds = @ds` duplicates the whole day on any retry or backfill. The rollout rebuilds a date range, which makes this likely. Use `MERGE`, or delete and insert the partition (or overwrite it) in one transaction.
+
+**Should fix**
+
+4. **The primary key doesn&apos;t match the grain.** The grain is one row per session per `ds`, but the contract says `primary_key: session_id`. A session that crosses midnight gets two rows. The key should be `(ds, session_id)`, or the grain should change.
+5. **The source query and the model filter differently.** The source query uses `DATE(viewed_at) = @ds`, and the model uses `ds = @ds`. These disagree for late-arriving or resent beacons. Pick one definition and state it.
+   - On a 2.5 TB table, wrapping `viewed_at` in `DATE()` may also prevent partition pruning, and `SELECT *` scans every column. Filter on the partition column and select only the columns you need.
+6. **The rollout has gaps.**
+   - `CREATE SNAPSHOT TABLE ... CLONE` fails on the first build, when the table doesn&apos;t exist, and on reruns, when the snapshot already exists. Date-stamp the snapshot name and make it conditional.
+   - &quot;Check row counts&quot; is too weak. Add checks for uniqueness on `(ds, session_id)`, `amount` totals against the source (after dedupe), and no nulls in the key.
+   - Say which restore path to use for a partial date-range rebuild. Restoring the whole backup table would overwrite days you didn&apos;t touch.
+7. **Late data and the SLA.** Nothing says how late beacons are handled before the 07:00 UTC freshness SLA. Add a lookback window, or document that late data is dropped.
+
+**Minor**
+
+- Say what `amount` means for page views, and why it&apos;s `NUMERIC`.
+- Add the usual session fields, such as start and end time and page count, or say they&apos;re out of scope.
+- The ownership contract has no tests or alerting section.
+
+I&apos;d fix items 1–3 before any build work. I can draft a revised plan, or turn the fixes into SQL, if you want.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">2 turns · $0.04 · 08:10:34 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan and found problems that I&apos;d fix before building. They&apos;re in rough order of severity.
+
+**Blocking**
+
+1. **Public access to PII (Access, Contract).**
+   - `allAuthenticatedUsers` on `public_web_metrics` exposes `visitor_email` and `ip_address` to anyone with a Google account.
+   - That contradicts `classification: internal`.
+   - The model SQL doesn&apos;t select those two columns, so the column list doesn&apos;t match the model either.
+   - Drop the PII columns, or hash them. Restrict readers to a named group, and use policy tags if the columns have to stay.
+
+2. **Double counting from beacon resends (Source, Model).**
+   - The source says beacons are resent on network failure, so `page_views` will contain duplicate rows.
+   - `SUM(amount)` will over-count them.
+   - The table has no event or beacon ID to dedupe on. You need one, or a defined dedupe key such as `(session_id, viewed_at, amount)`, applied before aggregating. Otherwise the numbers will be wrong.
+
+3. **The load isn&apos;t idempotent (Load, Rollout).**
+   - A plain `INSERT` duplicates rows on every rerun or backfill.
+   - Step 2 of the rollout, &quot;rebuild for the ds range,&quot; would double the data unless the range is deleted first.
+   - Use `MERGE` on `(ds, session_id)`, or delete the partition and insert in one transaction.
+
+**Should fix**
+
+4. **Wrong primary key.**
+   - The grain is one row per session per `ds`, but the contract says `primary_key: session_id`.
+   - A session that crosses midnight gets two rows.
+   - The key should be `(ds, session_id)`. Alternatively, define how sessions are assigned to a day.
+
+5. **`ds` and `DATE(viewed_at)` are used interchangeably.**
+   - The source query filters on `DATE(viewed_at) = @ds`, but the model filters on `ds = @ds`.
+   - If `ds` is the partition column, the first query likely scans the whole 2.5 TB. If the two dates differ because of timezone or late arrival, the results differ.
+   - Pick one, and state which is the partition column.
+
+6. **No late-data handling.**
+   - Resent beacons arrive late, but the 07:00 UTC SLA has no lookback window or reprocessing of recent partitions.
+
+7. **Weak rollout checks.**
+   - &quot;Check row counts&quot; wouldn&apos;t catch duplicates or wrong sums. Compare `COUNT(DISTINCT session_id)` and `SUM(amount)` against the deduped source.
+   - A fixed backup name (`fct_web_sessions_bak`) makes `CREATE SNAPSHOT TABLE` fail on the second run. Use a dated name or `IF NOT EXISTS`, and set an expiry.
+   - The plan should say that rollback means restoring the snapshot over the table. It should also say whether time travel (7 days) is a fallback or the main plan.
+
+**Minor**
+
+- `amount` is the sum of a per-page-view value. The plan should say what it represents (revenue? duration?) and what currency or unit it uses.
+- The Model and Load sections repeat the same SQL. Define it once.
+
+I&apos;d resolve #1–#3 before any build starts. Want me to turn this into a revised plan?</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan and found problems that I&apos;d fix before building. They&apos;re in rough order of severity.
+
+**Blocking**
+
+1. **Public access to PII (Access, Contract).**
+   - `allAuthenticatedUsers` on `public_web_metrics` exposes `visitor_email` and `ip_address` to anyone with a Google account.
+   - That contradicts `classification: internal`.
+   - The model SQL doesn&apos;t select those two columns, so the column list doesn&apos;t match the model either.
+   - Drop the PII columns, or hash them. Restrict readers to a named group, and use policy tags if the columns have to stay.
+
+2. **Double counting from beacon resends (Source, Model).**
+   - The source says beacons are resent on network failure, so `page_views` will contain duplicate rows.
+   - `SUM(amount)` will over-count them.
+   - The table has no event or beacon ID to dedupe on. You need one, or a defined dedupe key such as `(session_id, viewed_at, amount)`, applied before aggregating. Otherwise the numbers will be wrong.
+
+3. **The load isn&apos;t idempotent (Load, Rollout).**
+   - A plain `INSERT` duplicates rows on every rerun or backfill.
+   - Step 2 of the rollout, &quot;rebuild for the ds range,&quot; would double the data unless the range is deleted first.
+   - Use `MERGE` on `(ds, session_id)`, or delete the partition and insert in one transaction.
+
+**Should fix**
+
+4. **Wrong primary key.**
+   - The grain is one row per session per `ds`, but the contract says `primary_key: session_id`.
+   - A session that crosses midnight gets two rows.
+   - The key should be `(ds, session_id)`. Alternatively, define how sessions are assigned to a day.
+
+5. **`ds` and `DATE(viewed_at)` are used interchangeably.**
+   - The source query filters on `DATE(viewed_at) = @ds`, but the model filters on `ds = @ds`.
+   - If `ds` is the partition column, the first query likely scans the whole 2.5 TB. If the two dates differ because of timezone or late arrival, the results differ.
+   - Pick one, and state which is the partition column.
+
+6. **No late-data handling.**
+   - Resent beacons arrive late, but the 07:00 UTC SLA has no lookback window or reprocessing of recent partitions.
+
+7. **Weak rollout checks.**
+   - &quot;Check row counts&quot; wouldn&apos;t catch duplicates or wrong sums. Compare `COUNT(DISTINCT session_id)` and `SUM(amount)` against the deduped source.
+   - A fixed backup name (`fct_web_sessions_bak`) makes `CREATE SNAPSHOT TABLE` fail on the second run. Use a dated name or `IF NOT EXISTS`, and set an expiry.
+   - The plan should say that rollback means restoring the snapshot over the table. It should also say whether time travel (7 days) is a fallback or the main plan.
+
+**Minor**
+
+- `amount` is the sum of a per-page-view value. The plan should say what it represents (revenue? duration?) and what currency or unit it uses.
+- The Model and Load sections repeat the same SQL. Define it once.
+
+I&apos;d resolve #1–#3 before any build starts. Want me to turn this into a revised plan?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan and found problems that I&apos;d fix before building. They&apos;re in rough order of severity.
+
+**Blocking**
+
+1. **Public access to PII (Access, Contract).**
+   - `allAuthenticatedUsers` on `public_web_metrics` exposes `visitor_email` and `ip_address` to anyone with a Google account.
+   - That contradicts `classification: internal`.
+   - The model SQL doesn&apos;t select those two columns, so the column list doesn&apos;t match the model either.
+   - Drop the PII columns, or hash them. Restrict readers to a named group, and use policy tags if the columns have to stay.
+
+2. **Double counting from beacon resends (Source, Model).**
+   - The source says beacons are resent on network failure, so `page_views` will contain duplicate rows.
+   - `SUM(amount)` will over-count them.
+   - The table has no event or beacon ID to dedupe on. You need one, or a defined dedupe key such as `(session_id, viewed_at, amount)`, applied before aggregating. Otherwise the numbers will be wrong.
+
+3. **The load isn&apos;t idempotent (Load, Rollout).**
+   - A plain `INSERT` duplicates rows on every rerun or backfill.
+   - Step 2 of the rollout, &quot;rebuild for the ds range,&quot; would double the data unless the range is deleted first.
+   - Use `MERGE` on `(ds, session_id)`, or delete the partition and insert in one transaction.
+
+**Should fix**
+
+4. **Wrong primary key.**
+   - The grain is one row per session per `ds`, but the contract says `primary_key: session_id`.
+   - A session that crosses midnight gets two rows.
+   - The key should be `(ds, session_id)`. Alternatively, define how sessions are assigned to a day.
+
+5. **`ds` and `DATE(viewed_at)` are used interchangeably.**
+   - The source query filters on `DATE(viewed_at) = @ds`, but the model filters on `ds = @ds`.
+   - If `ds` is the partition column, the first query likely scans the whole 2.5 TB. If the two dates differ because of timezone or late arrival, the results differ.
+   - Pick one, and state which is the partition column.
+
+6. **No late-data handling.**
+   - Resent beacons arrive late, but the 07:00 UTC SLA has no lookback window or reprocessing of recent partitions.
+
+7. **Weak rollout checks.**
+   - &quot;Check row counts&quot; wouldn&apos;t catch duplicates or wrong sums. Compare `COUNT(DISTINCT session_id)` and `SUM(amount)` against the deduped source.
+   - A fixed backup name (`fct_web_sessions_bak`) makes `CREATE SNAPSHOT TABLE` fail on the second run. Use a dated name or `IF NOT EXISTS`, and set an expiry.
+   - The plan should say that rollback means restoring the snapshot over the table. It should also say whether time travel (7 days) is a fallback or the main plan.
+
+**Minor**
+
+- `amount` is the sum of a per-page-view value. The plan should say what it represents (revenue? duration?) and what currency or unit it uses.
+- The Model and Load sections repeat the same SQL. Define it once.
+
+I&apos;d resolve #1–#3 before any build starts. Want me to turn this into a revised plan?</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">2 turns · $0.04 · 08:11:08 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I&apos;ve reviewed the plan. I&apos;d fix the first four items below before building.
+
+**Blockers**
+
+1. **Duplicate beacons will inflate `amount`.** The source says beacons are &quot;resent on network failure&quot;, so `page_views` will contain duplicate rows. `SUM(amount)` double-counts them. The schema has no event ID to dedupe on, so you either need one added upstream or a defined dedup key, such as `(session_id, viewed_at, amount)`. Decide this before building.
+2. **The access section exposes PII.**
+   - `allAuthenticatedUsers` on `public_web_metrics` makes the table readable by any Google account.
+   - The column list includes `visitor_email` and `ip_address`.
+   - It also contradicts `classification: internal`.
+   - Restrict readers to a specific group, drop or hash the PII columns, and reconcile the classification.
+3. **The columns don&apos;t match the model.** The model SQL outputs only `ds, session_id, amount`. The source table has no `visitor_email` or `ip_address`. Either the schema is incomplete or the Access section is stale.
+4. **The load isn&apos;t idempotent.**
+   - A plain `INSERT` duplicates rows on any rerun or backfill.
+   - Rollout step 2 (&quot;rebuild for the ds range&quot;) would append to existing rows rather than replace them.
+   - Use `MERGE`, or delete and insert by partition, or use partition overwrite.
+
+**Should fix**
+
+5. **The primary key contradicts the grain.** The grain is one row per session per `ds`, so a session crossing midnight gets two rows. `primary_key: session_id` is wrong. It should be `(ds, session_id)`.
+6. **The source query and the model filter differently.**
+   - The source query uses `DATE(viewed_at) = @ds`, and the model uses `ds = @ds`.
+   - These can disagree for late-arriving data or timezone differences. If `ds` is the partition column, `DATE(viewed_at)` may also defeat pruning on a 2.5 TB table.
+   - Pick one definition of the day, and use `ds` for pruning.
+   - Avoid `SELECT *` on that table.
+7. **The rollout checks are weak.**
+   - Row counts won&apos;t catch the double-counting in item 1. Add a `SUM(amount)` reconciliation and a duplicate-key check.
+   - The snapshot clone fails if `fct_web_sessions` doesn&apos;t exist yet.
+   - Time travel lasts 7 days, so say how long you&apos;ll keep the backup.
+
+**Minor**
+
+- Say how null `session_id` and null `amount` are handled.
+- A 07:00 UTC freshness SLA needs a late-data policy. Beacon retries mean data arrives late.
+- Add a data test for uniqueness on `(ds, session_id)`.
+
+If you want, I can draft a revised plan with these changes. The dedup key and the Access decision need your input first.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I&apos;ve reviewed the plan. I&apos;d fix the first four items below before building.
+
+**Blockers**
+
+1. **Duplicate beacons will inflate `amount`.** The source says beacons are &quot;resent on network failure&quot;, so `page_views` will contain duplicate rows. `SUM(amount)` double-counts them. The schema has no event ID to dedupe on, so you either need one added upstream or a defined dedup key, such as `(session_id, viewed_at, amount)`. Decide this before building.
+2. **The access section exposes PII.**
+   - `allAuthenticatedUsers` on `public_web_metrics` makes the table readable by any Google account.
+   - The column list includes `visitor_email` and `ip_address`.
+   - It also contradicts `classification: internal`.
+   - Restrict readers to a specific group, drop or hash the PII columns, and reconcile the classification.
+3. **The columns don&apos;t match the model.** The model SQL outputs only `ds, session_id, amount`. The source table has no `visitor_email` or `ip_address`. Either the schema is incomplete or the Access section is stale.
+4. **The load isn&apos;t idempotent.**
+   - A plain `INSERT` duplicates rows on any rerun or backfill.
+   - Rollout step 2 (&quot;rebuild for the ds range&quot;) would append to existing rows rather than replace them.
+   - Use `MERGE`, or delete and insert by partition, or use partition overwrite.
+
+**Should fix**
+
+5. **The primary key contradicts the grain.** The grain is one row per session per `ds`, so a session crossing midnight gets two rows. `primary_key: session_id` is wrong. It should be `(ds, session_id)`.
+6. **The source query and the model filter differently.**
+   - The source query uses `DATE(viewed_at) = @ds`, and the model uses `ds = @ds`.
+   - These can disagree for late-arriving data or timezone differences. If `ds` is the partition column, `DATE(viewed_at)` may also defeat pruning on a 2.5 TB table.
+   - Pick one definition of the day, and use `ds` for pruning.
+   - Avoid `SELECT *` on that table.
+7. **The rollout checks are weak.**
+   - Row counts won&apos;t catch the double-counting in item 1. Add a `SUM(amount)` reconciliation and a duplicate-key check.
+   - The snapshot clone fails if `fct_web_sessions` doesn&apos;t exist yet.
+   - Time travel lasts 7 days, so say how long you&apos;ll keep the backup.
+
+**Minor**
+
+- Say how null `session_id` and null `amount` are handled.
+- A 07:00 UTC freshness SLA needs a late-data policy. Beacon retries mean data arrives late.
+- Add a data test for uniqueness on `(ds, session_id)`.
+
+If you want, I can draft a revised plan with these changes. The dedup key and the Access decision need your input first.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I&apos;ve reviewed the plan. I&apos;d fix the first four items below before building.
+
+**Blockers**
+
+1. **Duplicate beacons will inflate `amount`.** The source says beacons are &quot;resent on network failure&quot;, so `page_views` will contain duplicate rows. `SUM(amount)` double-counts them. The schema has no event ID to dedupe on, so you either need one added upstream or a defined dedup key, such as `(session_id, viewed_at, amount)`. Decide this before building.
+2. **The access section exposes PII.**
+   - `allAuthenticatedUsers` on `public_web_metrics` makes the table readable by any Google account.
+   - The column list includes `visitor_email` and `ip_address`.
+   - It also contradicts `classification: internal`.
+   - Restrict readers to a specific group, drop or hash the PII columns, and reconcile the classification.
+3. **The columns don&apos;t match the model.** The model SQL outputs only `ds, session_id, amount`. The source table has no `visitor_email` or `ip_address`. Either the schema is incomplete or the Access section is stale.
+4. **The load isn&apos;t idempotent.**
+   - A plain `INSERT` duplicates rows on any rerun or backfill.
+   - Rollout step 2 (&quot;rebuild for the ds range&quot;) would append to existing rows rather than replace them.
+   - Use `MERGE`, or delete and insert by partition, or use partition overwrite.
+
+**Should fix**
+
+5. **The primary key contradicts the grain.** The grain is one row per session per `ds`, so a session crossing midnight gets two rows. `primary_key: session_id` is wrong. It should be `(ds, session_id)`.
+6. **The source query and the model filter differently.**
+   - The source query uses `DATE(viewed_at) = @ds`, and the model uses `ds = @ds`.
+   - These can disagree for late-arriving data or timezone differences. If `ds` is the partition column, `DATE(viewed_at)` may also defeat pruning on a 2.5 TB table.
+   - Pick one definition of the day, and use `ds` for pruning.
+   - Avoid `SELECT *` on that table.
+7. **The rollout checks are weak.**
+   - Row counts won&apos;t catch the double-counting in item 1. Add a `SUM(amount)` reconciliation and a duplicate-key check.
+   - The snapshot clone fails if `fct_web_sessions` doesn&apos;t exist yet.
+   - Time travel lasts 7 days, so say how long you&apos;ll keep the backup.
+
+**Minor**
+
+- Say how null `session_id` and null `amount` are handled.
+- A 07:00 UTC freshness SLA needs a late-data policy. Beacon retries mean data arrives late.
+- Add a data test for uniqueness on `(ds, session_id)`.
+
+If you want, I can draft a revised plan with these changes. The dedup key and the Access decision need your input first.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">2 turns · $0.04 · 08:11:41 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan and found problems in the model, the load, and the access section. I&apos;d fix the first four before building.
+
+**Blocking**
+
+1. **Duplicates inflate `amount`.** The source says beacons are &quot;resent on network failure&quot;, so `raw_web.page_views` will contain duplicate events. `SUM(amount)` double-counts them. The table has no event ID to dedupe on. We need one, or a dedupe rule such as a `(session_id, viewed_at, amount)` hash, before the aggregate.
+2. **The load isn&apos;t idempotent.** A plain `INSERT` duplicates every row on a rerun or backfill. The rollout step &quot;rebuild for the ds range&quot; has the same problem. Use a `MERGE`, or delete the `ds` partition and reload it (or overwrite the partition) in one statement.
+3. **PII is exposed to everyone.** `public_web_metrics` is readable by `allAuthenticatedUsers`, and its columns include `visitor_email` and `ip_address`. That conflicts with `classification: internal`. Either drop those columns from this table, or restrict the readers and classify it as PII or restricted.
+4. **The columns don&apos;t match.** The access section lists `visitor_email` and `ip_address`. The source table doesn&apos;t have them, and the model SQL doesn&apos;t select them. Decide whether they belong in the model at all. Dropping them fixes item 3 too.
+
+**Should fix**
+
+5. **The primary key contradicts the grain.** The grain is one row per session per `ds`, so a session that spans midnight produces two rows. The key should be `(ds, session_id)`, not `session_id`.
+6. **`ds` and `viewed_at` don&apos;t line up.** The source example filters on `DATE(viewed_at) = @ds`. The model filters on `ds = @ds`. These can differ, for example for late or resent beacons. On a 2.5 TB table the `DATE(viewed_at)` filter may also skip partition pruning and scan everything. Pick one definition, and make sure the filter hits the partition column.
+7. **Late data isn&apos;t handled.** Resends can arrive after the day&apos;s load. The plan has no reprocessing window for them, and nothing to meet the 07:00 UTC SLA, such as a schedule or an upstream-ready check.
+8. **The rollout checks are weak.**
+   - Matching row counts won&apos;t catch wrong sums. Compare `SUM(amount)` and distinct sessions per `ds` against the old table, or against the source after dedup.
+   - `CREATE SNAPSHOT TABLE ... fct_web_sessions_bak` fails if the snapshot already exists, so use a dated name.
+   - Say what happens if `fct_web_sessions` doesn&apos;t exist yet.
+
+I can draft a revised plan with these changes. Say if you want that.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan and found problems in the model, the load, and the access section. I&apos;d fix the first four before building.
+
+**Blocking**
+
+1. **Duplicates inflate `amount`.** The source says beacons are &quot;resent on network failure&quot;, so `raw_web.page_views` will contain duplicate events. `SUM(amount)` double-counts them. The table has no event ID to dedupe on. We need one, or a dedupe rule such as a `(session_id, viewed_at, amount)` hash, before the aggregate.
+2. **The load isn&apos;t idempotent.** A plain `INSERT` duplicates every row on a rerun or backfill. The rollout step &quot;rebuild for the ds range&quot; has the same problem. Use a `MERGE`, or delete the `ds` partition and reload it (or overwrite the partition) in one statement.
+3. **PII is exposed to everyone.** `public_web_metrics` is readable by `allAuthenticatedUsers`, and its columns include `visitor_email` and `ip_address`. That conflicts with `classification: internal`. Either drop those columns from this table, or restrict the readers and classify it as PII or restricted.
+4. **The columns don&apos;t match.** The access section lists `visitor_email` and `ip_address`. The source table doesn&apos;t have them, and the model SQL doesn&apos;t select them. Decide whether they belong in the model at all. Dropping them fixes item 3 too.
+
+**Should fix**
+
+5. **The primary key contradicts the grain.** The grain is one row per session per `ds`, so a session that spans midnight produces two rows. The key should be `(ds, session_id)`, not `session_id`.
+6. **`ds` and `viewed_at` don&apos;t line up.** The source example filters on `DATE(viewed_at) = @ds`. The model filters on `ds = @ds`. These can differ, for example for late or resent beacons. On a 2.5 TB table the `DATE(viewed_at)` filter may also skip partition pruning and scan everything. Pick one definition, and make sure the filter hits the partition column.
+7. **Late data isn&apos;t handled.** Resends can arrive after the day&apos;s load. The plan has no reprocessing window for them, and nothing to meet the 07:00 UTC SLA, such as a schedule or an upstream-ready check.
+8. **The rollout checks are weak.**
+   - Matching row counts won&apos;t catch wrong sums. Compare `SUM(amount)` and distinct sessions per `ds` against the old table, or against the source after dedup.
+   - `CREATE SNAPSHOT TABLE ... fct_web_sessions_bak` fails if the snapshot already exists, so use a dated name.
+   - Say what happens if `fct_web_sessions` doesn&apos;t exist yet.
+
+I can draft a revised plan with these changes. Say if you want that.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan and found problems in the model, the load, and the access section. I&apos;d fix the first four before building.
+
+**Blocking**
+
+1. **Duplicates inflate `amount`.** The source says beacons are &quot;resent on network failure&quot;, so `raw_web.page_views` will contain duplicate events. `SUM(amount)` double-counts them. The table has no event ID to dedupe on. We need one, or a dedupe rule such as a `(session_id, viewed_at, amount)` hash, before the aggregate.
+2. **The load isn&apos;t idempotent.** A plain `INSERT` duplicates every row on a rerun or backfill. The rollout step &quot;rebuild for the ds range&quot; has the same problem. Use a `MERGE`, or delete the `ds` partition and reload it (or overwrite the partition) in one statement.
+3. **PII is exposed to everyone.** `public_web_metrics` is readable by `allAuthenticatedUsers`, and its columns include `visitor_email` and `ip_address`. That conflicts with `classification: internal`. Either drop those columns from this table, or restrict the readers and classify it as PII or restricted.
+4. **The columns don&apos;t match.** The access section lists `visitor_email` and `ip_address`. The source table doesn&apos;t have them, and the model SQL doesn&apos;t select them. Decide whether they belong in the model at all. Dropping them fixes item 3 too.
+
+**Should fix**
+
+5. **The primary key contradicts the grain.** The grain is one row per session per `ds`, so a session that spans midnight produces two rows. The key should be `(ds, session_id)`, not `session_id`.
+6. **`ds` and `viewed_at` don&apos;t line up.** The source example filters on `DATE(viewed_at) = @ds`. The model filters on `ds = @ds`. These can differ, for example for late or resent beacons. On a 2.5 TB table the `DATE(viewed_at)` filter may also skip partition pruning and scan everything. Pick one definition, and make sure the filter hits the partition column.
+7. **Late data isn&apos;t handled.** Resends can arrive after the day&apos;s load. The plan has no reprocessing window for them, and nothing to meet the 07:00 UTC SLA, such as a schedule or an upstream-ready check.
+8. **The rollout checks are weak.**
+   - Matching row counts won&apos;t catch wrong sums. Compare `SUM(amount)` and distinct sessions per `ds` against the old table, or against the source after dedup.
+   - `CREATE SNAPSHOT TABLE ... fct_web_sessions_bak` fails if the snapshot already exists, so use a dated name.
+   - Say what happens if `fct_web_sessions` doesn&apos;t exist yet.
+
+I can draft a revised plan with these changes. Say if you want that.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">2 turns · $0.04 · 08:12:16 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and found these problems, roughly from most to least serious.
+
+**Blocking**
+
+1. **Duplicate beacons inflate `amount`.** The source says beacons are &quot;resent on network failure&quot;, so `raw_web.page_views` will contain duplicate rows. `SUM(amount)` counts each duplicate again. The plan has no dedup step. Add a stable event key, such as a beacon or event ID, and dedupe before aggregating. The table has no such column today, so you may need to ask the tracker team for one. Row-level dedup on `(session_id, viewed_at, amount)` is a weaker fallback. It will wrongly merge genuinely identical events.
+
+2. **PII is exposed to everyone.** The Access section grants `allAuthenticatedUsers` read access on `public_web_metrics`. The column list includes `visitor_email` and `ip_address`. The Contract section classifies the table as `internal`. These three statements contradict each other. Drop the PII columns from the public dataset, or hash them. Alternatively, restrict the readers and classify the table as confidential or PII. Also, the model SQL doesn&apos;t produce `visitor_email` or `ip_address`, so the column list doesn&apos;t match the model.
+
+3. **The load isn&apos;t idempotent.** A plain `INSERT` re-run for the same `ds` duplicates every row. This will happen on retries and backfills. It also breaks the `primary_key: session_id` contract. Use `MERGE`, or delete and insert the partition in one transaction, or use partition overwrite.
+
+4. **The grain and the primary key disagree.** The grain is one row per session per `ds`, but the primary key is `session_id` alone. A session that spans midnight appears under two `ds` values. Make the key `(ds, session_id)`, or decide how cross-midnight sessions are assigned.
+
+**Significant**
+
+5. **The source query defeats partition pruning.** `WHERE DATE(viewed_at) = @ds` on a 2.5 TB table probably scans everything. The model query filters on `ds` instead. The two filters may also return different rows, because `ds` and `viewed_at` can differ in timezone or because of late arrivals. Pick one filter and state which column is authoritative. Prefer the partition column.
+
+6. **Late-arriving data isn&apos;t handled.** Resent beacons can arrive after their `ds` has been loaded. The plan needs a lookback or reprocess window, and it must be reconciled with the 07:00 UTC freshness SLA.
+
+7. **The rollback story is weak.**
+   - Rollout step 1 clones the whole table, but step 2 only rebuilds a ds range. Restoring the full snapshot would also revert unrelated partitions.
+   - The 7-day time-travel window is stated without any detail on how to restore. Snapshots also incur storage cost.
+   - Step 3, &quot;check row counts&quot;, has no pass/fail threshold. Row counts won&apos;t catch the inflated sums from problem 1. Add checks for uniqueness on the key, sum reconciliation against source after dedup, and null `session_id`.
+
+**Minor**
+
+- The Model and Load sections repeat the same SQL. Define it once.
+- `amount` is `NUMERIC`, but the plan doesn&apos;t say what it represents (revenue? page value?) or how nulls are handled.
+- There&apos;s no mention of partitioning or clustering for `fct_web_sessions`, no tests, and no backfill plan.
+
+I&apos;d fix problems 1 to 3 before building anything. Problem 2 is a data exposure risk the moment the dataset is created. I can draft a revised plan if you&apos;d like.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-scan</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and found these problems, roughly from most to least serious.
+
+**Blocking**
+
+1. **Duplicate beacons inflate `amount`.** The source says beacons are &quot;resent on network failure&quot;, so `raw_web.page_views` will contain duplicate rows. `SUM(amount)` counts each duplicate again. The plan has no dedup step. Add a stable event key, such as a beacon or event ID, and dedupe before aggregating. The table has no such column today, so you may need to ask the tracker team for one. Row-level dedup on `(session_id, viewed_at, amount)` is a weaker fallback. It will wrongly merge genuinely identical events.
+
+2. **PII is exposed to everyone.** The Access section grants `allAuthenticatedUsers` read access on `public_web_metrics`. The column list includes `visitor_email` and `ip_address`. The Contract section classifies the table as `internal`. These three statements contradict each other. Drop the PII columns from the public dataset, or hash them. Alternatively, restrict the readers and classify the table as confidential or PII. Also, the model SQL doesn&apos;t produce `visitor_email` or `ip_address`, so the column list doesn&apos;t match the model.
+
+3. **The load isn&apos;t idempotent.** A plain `INSERT` re-run for the same `ds` duplicates every row. This will happen on retries and backfills. It also breaks the `primary_key: session_id` contract. Use `MERGE`, or delete and insert the partition in one transaction, or use partition overwrite.
+
+4. **The grain and the primary key disagree.** The grain is one row per session per `ds`, but the primary key is `session_id` alone. A session that spans midnight appears under two `ds` values. Make the key `(ds, session_id)`, or decide how cross-midnight sessions are assigned.
+
+**Significant**
+
+5. **The source query defeats partition pruning.** `WHERE DATE(viewed_at) = @ds` on a 2.5 TB table probably scans everything. The model query filters on `ds` instead. The two filters may also return different rows, because `ds` and `viewed_at` can differ in timezone or because of late arrivals. Pick one filter and state which column is authoritative. Prefer the partition column.
+
+6. **Late-arriving data isn&apos;t handled.** Resent beacons can arrive after their `ds` has been loaded. The plan needs a lookback or reprocess window, and it must be reconciled with the 07:00 UTC freshness SLA.
+
+7. **The rollback story is weak.**
+   - Rollout step 1 clones the whole table, but step 2 only rebuilds a ds range. Restoring the full snapshot would also revert unrelated partitions.
+   - The 7-day time-travel window is stated without any detail on how to restore. Snapshots also incur storage cost.
+   - Step 3, &quot;check row counts&quot;, has no pass/fail threshold. Row counts won&apos;t catch the inflated sums from problem 1. Add checks for uniqueness on the key, sum reconciliation against source after dedup, and null `session_id`.
+
+**Minor**
+
+- The Model and Load sections repeat the same SQL. Define it once.
+- `amount` is `NUMERIC`, but the plan doesn&apos;t say what it represents (revenue? page value?) or how nulls are handled.
+- There&apos;s no mention of partitioning or clustering for `fct_web_sessions`, no tests, and no backfill plan.
+
+I&apos;d fix problems 1 to 3 before building anything. Problem 2 is a data exposure risk the moment the dataset is created. I can draft a revised plan if you&apos;d like.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS FAIL PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✗ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and found these problems, roughly from most to least serious.
+
+**Blocking**
+
+1. **Duplicate beacons inflate `amount`.** The source says beacons are &quot;resent on network failure&quot;, so `raw_web.page_views` will contain duplicate rows. `SUM(amount)` counts each duplicate again. The plan has no dedup step. Add a stable event key, such as a beacon or event ID, and dedupe before aggregating. The table has no such column today, so you may need to ask the tracker team for one. Row-level dedup on `(session_id, viewed_at, amount)` is a weaker fallback. It will wrongly merge genuinely identical events.
+
+2. **PII is exposed to everyone.** The Access section grants `allAuthenticatedUsers` read access on `public_web_metrics`. The column list includes `visitor_email` and `ip_address`. The Contract section classifies the table as `internal`. These three statements contradict each other. Drop the PII columns from the public dataset, or hash them. Alternatively, restrict the readers and classify the table as confidential or PII. Also, the model SQL doesn&apos;t produce `visitor_email` or `ip_address`, so the column list doesn&apos;t match the model.
+
+3. **The load isn&apos;t idempotent.** A plain `INSERT` re-run for the same `ds` duplicates every row. This will happen on retries and backfills. It also breaks the `primary_key: session_id` contract. Use `MERGE`, or delete and insert the partition in one transaction, or use partition overwrite.
+
+4. **The grain and the primary key disagree.** The grain is one row per session per `ds`, but the primary key is `session_id` alone. A session that spans midnight appears under two `ds` values. Make the key `(ds, session_id)`, or decide how cross-midnight sessions are assigned.
+
+**Significant**
+
+5. **The source query defeats partition pruning.** `WHERE DATE(viewed_at) = @ds` on a 2.5 TB table probably scans everything. The model query filters on `ds` instead. The two filters may also return different rows, because `ds` and `viewed_at` can differ in timezone or because of late arrivals. Pick one filter and state which column is authoritative. Prefer the partition column.
+
+6. **Late-arriving data isn&apos;t handled.** Resent beacons can arrive after their `ds` has been loaded. The plan needs a lookback or reprocess window, and it must be reconciled with the 07:00 UTC freshness SLA.
+
+7. **The rollback story is weak.**
+   - Rollout step 1 clones the whole table, but step 2 only rebuilds a ds range. Restoring the full snapshot would also revert unrelated partitions.
+   - The 7-day time-travel window is stated without any detail on how to restore. Snapshots also incur storage cost.
+   - Step 3, &quot;check row counts&quot;, has no pass/fail threshold. Row counts won&apos;t catch the inflated sums from problem 1. Add checks for uniqueness on the key, sum reconciliation against source after dedup, and null `session_id`.
+
+**Minor**
+
+- The Model and Load sections repeat the same SQL. Define it once.
+- `amount` is `NUMERIC`, but the plan doesn&apos;t say what it represents (revenue? page value?) or how nulls are handled.
+- There&apos;s no mention of partitioning or clustering for `fct_web_sessions`, no tests, and no backfill plan.
+
+I&apos;d fix problems 1 to 3 before building anything. Problem 2 is a data exposure risk the moment the dataset is created. I can draft a revised plan if you&apos;d like.</pre>
+</div>
+</details></div>
+</div>
+</section>
+</details>
+<details class="section" open>
+<summary>Prompt</summary>
+<div class="md"><p>The plan for the web sessions model is at docs/wraith/2026-10-12-web-sessions/plan.md. Review it before we build it.</p>
+</div>
+</details>
+<details class="section" open>
+<summary>Graders — what "good" means for this case</summary>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">1-dedup</span><span class="badge">llm</span></div>
+<div class="md"><p>Answer key, category dedup. Planted defect: the source delivers at least once (tracker beacons, resent on network failure) and the Load section uses a plain INSERT with no MERGE or dedup on session_id, so redelivered rows are duplicated. Location: the Load section, INSERT INTO ... SELECT of <code>fct_web_sessions</code>'s plan.</p>
+<p>PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.</p>
+</div>
+</div>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">2-scan</span><span class="badge">llm</span></div>
+<div class="md"><p>Answer key, category scan. Planted defect: raw_web.page_views (about 2.5 TB) is created without PARTITION BY or CLUSTER BY and the query filters on DATE(viewed_at), so every run scans the whole table. Location: the Source section DDL and query of <code>fct_web_sessions</code>'s plan.</p>
+<p>PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.</p>
+</div>
+</div>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">3-pii</span><span class="badge">llm</span></div>
+<div class="md"><p>Answer key, category pii. Planted defect: columns visitor_email, ip_address are personal data and the dataset public_web_metrics is readable by allAuthenticatedUsers. Location: the Access section of <code>fct_web_sessions</code>'s plan.</p>
+<p>PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.</p>
+</div>
+</div>
+</details>
+</article>
+<footer>Generated by <code>claude plugin eval</code> · schema v1 · scores are not comparable across different suites</footer>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var bar=document.querySelector('.toolbar');
+  if(!bar)return;
+  bar.addEventListener('click',function(e){
+    var b=e.target&&e.target.closest('button');
+    if(!b)return;
+    var open=b.dataset.act==='expand';
+    document.querySelectorAll('details.section, details.grader').forEach(function(d){d.open=open});
+  });
+});
+// Collapsed details vanish from print/PDF; these pages are share artifacts.
+window.addEventListener('beforeprint',function(){
+  document.querySelectorAll('details').forEach(function(d){
+    if(!d.open){d.dataset.printOpened='1';d.open=true}
+  });
+});
+window.addEventListener('afterprint',function(){
+  document.querySelectorAll('details[data-print-opened]').forEach(function(d){
+    d.open=false;delete d.dataset.printOpened;
+  });
+});
+</script>
+</body>
+</html>

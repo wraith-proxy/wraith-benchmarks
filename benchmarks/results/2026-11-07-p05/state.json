@@ -1,0 +1,19 @@
+{
+  "plan-review": {
+    "status": "done",
+    "wraith_sha": "575afc1fd658c11d8c48ef65253a852cf414070e",
+    "complete": {
+      "plan-review-p05": "plan-review/attempt-1"
+    },
+    "attempts": [
+      {
+        "n": 1,
+        "dir": "plan-review/attempt-1",
+        "complete": [
+          "plan-review-p05"
+        ],
+        "failures": []
+      }
+    ]
+  }
+}

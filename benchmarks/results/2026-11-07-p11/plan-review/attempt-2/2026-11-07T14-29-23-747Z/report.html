@@ -1,0 +1,1295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Eval report — wraith v0.6.0</title>
+</head>
+<body>
+<style>
+:root{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){:root{--plane:#0d0d0d;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#898781;--hairline:rgba(255,255,255,.10);--grid:#2c2c2a;--inset:rgba(255,255,255,.05);--accent:#3987e5;--base-fill:#898781;--delta-good:#0ca30c;--good:#0ca30c;--warning:#fab219;--critical:#e06c6c;color-scheme:dark}}
+:root[data-theme="dark"]{--plane:#0d0d0d;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#898781;--hairline:rgba(255,255,255,.10);--grid:#2c2c2a;--inset:rgba(255,255,255,.05);--accent:#3987e5;--base-fill:#898781;--delta-good:#0ca30c;--good:#0ca30c;--warning:#fab219;--critical:#e06c6c;color-scheme:dark}
+:root[data-theme="light"]{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--plane);color:var(--ink);
+  font:14px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-text-size-adjust:100%}
+.wrap{max-width:880px;margin:0 auto;padding:40px 24px 64px;display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+header h1{margin:2px 0 0;font-size:24px;font-weight:600;line-height:1.25;text-wrap:balance}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;color:var(--ink-2);font-size:13px}
+.meta .num{font-variant-numeric:tabular-nums lining-nums}
+.banner{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;
+  border:1px solid var(--hairline);background:var(--surface);font-size:13px}
+.banner .chip-warn{color:var(--warning);font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--hairline);border-radius:10px;padding:14px 16px;
+  display:flex;flex-direction:column;gap:4px}
+.tile .label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.tile .value{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums lining-nums;line-height:1.1}
+.tile.hero .value{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:48px}
+.tile .sub{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tile .value.delta-pos{color:var(--delta-good)}
+.tile .value.delta-neg{color:var(--critical)}
+.toolbar{display:flex;gap:8px;justify-content:flex-end}
+.toolbar button{font:12px system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink-2);
+  background:var(--surface);border:1px solid var(--hairline);border-radius:6px;padding:4px 10px;cursor:pointer}
+.toolbar button:hover{color:var(--ink)}
+.toolbar button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.case{background:var(--surface);border:1px solid var(--hairline);border-radius:10px;padding:18px 20px;
+  display:flex;flex-direction:column;gap:10px}
+.case-regressed{border-left:3px solid var(--critical)}
+.verdict{margin:6px 0 0;font-size:15px}
+.verdict .delta{font-size:15px}
+.flag{font-size:11px;font-weight:600;color:var(--warning);white-space:nowrap}
+.star{color:var(--warning);font-size:.45em;vertical-align:super;line-height:0;cursor:help}
+.legend summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2)}
+.legend-list{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--ink-2)}
+.case-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.case-head h2{margin:0;font-size:16px;font-weight:600}
+.case-head .spacer{flex:1}
+.case-score{font-size:15px;font-weight:600}
+.mono{font:12px "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.num{font-variant-numeric:tabular-nums lining-nums}
+.muted{color:var(--ink-3);font-size:12px}
+.meter{display:inline-block;position:relative;width:120px;height:6px;border-radius:4px;background:var(--grid);
+  vertical-align:middle}
+.meter>span{display:block;height:100%;border-radius:4px;max-width:100%}
+.meter .tick{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink-3);border-radius:1px}
+.m-accent>span{background:var(--accent)}
+.m-base>span{background:var(--base-fill)}
+.delta{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.delta-pos{color:var(--delta-good)}
+.delta-neg{color:var(--critical)}
+.delta-zero{color:var(--ink-3)}
+details.section{border-top:1px solid var(--grid);padding-top:10px}
+details.section>summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--ink-2);list-style-position:outside;margin-left:2px}
+details.section>summary:hover{color:var(--ink)}
+details.section[open]>summary{margin-bottom:8px}
+.md{display:flex;flex-direction:column;gap:8px;background:var(--inset);border-radius:8px;
+  padding:12px 14px;overflow-wrap:break-word}
+.md>:first-child{margin-top:0}
+.md h1,.md h2,.md h3,.md h4,.md h5,.md h6{margin:4px 0 0;font-size:1em;font-weight:600;line-height:1.3}
+.md p,.md ul,.md ol,.md blockquote,.md table,.md pre,.md hr{margin:0}
+.md ul,.md ol{display:flex;flex-direction:column;gap:4px;padding-left:20px}
+.md blockquote{border-left:2px solid var(--hairline);padding-left:10px;color:var(--ink-2)}
+.md :not(pre)>code{background:var(--inset);padding:1px 4px;border-radius:4px;
+  font:.92em "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.md pre{background:var(--inset);border:1px solid var(--hairline);padding:10px 12px;border-radius:6px;
+  overflow-x:auto;font:12px/1.5 "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.md pre code{background:none;padding:0;font:inherit}
+.md table{width:100%;border-collapse:collapse}
+.md th,.md td{padding:5px 8px;text-align:left;vertical-align:top;border-bottom:1px solid var(--grid)}
+.md th{font-weight:600;color:var(--ink-2)}
+.md a{color:var(--accent);text-decoration:none}
+.md a:hover{text-decoration:underline}
+.grader-def{display:flex;flex-direction:column;gap:6px;padding:8px 0}
+.grader-def+.grader-def{border-top:1px solid var(--grid)}
+.grader-def-head{display:flex;align-items:baseline;gap:8px}
+.grader-name{font:13px "SF Mono",ui-monospace,Menlo,Consolas,monospace;font-weight:600}
+.badge{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2);
+  border:1px solid var(--hairline);border-radius:999px;padding:1px 8px}
+.config{display:flex;flex-direction:column;gap:2px;background:var(--inset);border-radius:8px;padding:10px 14px}
+.config code{font:12px "SF Mono",ui-monospace,Menlo,Consolas,monospace;overflow-wrap:anywhere}
+.arm{display:flex;flex-direction:column;gap:8px;padding:6px 0}
+.arm+.arm{border-top:1px dashed var(--grid);margin-top:4px;padding-top:12px}
+.arm-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.arm-label{font-size:13px;font-weight:600}
+.run{border:1px solid var(--grid);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.run-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.run-title{font-size:12px;font-weight:600;color:var(--ink-2)}
+.run-error .explanation{color:var(--ink-2)}
+.note{font-size:12px;color:var(--ink-2)}
+.graders{display:flex;flex-direction:column;gap:4px}
+details.grader{border-radius:6px}
+details.grader>summary{cursor:pointer;display:flex;align-items:baseline;gap:8px;padding:3px 4px;
+  border-radius:6px;list-style:none}
+details.grader>summary::-webkit-details-marker{display:none}
+details.grader>summary::before{content:'▸';font-size:10px;color:var(--ink-3);flex:none;
+  transition:transform .12s ease}
+details.grader[open]>summary::before{transform:rotate(90deg)}
+details.grader>summary:hover{background:var(--inset)}
+details.grader>summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.grader-body{padding:6px 8px 8px 24px;display:flex;flex-direction:column;gap:6px}
+.chip{font-size:11px;font-weight:600;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.chip-pass{color:var(--good);border:1px solid currentColor}
+.chip-fail{color:var(--critical);border:1px solid currentColor}
+.chip.chip-warn{color:var(--warning);border:1px solid currentColor}
+.explanation{margin:0;font-size:13px;color:var(--ink-2);white-space:pre-wrap;overflow-wrap:break-word}
+.kv{display:flex;gap:8px;font-size:12px;color:var(--ink-3)}
+.votes{font-variant-numeric:tabular-nums;letter-spacing:.1em}
+pre.evidence{margin:0;background:var(--inset);border:1px solid var(--hairline);border-radius:6px;
+  padding:8px 10px;overflow-x:auto;max-height:320px;
+  font:12px/1.5 "SF Mono",ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:break-word}
+footer{color:var(--ink-3);font-size:12px;text-align:center;padding-top:8px}
+@media (prefers-reduced-motion:no-preference){
+  details.grader>summary,.toolbar button{transition:background .12s ease,color .12s ease}
+}
+@media (prefers-reduced-motion:reduce){
+  details.grader>summary::before{transition:none}
+}
+@media print{
+  :root,:root[data-theme="dark"],:root[data-theme="light"]{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;color-scheme:light}
+  body{background:#fff}
+  .toolbar{display:none}
+  .case,.run,.grader-def{break-inside:avoid}
+  pre.evidence{max-height:none}
+}
+</style>
+<div class="wrap">
+<header>
+<div class="eyebrow">Plugin eval report</div>
+<h1>wraith v0.6.0</h1>
+<p class="verdict">Plugin effect: <span class="delta delta-pos">↑ +13.3 pts</span> vs baseline — improved 1 · flat 0 · regressed 0 of 1 case.</p>
+<div class="meta">
+<span class="mono">.</span>
+<span>Claude Code v2.1.316</span>
+<span class="num">2026-11-07 14:29 UTC</span>
+<span class="num">7m 26s</span>
+<span class="num">$0.81</span>
+<span class="num">10 runs</span>
+
+
+<span>model claude-sonnet-5-5</span>
+<span>judge claude-haiku-5-5</span>
+<span class="num">threshold 100%</span>
+<span>filtered: --case plan-review-p11</span>
+</div>
+</header>
+
+<section class="tiles">
+<div class="tile hero"><span class="label">Suite score · with plugin</span><span class="value">33.3%</span><span class="sub">mean of per-case scores</span></div>
+<div class="tile"><span class="label">Ablation Δ</span><span class="value num delta-pos">↑ +13.3</span><span class="sub">score points vs baseline, 1 of 1 case</span></div>
+<div class="tile"><span class="label">Baseline score</span><span class="value num">20%</span><span class="sub">without the plugin</span></div>
+<div class="tile"><span class="label">Cases</span><span class="value num">1</span><span class="sub">0 of 1 ≥ 100% threshold</span></div>
+<div class="tile"><span class="label">Perfect runs</span><span class="value num">0%</span><span class="sub">runs where every grader passed</span></div>
+</section>
+<details class="section legend">
+<summary>How to read this report</summary>
+<ul class="legend-list">
+<li>A run's score is the weighted fraction of its graders that passed; a "perfect" run passed every grader.</li>
+<li>A case's score is the mean of its runs; a case passes when its score is at or above the 100% threshold (the tick on each case bar).</li>
+<li>The suite score is the mean of the per-case scores.</li>
+<li>Judge votes are independent samples of the LLM judge; the majority decides pass or fail.</li>
+<li>"With plugin" and "Baseline" runs are identical except for the plugin being loaded; Δ is the with-plugin score minus the baseline score.</li>
+
+</ul>
+</details>
+<div class="toolbar"><button type="button" data-act="expand">Expand all</button><button type="button" data-act="collapse">Collapse all</button></div>
+<article class="case" id="case-1">
+<div class="case-head">
+<h2>plan-review-p11</h2>
+<span class="muted mono">bench-plan-review/p11</span>
+<span class="spacer"></span>
+
+<span class="delta delta-pos">↑ +13.3 pts</span>
+<span class="muted">with plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:33.3%"></span><i class="tick" style="left:100.0%"></i></span>
+<span class="num case-score">33.3%</span>
+</div>
+
+<details class="section" open>
+<summary>Results</summary>
+<section class="arm">
+<div class="arm-head">
+<span class="arm-label">With plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">0% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">8 turns · $0.11 · 14:29:23 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with five blockers.
+
+I found no existing model, contract or metric for pick rates, so the premise check passed. I didn&apos;t dry-run any queries, because the plan&apos;s SQL doesn&apos;t run against the stated source.
+
+**Blockers**
+1. **Grain and SQL disagree.** The source table has no `shift_id` or `week` column. The Model query groups by `week`, the Load query groups by `shift_id`, and the stated grain is per picker per shift per ds.
+2. **No rate.** The model is called &quot;pick rates&quot; but only sums `amount`, with no denominator such as hours or lines.
+3. **Contract gaps.** The owner is TBD and there is no contract file. The primary key leaves out `ds`, and the change isn&apos;t classified as additive or breaking.
+4. **Personal data.** `picker_id` identifies workers and the model measures their performance, but the classification is `internal`. The plan says identifiers are hashed with SHA256, but no step does the hashing. An unsalted hash of a short ID is reversible. There&apos;s also no erasure path.
+5. **Rollout.** The in-place `UPDATE` can&apos;t insert missing rows, so the backfill would leave gaps. It covers two years with no batching, the query is elided, and there&apos;s no rollback.
+
+**Should-fix items**
+- **Consumer and decision:** the plan names neither.
+- **Snapshot and `ds` definition:** the `ds` snapshot isn&apos;t stated, and neither is what `ds` means or how shifts that cross midnight are handled.
+- **MERGE reruns:** a rerun leaves stale rows in the target.
+- **Cost:** the target&apos;s partitioning isn&apos;t specified and the MERGE has no `d.ds` pruning predicate. A backfill could read up to the full ~400 GB, about 40 times the 10 GB dev limit.
+- **Tests and freshness:** the plan has no tests, and the 07:00 UTC freshness SLA doesn&apos;t say which shift it covers.
+- **Downstream consumers:** none are listed.
+- **Late-arriving data:** the plan doesn&apos;t say how it&apos;s handled.
+
+The section also has one nit, on justifying reader access. As the skill requires, I only appended the review and left the rest of the plan unchanged.
+
+Two things need your decision. How should shift be derived? And what is the actual rate metric? Resolving those would let me re-run the review, including the dry-runs.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with five blockers.
+
+I found no existing model, contract or metric for pick rates, so the premise check passed. I didn&apos;t dry-run any queries, because the plan&apos;s SQL doesn&apos;t run against the stated source.
+
+**Blockers**
+1. **Grain and SQL disagree.** The source table has no `shift_id` or `week` column. The Model query groups by `week`, the Load query groups by `shift_id`, and the stated grain is per picker per shift per ds.
+2. **No rate.** The model is called &quot;pick rates&quot; but only sums `amount`, with no denominator such as hours or lines.
+3. **Contract gaps.** The owner is TBD and there is no contract file. The primary key leaves out `ds`, and the change isn&apos;t classified as additive or breaking.
+4. **Personal data.** `picker_id` identifies workers and the model measures their performance, but the classification is `internal`. The plan says identifiers are hashed with SHA256, but no step does the hashing. An unsalted hash of a short ID is reversible. There&apos;s also no erasure path.
+5. **Rollout.** The in-place `UPDATE` can&apos;t insert missing rows, so the backfill would leave gaps. It covers two years with no batching, the query is elided, and there&apos;s no rollback.
+
+**Should-fix items**
+- **Consumer and decision:** the plan names neither.
+- **Snapshot and `ds` definition:** the `ds` snapshot isn&apos;t stated, and neither is what `ds` means or how shifts that cross midnight are handled.
+- **MERGE reruns:** a rerun leaves stale rows in the target.
+- **Cost:** the target&apos;s partitioning isn&apos;t specified and the MERGE has no `d.ds` pruning predicate. A backfill could read up to the full ~400 GB, about 40 times the 10 GB dev limit.
+- **Tests and freshness:** the plan has no tests, and the 07:00 UTC freshness SLA doesn&apos;t say which shift it covers.
+- **Downstream consumers:** none are listed.
+- **Late-arriving data:** the plan doesn&apos;t say how it&apos;s handled.
+
+The section also has one nit, on justifying reader access. As the skill requires, I only appended the review and left the rest of the plan unchanged.
+
+Two things need your decision. How should shift be derived? And what is the actual rate metric? Resolving those would let me re-run the review, including the dry-runs.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">3-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with five blockers.
+
+I found no existing model, contract or metric for pick rates, so the premise check passed. I didn&apos;t dry-run any queries, because the plan&apos;s SQL doesn&apos;t run against the stated source.
+
+**Blockers**
+1. **Grain and SQL disagree.** The source table has no `shift_id` or `week` column. The Model query groups by `week`, the Load query groups by `shift_id`, and the stated grain is per picker per shift per ds.
+2. **No rate.** The model is called &quot;pick rates&quot; but only sums `amount`, with no denominator such as hours or lines.
+3. **Contract gaps.** The owner is TBD and there is no contract file. The primary key leaves out `ds`, and the change isn&apos;t classified as additive or breaking.
+4. **Personal data.** `picker_id` identifies workers and the model measures their performance, but the classification is `internal`. The plan says identifiers are hashed with SHA256, but no step does the hashing. An unsalted hash of a short ID is reversible. There&apos;s also no erasure path.
+5. **Rollout.** The in-place `UPDATE` can&apos;t insert missing rows, so the backfill would leave gaps. It covers two years with no batching, the query is elided, and there&apos;s no rollback.
+
+**Should-fix items**
+- **Consumer and decision:** the plan names neither.
+- **Snapshot and `ds` definition:** the `ds` snapshot isn&apos;t stated, and neither is what `ds` means or how shifts that cross midnight are handled.
+- **MERGE reruns:** a rerun leaves stale rows in the target.
+- **Cost:** the target&apos;s partitioning isn&apos;t specified and the MERGE has no `d.ds` pruning predicate. A backfill could read up to the full ~400 GB, about 40 times the 10 GB dev limit.
+- **Tests and freshness:** the plan has no tests, and the 07:00 UTC freshness SLA doesn&apos;t say which shift it covers.
+- **Downstream consumers:** none are listed.
+- **Late-arriving data:** the plan doesn&apos;t say how it&apos;s handled.
+
+The section also has one nit, on justifying reader access. As the skill requires, I only appended the review and left the rest of the plan unchanged.
+
+Two things need your decision. How should shift be derived? And what is the actual rate metric? Resolving those would let me re-run the review, including the dry-runs.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">8 turns · $0.12 · 14:30:26 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. I left the rest of the plan alone. **Verdict: NOT READY**, with four blockers.
+
+**Blockers**
+- **Item 3, grain and keys:** the source table has no `shift_id` and no `week`. The Model query groups by `week` and the Load MERGE uses `shift_id`, so the two queries and the stated grain disagree. Neither query can run against the source DDL.
+- **Item 7, personal data:** `picker_id` identifies workers, and the model measures their output.
+  - The plan classifies it as `internal`.
+  - &quot;Hashed with SHA256&quot; names no salt or key, so it can be reversed. The SQL never hashes anything.
+  - The plan has no crypto-shred path or retention rule.
+- **Item 2, contract:** `owner` is TBD, and it is a required field. `primary_key` leaves out `ds`, which contradicts the grain. No contract file exists in `contracts/`, and the change isn&apos;t classified as additive or breaking.
+- **Items 5 and 10, rollout:** step 1 is an `UPDATE` with the query elided. An `UPDATE` loads nothing into an empty table. The step also covers two years in one statement, and the plan has no rollback.
+
+**Should-fix**
+- **Item 1:** the plan names no consumer or decision, and &quot;pick rate&quot; has no denominator.
+- **Item 6:** the target table has no DDL, so no partitioning or clustering. The MERGE has no partition predicate on the target, and cost isn&apos;t estimated. A full backfill of the 400 GB source is far over the 10 GB dev cap.
+- **Item 5:** the MERGE never removes rows that disappear from the source, so a rerun can differ from a clean build.
+- **Items 8, 9 and 11:** there are no tests, no listed downstream consumers, and no late-arriving data rule. The late-data rule also needs to say how `ds` is assigned for a shift that crosses midnight.
+
+There are two nits. The plan doesn&apos;t state the `ds` snapshot temporal model, and `picker_id` has no column-level policy tag.
+
+**Not done**
+- **Step 0:** there are no existing models or contracts in the repo, so I found nothing that already serves this need.
+- **Dry runs:** I didn&apos;t run any, because the queries reference columns that don&apos;t exist.
+- **Vendor second pass:** I didn&apos;t run it. It sets an attribution tag that reports usage to Google, so that&apos;s your call.
+
+Next, someone has to decide the shift key, the owner and the hashing approach. After that I can help rework the plan.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. I left the rest of the plan alone. **Verdict: NOT READY**, with four blockers.
+
+**Blockers**
+- **Item 3, grain and keys:** the source table has no `shift_id` and no `week`. The Model query groups by `week` and the Load MERGE uses `shift_id`, so the two queries and the stated grain disagree. Neither query can run against the source DDL.
+- **Item 7, personal data:** `picker_id` identifies workers, and the model measures their output.
+  - The plan classifies it as `internal`.
+  - &quot;Hashed with SHA256&quot; names no salt or key, so it can be reversed. The SQL never hashes anything.
+  - The plan has no crypto-shred path or retention rule.
+- **Item 2, contract:** `owner` is TBD, and it is a required field. `primary_key` leaves out `ds`, which contradicts the grain. No contract file exists in `contracts/`, and the change isn&apos;t classified as additive or breaking.
+- **Items 5 and 10, rollout:** step 1 is an `UPDATE` with the query elided. An `UPDATE` loads nothing into an empty table. The step also covers two years in one statement, and the plan has no rollback.
+
+**Should-fix**
+- **Item 1:** the plan names no consumer or decision, and &quot;pick rate&quot; has no denominator.
+- **Item 6:** the target table has no DDL, so no partitioning or clustering. The MERGE has no partition predicate on the target, and cost isn&apos;t estimated. A full backfill of the 400 GB source is far over the 10 GB dev cap.
+- **Item 5:** the MERGE never removes rows that disappear from the source, so a rerun can differ from a clean build.
+- **Items 8, 9 and 11:** there are no tests, no listed downstream consumers, and no late-arriving data rule. The late-data rule also needs to say how `ds` is assigned for a shift that crosses midnight.
+
+There are two nits. The plan doesn&apos;t state the `ds` snapshot temporal model, and `picker_id` has no column-level policy tag.
+
+**Not done**
+- **Step 0:** there are no existing models or contracts in the repo, so I found nothing that already serves this need.
+- **Dry runs:** I didn&apos;t run any, because the queries reference columns that don&apos;t exist.
+- **Vendor second pass:** I didn&apos;t run it. It sets an attribution tag that reports usage to Google, so that&apos;s your call.
+
+Next, someone has to decide the shift key, the owner and the hashing approach. After that I can help rework the plan.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">3-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. I left the rest of the plan alone. **Verdict: NOT READY**, with four blockers.
+
+**Blockers**
+- **Item 3, grain and keys:** the source table has no `shift_id` and no `week`. The Model query groups by `week` and the Load MERGE uses `shift_id`, so the two queries and the stated grain disagree. Neither query can run against the source DDL.
+- **Item 7, personal data:** `picker_id` identifies workers, and the model measures their output.
+  - The plan classifies it as `internal`.
+  - &quot;Hashed with SHA256&quot; names no salt or key, so it can be reversed. The SQL never hashes anything.
+  - The plan has no crypto-shred path or retention rule.
+- **Item 2, contract:** `owner` is TBD, and it is a required field. `primary_key` leaves out `ds`, which contradicts the grain. No contract file exists in `contracts/`, and the change isn&apos;t classified as additive or breaking.
+- **Items 5 and 10, rollout:** step 1 is an `UPDATE` with the query elided. An `UPDATE` loads nothing into an empty table. The step also covers two years in one statement, and the plan has no rollback.
+
+**Should-fix**
+- **Item 1:** the plan names no consumer or decision, and &quot;pick rate&quot; has no denominator.
+- **Item 6:** the target table has no DDL, so no partitioning or clustering. The MERGE has no partition predicate on the target, and cost isn&apos;t estimated. A full backfill of the 400 GB source is far over the 10 GB dev cap.
+- **Item 5:** the MERGE never removes rows that disappear from the source, so a rerun can differ from a clean build.
+- **Items 8, 9 and 11:** there are no tests, no listed downstream consumers, and no late-arriving data rule. The late-data rule also needs to say how `ds` is assigned for a shift that crosses midnight.
+
+There are two nits. The plan doesn&apos;t state the `ds` snapshot temporal model, and `picker_id` has no column-level policy tag.
+
+**Not done**
+- **Step 0:** there are no existing models or contracts in the repo, so I found nothing that already serves this need.
+- **Dry runs:** I didn&apos;t run any, because the queries reference columns that don&apos;t exist.
+- **Vendor second pass:** I didn&apos;t run it. It sets an attribution tag that reports usage to Google, so that&apos;s your call.
+
+Next, someone has to decide the shift key, the owner and the hashing approach. After that I can help rework the plan.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">8 turns · $0.12 · 14:31:18 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, with four blockers. I changed nothing else in the plan.
+
+**Blockers**
+1. **The queries don&apos;t match the source.** `raw_wms.pick_events` has no `shift_id` or `week` column, yet the Model query groups by `week` and the MERGE groups by `shift_id`. The &quot;per picker per shift&quot; grain can&apos;t be built until the plan says where `shift_id` comes from.
+2. **The contract is incomplete.** The primary key omits `ds`, the owner is `TBD` (a required field), and there is no contract file in `contracts/`.
+3. **Personal data is mishandled.**
+   - `picker_id` identifies warehouse workers, and the model measures their productivity, so it is personal data. The plan classifies it as `internal`.
+   - The &quot;SHA256 hashed&quot; claim isn&apos;t in any query.
+   - An unsalted hash of a low-entropy ID is reversible by enumeration.
+   - There is no erasure path.
+4. **The backfill does nothing.** It is an `UPDATE` on an empty table, so it changes zero rows. Its `SELECT ...` is elided, and the 730 per-ds scans aren&apos;t costed.
+
+**Should-fix**
+- The MERGE never deletes stale rows and scans the whole target table on every run.
+- `fct_pick_rates` has no partitioning, clustering or `require_partition_filter` defined.
+- The &quot;rate&quot; is undefined. The model only sums `amount`, with no time denominator.
+- The tests are weak: only an unspecified &quot;check row counts&quot;.
+- The 07:00 UTC freshness SLA isn&apos;t tied to the once-per-shift delivery times.
+- Nothing says how late or re-sent uploads, or shifts that cross midnight, are handled.
+- There is no rollback.
+
+I also logged two nits: downstream consumers aren&apos;t listed, and the temporal model isn&apos;t stated.
+
+- **Step 0:** I found no existing model, contract or reference to these tables in the repo, so the premise check raised nothing.
+- **Dry runs:** I didn&apos;t run any, because I haven&apos;t checked the tables against `example-project-dev`. The cost findings are based on reading the plan only.
+- **Vendor skills:** I didn&apos;t run the second-pass vendor skills. They aren&apos;t listed as installed here.
+
+Next, someone needs to resolve the four blockers in the plan, starting with where `shift_id` comes from. That answer changes the grain, the key and the backfill. After that I can re-review.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, with four blockers. I changed nothing else in the plan.
+
+**Blockers**
+1. **The queries don&apos;t match the source.** `raw_wms.pick_events` has no `shift_id` or `week` column, yet the Model query groups by `week` and the MERGE groups by `shift_id`. The &quot;per picker per shift&quot; grain can&apos;t be built until the plan says where `shift_id` comes from.
+2. **The contract is incomplete.** The primary key omits `ds`, the owner is `TBD` (a required field), and there is no contract file in `contracts/`.
+3. **Personal data is mishandled.**
+   - `picker_id` identifies warehouse workers, and the model measures their productivity, so it is personal data. The plan classifies it as `internal`.
+   - The &quot;SHA256 hashed&quot; claim isn&apos;t in any query.
+   - An unsalted hash of a low-entropy ID is reversible by enumeration.
+   - There is no erasure path.
+4. **The backfill does nothing.** It is an `UPDATE` on an empty table, so it changes zero rows. Its `SELECT ...` is elided, and the 730 per-ds scans aren&apos;t costed.
+
+**Should-fix**
+- The MERGE never deletes stale rows and scans the whole target table on every run.
+- `fct_pick_rates` has no partitioning, clustering or `require_partition_filter` defined.
+- The &quot;rate&quot; is undefined. The model only sums `amount`, with no time denominator.
+- The tests are weak: only an unspecified &quot;check row counts&quot;.
+- The 07:00 UTC freshness SLA isn&apos;t tied to the once-per-shift delivery times.
+- Nothing says how late or re-sent uploads, or shifts that cross midnight, are handled.
+- There is no rollback.
+
+I also logged two nits: downstream consumers aren&apos;t listed, and the temporal model isn&apos;t stated.
+
+- **Step 0:** I found no existing model, contract or reference to these tables in the repo, so the premise check raised nothing.
+- **Dry runs:** I didn&apos;t run any, because I haven&apos;t checked the tables against `example-project-dev`. The cost findings are based on reading the plan only.
+- **Vendor skills:** I didn&apos;t run the second-pass vendor skills. They aren&apos;t listed as installed here.
+
+Next, someone needs to resolve the four blockers in the plan, starting with where `shift_id` comes from. That answer changes the grain, the key and the backfill. After that I can re-review.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">3-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, with four blockers. I changed nothing else in the plan.
+
+**Blockers**
+1. **The queries don&apos;t match the source.** `raw_wms.pick_events` has no `shift_id` or `week` column, yet the Model query groups by `week` and the MERGE groups by `shift_id`. The &quot;per picker per shift&quot; grain can&apos;t be built until the plan says where `shift_id` comes from.
+2. **The contract is incomplete.** The primary key omits `ds`, the owner is `TBD` (a required field), and there is no contract file in `contracts/`.
+3. **Personal data is mishandled.**
+   - `picker_id` identifies warehouse workers, and the model measures their productivity, so it is personal data. The plan classifies it as `internal`.
+   - The &quot;SHA256 hashed&quot; claim isn&apos;t in any query.
+   - An unsalted hash of a low-entropy ID is reversible by enumeration.
+   - There is no erasure path.
+4. **The backfill does nothing.** It is an `UPDATE` on an empty table, so it changes zero rows. Its `SELECT ...` is elided, and the 730 per-ds scans aren&apos;t costed.
+
+**Should-fix**
+- The MERGE never deletes stale rows and scans the whole target table on every run.
+- `fct_pick_rates` has no partitioning, clustering or `require_partition_filter` defined.
+- The &quot;rate&quot; is undefined. The model only sums `amount`, with no time denominator.
+- The tests are weak: only an unspecified &quot;check row counts&quot;.
+- The 07:00 UTC freshness SLA isn&apos;t tied to the once-per-shift delivery times.
+- Nothing says how late or re-sent uploads, or shifts that cross midnight, are handled.
+- There is no rollback.
+
+I also logged two nits: downstream consumers aren&apos;t listed, and the temporal model isn&apos;t stated.
+
+- **Step 0:** I found no existing model, contract or reference to these tables in the repo, so the premise check raised nothing.
+- **Dry runs:** I didn&apos;t run any, because I haven&apos;t checked the tables against `example-project-dev`. The cost findings are based on reading the plan only.
+- **Vendor skills:** I didn&apos;t run the second-pass vendor skills. They aren&apos;t listed as installed here.
+
+Next, someone needs to resolve the four blockers in the plan, starting with where `shift_id` comes from. That answer changes the grain, the key and the backfill. After that I can re-review.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:0.0%"></span></span>
+<span class="num">0%</span>
+<span class="muted num">8 turns · $0.11 · 14:32:12 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, with five blockers.
+
+I didn&apos;t run any dry runs. The plan&apos;s queries don&apos;t compile against the source schema, and `fct_pick_rates` has no DDL. I also couldn&apos;t run `dbt ls`, because there is no dbt project yet. The repo has no existing model or contract for pick rates, so the plan doesn&apos;t duplicate anything.
+
+**Blockers**
+- **Grain (item 3):** The plan says &quot;per picker per shift per ds&quot;. The model query groups by `week` and the load groups by `shift_id`. Neither column exists in `raw_wms.pick_events`. The primary key also leaves out `ds`.
+- **Contract (item 2):** `owner` is TBD, and it&apos;s a required field. There&apos;s no contract file and no additive/breaking classification.
+- **Idempotency and backfill (item 5):**
+  - The MERGE never removes rows that vanish from the source.
+  - The rollout `UPDATE` never inserts missing rows.
+  - The rollout `UPDATE` covers two years in one statement.
+  - The plan has no backfill path written out.
+- **Personal data (item 7):** `picker_id` identifies a person, but the contract classifies the data as `internal`. The plan mentions SHA256 hashing, but no query applies it. An unsalted hash over a small ID space is reversible. There&apos;s no deletion or crypto-shred path.
+- **Rollback (item 10):** The plan has none.
+
+**Should-fix**
+- The plan doesn&apos;t name a consumer or the cost of wrong, late or down.
+- The temporal model isn&apos;t stated.
+- There&apos;s no target table DDL, so the MERGE scans the whole table. The backfill would touch about 730 partitions against the 10 GB dev cap.
+- There are no tests, and the 07:00 UTC freshness SLA doesn&apos;t fit uploads once per shift.
+- Late-arriving data isn&apos;t handled, for example shifts that cross midnight.
+- No downstream consumers are listed.
+
+There&apos;s also a nit: `amount` has no unit, and the model is called a &quot;rate&quot; but only sums amounts.
+
+As the skill requires, I left the rest of the plan untouched for you to resolve the findings. The grain decision (where `shift_id` comes from) unblocks most of the other fixes, so I&apos;d settle that first.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, with five blockers.
+
+I didn&apos;t run any dry runs. The plan&apos;s queries don&apos;t compile against the source schema, and `fct_pick_rates` has no DDL. I also couldn&apos;t run `dbt ls`, because there is no dbt project yet. The repo has no existing model or contract for pick rates, so the plan doesn&apos;t duplicate anything.
+
+**Blockers**
+- **Grain (item 3):** The plan says &quot;per picker per shift per ds&quot;. The model query groups by `week` and the load groups by `shift_id`. Neither column exists in `raw_wms.pick_events`. The primary key also leaves out `ds`.
+- **Contract (item 2):** `owner` is TBD, and it&apos;s a required field. There&apos;s no contract file and no additive/breaking classification.
+- **Idempotency and backfill (item 5):**
+  - The MERGE never removes rows that vanish from the source.
+  - The rollout `UPDATE` never inserts missing rows.
+  - The rollout `UPDATE` covers two years in one statement.
+  - The plan has no backfill path written out.
+- **Personal data (item 7):** `picker_id` identifies a person, but the contract classifies the data as `internal`. The plan mentions SHA256 hashing, but no query applies it. An unsalted hash over a small ID space is reversible. There&apos;s no deletion or crypto-shred path.
+- **Rollback (item 10):** The plan has none.
+
+**Should-fix**
+- The plan doesn&apos;t name a consumer or the cost of wrong, late or down.
+- The temporal model isn&apos;t stated.
+- There&apos;s no target table DDL, so the MERGE scans the whole table. The backfill would touch about 730 partitions against the 10 GB dev cap.
+- There are no tests, and the 07:00 UTC freshness SLA doesn&apos;t fit uploads once per shift.
+- Late-arriving data isn&apos;t handled, for example shifts that cross midnight.
+- No downstream consumers are listed.
+
+There&apos;s also a nit: `amount` has no unit, and the model is called a &quot;rate&quot; but only sums amounts.
+
+As the skill requires, I left the rest of the plan untouched for you to resolve the findings. The grain decision (where `shift_id` comes from) unblocks most of the other fixes, so I&apos;d settle that first.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">3-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, with five blockers.
+
+I didn&apos;t run any dry runs. The plan&apos;s queries don&apos;t compile against the source schema, and `fct_pick_rates` has no DDL. I also couldn&apos;t run `dbt ls`, because there is no dbt project yet. The repo has no existing model or contract for pick rates, so the plan doesn&apos;t duplicate anything.
+
+**Blockers**
+- **Grain (item 3):** The plan says &quot;per picker per shift per ds&quot;. The model query groups by `week` and the load groups by `shift_id`. Neither column exists in `raw_wms.pick_events`. The primary key also leaves out `ds`.
+- **Contract (item 2):** `owner` is TBD, and it&apos;s a required field. There&apos;s no contract file and no additive/breaking classification.
+- **Idempotency and backfill (item 5):**
+  - The MERGE never removes rows that vanish from the source.
+  - The rollout `UPDATE` never inserts missing rows.
+  - The rollout `UPDATE` covers two years in one statement.
+  - The plan has no backfill path written out.
+- **Personal data (item 7):** `picker_id` identifies a person, but the contract classifies the data as `internal`. The plan mentions SHA256 hashing, but no query applies it. An unsalted hash over a small ID space is reversible. There&apos;s no deletion or crypto-shred path.
+- **Rollback (item 10):** The plan has none.
+
+**Should-fix**
+- The plan doesn&apos;t name a consumer or the cost of wrong, late or down.
+- The temporal model isn&apos;t stated.
+- There&apos;s no target table DDL, so the MERGE scans the whole table. The backfill would touch about 730 partitions against the 10 GB dev cap.
+- There are no tests, and the 07:00 UTC freshness SLA doesn&apos;t fit uploads once per shift.
+- Late-arriving data isn&apos;t handled, for example shifts that cross midnight.
+- No downstream consumers are listed.
+
+There&apos;s also a nit: `amount` has no unit, and the model is called a &quot;rate&quot; but only sums amounts.
+
+As the skill requires, I left the rest of the plan untouched for you to resolve the findings. The grain decision (where `shift_id` comes from) unblocks most of the other fixes, so I&apos;d settle that first.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">8 turns · $0.12 · 14:33:00 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. **The verdict is NOT READY.** I didn&apos;t touch the rest of the plan.
+
+**Blockers**
+- **Grain:** the plan says &quot;per picker per shift per ds&quot;, but `pick_events` has no `shift_id` or `week` column. The Model query groups by `week`, and the Load query groups by `shift_id`. The Contract&apos;s primary key leaves out `ds`. The model also never computes a rate. It only sums `amount`, which has no stated unit.
+- **Backfill:** the rollout uses an `UPDATE` on a new, empty table, so it would change nothing. The query is elided and there is no loop over the two years.
+- **Personal data:** `picker_id` identifies workers, but the contract classifies it as `internal`. No step actually hashes it. Unsalted SHA256 of employee IDs can be reversed by dictionary, and there is no erasure path.
+- **Contract:** the owner is `TBD`, and no contract file exists.
+
+**Should-fix**
+- The target table has no DDL, so partitioning and clustering are unspecified.
+- The cost isn&apos;t estimated, and it&apos;s unclear whether 400 GB is the total or per `ds`.
+- The MERGE can&apos;t remove stale shift rows.
+- There are no tests or reconciliation checks.
+- Late-arriving data, rollback, and downstream consumers aren&apos;t covered.
+- The consumer and decision aren&apos;t named.
+
+**Not done**
+- **Existing model:** I found nothing in this repo that already answers pick rates. There is no `dbt/` or `contracts/` directory yet, so I can&apos;t rule out a model elsewhere.
+- **Dry-runs and `dbt ls`:** I skipped both. The queries reference columns that don&apos;t exist, and there is no dbt project.
+- **Vendor second pass:** I didn&apos;t run it. I didn&apos;t check whether those skills are installed.
+
+Next, the author needs to settle the grain and how `shift_id` is derived, since the other fixes depend on it. I can draft the fixes to the plan once you decide on that.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. **The verdict is NOT READY.** I didn&apos;t touch the rest of the plan.
+
+**Blockers**
+- **Grain:** the plan says &quot;per picker per shift per ds&quot;, but `pick_events` has no `shift_id` or `week` column. The Model query groups by `week`, and the Load query groups by `shift_id`. The Contract&apos;s primary key leaves out `ds`. The model also never computes a rate. It only sums `amount`, which has no stated unit.
+- **Backfill:** the rollout uses an `UPDATE` on a new, empty table, so it would change nothing. The query is elided and there is no loop over the two years.
+- **Personal data:** `picker_id` identifies workers, but the contract classifies it as `internal`. No step actually hashes it. Unsalted SHA256 of employee IDs can be reversed by dictionary, and there is no erasure path.
+- **Contract:** the owner is `TBD`, and no contract file exists.
+
+**Should-fix**
+- The target table has no DDL, so partitioning and clustering are unspecified.
+- The cost isn&apos;t estimated, and it&apos;s unclear whether 400 GB is the total or per `ds`.
+- The MERGE can&apos;t remove stale shift rows.
+- There are no tests or reconciliation checks.
+- Late-arriving data, rollback, and downstream consumers aren&apos;t covered.
+- The consumer and decision aren&apos;t named.
+
+**Not done**
+- **Existing model:** I found nothing in this repo that already answers pick rates. There is no `dbt/` or `contracts/` directory yet, so I can&apos;t rule out a model elsewhere.
+- **Dry-runs and `dbt ls`:** I skipped both. The queries reference columns that don&apos;t exist, and there is no dbt project.
+- **Vendor second pass:** I didn&apos;t run it. I didn&apos;t check whether those skills are installed.
+
+Next, the author needs to settle the grain and how `shift_id` is derived, since the other fixes depend on it. I can draft the fixes to the plan once you decide on that.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">3-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. **The verdict is NOT READY.** I didn&apos;t touch the rest of the plan.
+
+**Blockers**
+- **Grain:** the plan says &quot;per picker per shift per ds&quot;, but `pick_events` has no `shift_id` or `week` column. The Model query groups by `week`, and the Load query groups by `shift_id`. The Contract&apos;s primary key leaves out `ds`. The model also never computes a rate. It only sums `amount`, which has no stated unit.
+- **Backfill:** the rollout uses an `UPDATE` on a new, empty table, so it would change nothing. The query is elided and there is no loop over the two years.
+- **Personal data:** `picker_id` identifies workers, but the contract classifies it as `internal`. No step actually hashes it. Unsalted SHA256 of employee IDs can be reversed by dictionary, and there is no erasure path.
+- **Contract:** the owner is `TBD`, and no contract file exists.
+
+**Should-fix**
+- The target table has no DDL, so partitioning and clustering are unspecified.
+- The cost isn&apos;t estimated, and it&apos;s unclear whether 400 GB is the total or per `ds`.
+- The MERGE can&apos;t remove stale shift rows.
+- There are no tests or reconciliation checks.
+- Late-arriving data, rollback, and downstream consumers aren&apos;t covered.
+- The consumer and decision aren&apos;t named.
+
+**Not done**
+- **Existing model:** I found nothing in this repo that already answers pick rates. There is no `dbt/` or `contracts/` directory yet, so I can&apos;t rule out a model elsewhere.
+- **Dry-runs and `dbt ls`:** I skipped both. The queries reference columns that don&apos;t exist, and there is no dbt project.
+- **Vendor second pass:** I didn&apos;t run it. I didn&apos;t check whether those skills are installed.
+
+Next, the author needs to settle the grain and how `shift_id` is derived, since the other fixes depend on it. I can draft the fixes to the plan once you decide on that.</pre>
+</div>
+</details></div>
+</div>
+</section><section class="arm">
+<div class="arm-head">
+<span class="arm-label">Baseline (no plugin)</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:20.0%"></span></span>
+<span class="num">20%</span>
+<span class="muted num">0% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">2 turns · $0.05 · 14:34:02 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. It has three blocking problems and several smaller ones. I only read the plan. I haven&apos;t checked it against the real tables.
+
+## Blocking
+
+1. **The queries use columns the source doesn&apos;t have.** `raw_wms.pick_events` has `ds, picked_at, picker_id, amount`. The model query selects `week` and the load selects `shift_id`, and neither exists. Either the DDL is incomplete or `shift_id` has to be derived, for example from `picked_at` and a shift calendar. The plan needs to say which.
+2. **The grain contradicts itself.** The stated grain is picker × shift × ds. The Model query groups by `week`, and the Load query groups by `shift_id`. The Model query looks like a leftover and should be deleted or fixed.
+3. **The rollout can&apos;t work as written.**
+   - Step 1 is an `UPDATE` on a table that starts empty, so it would change nothing. A backfill needs `INSERT` or `MERGE`.
+   - The `SELECT ...` and `WHERE ...` are elided, so the step can&apos;t be reviewed.
+   - Two years of backfill on a table of about 400 GB, with `require_partition_filter = TRUE`, should run partition by partition over a bounded `ds` range. The plan should include a cost estimate.
+   - &quot;Check row counts&quot; doesn&apos;t prove correctness. Add a reconciliation of `SUM(amount)` against the source per `ds`.
+
+## Should fix
+
+- **It doesn&apos;t compute a rate.** The model is named &quot;pick rates&quot; but only sums `amount`. A rate needs a denominator such as hours worked or active time, and the plan doesn&apos;t say where that comes from.
+- **Privacy and access.**
+  - The plan says identifiers are hashed with SHA256, but no step does the hashing. The load passes raw `picker_id` through.
+  - Unsalted SHA256 of low-entropy worker IDs is easy to reverse. Use a keyed hash or a salt.
+  - Per-person productivity data is probably not &quot;internal&quot;. Confirm the classification with whoever owns data policy.
+- **The primary key is inconsistent.** The contract says `picker_id, shift_id`. The MERGE key is `ds, picker_id, shift_id`. Pick one, and make sure `shift_id` is unique within a `ds`.
+- **Timing and late data.**
+  - Scanners upload once per shift, so a `ds` can be partial when the load runs.
+  - Shifts that cross midnight can split across `ds` values.
+  - The plan gives no schedule or late-arrival handling, and no reason to expect the 07:00 UTC SLA to be met.
+  - The MERGE is idempotent per `ds`, but it never deletes rows that disappear from the source.
+- **Owner is TBD.** An SLA with no owner won&apos;t be enforced.
+- **The destination table is undefined.** There is no DDL, partitioning or clustering for `fct_pick_rates`, and no data-quality tests such as uniqueness, not-null or non-negative `amount`.
+
+If you tell me how `shift_id` is meant to be derived, I can draft a corrected version of the plan.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. It has three blocking problems and several smaller ones. I only read the plan. I haven&apos;t checked it against the real tables.
+
+## Blocking
+
+1. **The queries use columns the source doesn&apos;t have.** `raw_wms.pick_events` has `ds, picked_at, picker_id, amount`. The model query selects `week` and the load selects `shift_id`, and neither exists. Either the DDL is incomplete or `shift_id` has to be derived, for example from `picked_at` and a shift calendar. The plan needs to say which.
+2. **The grain contradicts itself.** The stated grain is picker × shift × ds. The Model query groups by `week`, and the Load query groups by `shift_id`. The Model query looks like a leftover and should be deleted or fixed.
+3. **The rollout can&apos;t work as written.**
+   - Step 1 is an `UPDATE` on a table that starts empty, so it would change nothing. A backfill needs `INSERT` or `MERGE`.
+   - The `SELECT ...` and `WHERE ...` are elided, so the step can&apos;t be reviewed.
+   - Two years of backfill on a table of about 400 GB, with `require_partition_filter = TRUE`, should run partition by partition over a bounded `ds` range. The plan should include a cost estimate.
+   - &quot;Check row counts&quot; doesn&apos;t prove correctness. Add a reconciliation of `SUM(amount)` against the source per `ds`.
+
+## Should fix
+
+- **It doesn&apos;t compute a rate.** The model is named &quot;pick rates&quot; but only sums `amount`. A rate needs a denominator such as hours worked or active time, and the plan doesn&apos;t say where that comes from.
+- **Privacy and access.**
+  - The plan says identifiers are hashed with SHA256, but no step does the hashing. The load passes raw `picker_id` through.
+  - Unsalted SHA256 of low-entropy worker IDs is easy to reverse. Use a keyed hash or a salt.
+  - Per-person productivity data is probably not &quot;internal&quot;. Confirm the classification with whoever owns data policy.
+- **The primary key is inconsistent.** The contract says `picker_id, shift_id`. The MERGE key is `ds, picker_id, shift_id`. Pick one, and make sure `shift_id` is unique within a `ds`.
+- **Timing and late data.**
+  - Scanners upload once per shift, so a `ds` can be partial when the load runs.
+  - Shifts that cross midnight can split across `ds` values.
+  - The plan gives no schedule or late-arrival handling, and no reason to expect the 07:00 UTC SLA to be met.
+  - The MERGE is idempotent per `ds`, but it never deletes rows that disappear from the source.
+- **Owner is TBD.** An SLA with no owner won&apos;t be enforced.
+- **The destination table is undefined.** There is no DDL, partitioning or clustering for `fct_pick_rates`, and no data-quality tests such as uniqueness, not-null or non-negative `amount`.
+
+If you tell me how `shift_id` is meant to be derived, I can draft a corrected version of the plan.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">3-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. It has three blocking problems and several smaller ones. I only read the plan. I haven&apos;t checked it against the real tables.
+
+## Blocking
+
+1. **The queries use columns the source doesn&apos;t have.** `raw_wms.pick_events` has `ds, picked_at, picker_id, amount`. The model query selects `week` and the load selects `shift_id`, and neither exists. Either the DDL is incomplete or `shift_id` has to be derived, for example from `picked_at` and a shift calendar. The plan needs to say which.
+2. **The grain contradicts itself.** The stated grain is picker × shift × ds. The Model query groups by `week`, and the Load query groups by `shift_id`. The Model query looks like a leftover and should be deleted or fixed.
+3. **The rollout can&apos;t work as written.**
+   - Step 1 is an `UPDATE` on a table that starts empty, so it would change nothing. A backfill needs `INSERT` or `MERGE`.
+   - The `SELECT ...` and `WHERE ...` are elided, so the step can&apos;t be reviewed.
+   - Two years of backfill on a table of about 400 GB, with `require_partition_filter = TRUE`, should run partition by partition over a bounded `ds` range. The plan should include a cost estimate.
+   - &quot;Check row counts&quot; doesn&apos;t prove correctness. Add a reconciliation of `SUM(amount)` against the source per `ds`.
+
+## Should fix
+
+- **It doesn&apos;t compute a rate.** The model is named &quot;pick rates&quot; but only sums `amount`. A rate needs a denominator such as hours worked or active time, and the plan doesn&apos;t say where that comes from.
+- **Privacy and access.**
+  - The plan says identifiers are hashed with SHA256, but no step does the hashing. The load passes raw `picker_id` through.
+  - Unsalted SHA256 of low-entropy worker IDs is easy to reverse. Use a keyed hash or a salt.
+  - Per-person productivity data is probably not &quot;internal&quot;. Confirm the classification with whoever owns data policy.
+- **The primary key is inconsistent.** The contract says `picker_id, shift_id`. The MERGE key is `ds, picker_id, shift_id`. Pick one, and make sure `shift_id` is unique within a `ds`.
+- **Timing and late data.**
+  - Scanners upload once per shift, so a `ds` can be partial when the load runs.
+  - Shifts that cross midnight can split across `ds` values.
+  - The plan gives no schedule or late-arrival handling, and no reason to expect the 07:00 UTC SLA to be met.
+  - The MERGE is idempotent per `ds`, but it never deletes rows that disappear from the source.
+- **Owner is TBD.** An SLA with no owner won&apos;t be enforced.
+- **The destination table is undefined.** There is no DDL, partitioning or clustering for `fct_pick_rates`, and no data-quality tests such as uniqueness, not-null or non-negative `amount`.
+
+If you tell me how `shift_id` is meant to be derived, I can draft a corrected version of the plan.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:0.0%"></span></span>
+<span class="num">0%</span>
+<span class="muted num">2 turns · $0.04 · 14:34:34 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed `plan.md`. It isn&apos;t ready to build. The main problem is that the SQL uses columns the source table doesn&apos;t have.
+
+**Blocking**
+
+1. **`shift_id` and `week` aren&apos;t in the source.** `raw_wms.pick_events` has `ds, picked_at, picker_id, amount`. The Model query uses `week` and the Load query uses `shift_id`, so neither would run. The plan never says how a shift is derived, whether from scanner upload, a time window on `picked_at`, or a join to a shift table. The grain (&quot;per picker per shift per ds&quot;) depends on that definition.
+2. **The Model and Load queries disagree.** Model groups by `week`. Load groups by `shift_id`. Only one can match the stated grain. Keep one definition and have the other reference it.
+3. **The rollout step does nothing.** Step 1 is an `UPDATE ... WHERE` against a table that doesn&apos;t exist yet, and `UPDATE` only touches rows that already exist. The backfill needs inserts, for example running the same `MERGE` once per `ds` over two years. The `SELECT ...` is also elided. &quot;Check row counts&quot; is too weak. Compare `SUM(amount)` per `ds` against the source as well.
+4. **The primary key is wrong.** The contract says `picker_id, shift_id`, but the grain and the `MERGE` key include `ds`. Without `ds` the key isn&apos;t unique across days, unless `shift_id` is globally unique. The plan should say which.
+
+**Should fix**
+
+5. **The model has no rate.** It&apos;s named pick rates but only sums `amount`. There&apos;s no time or hours denominator. `amount` is also undefined: units, lines, or quantity?
+6. **Late uploads aren&apos;t handled.** Scanners upload once per shift, and the load filters on `ds = @ds`. A shift that uploads after the run, or after the 07:00 UTC SLA, would be missing or partial. The plan should say whether it reloads the previous N days, and when the job is scheduled relative to the last upload. The `MERGE` is idempotent, so reloads are safe.
+7. **Privacy and access.**
+   - `picker_id` identifies individual workers, and this is performance data. &quot;Internal&quot; classification looks too low for the dataset (`fct_private`).
+   - The plan says identifiers are hashed with SHA256, but no query does that.
+   - An unsalted hash of low-entropy employee IDs is easy to reverse. Use a salted or keyed hash (HMAC), and state who holds the key.
+8. **The owner is TBD.** Assign an owner before this ships, since the SLA and access decisions need someone accountable.
+9. **Minor.** `require_partition_filter` is set on the source, so the `ds = @ds` filter is correct. Say whether `fct_pick_rates` is partitioned by `ds` too, so the `MERGE` doesn&apos;t scan the whole target.
+
+I can draft a corrected version of the plan once you&apos;ve settled how `shift_id` is defined (item 1).</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL PASS FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✓ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed `plan.md`. It isn&apos;t ready to build. The main problem is that the SQL uses columns the source table doesn&apos;t have.
+
+**Blocking**
+
+1. **`shift_id` and `week` aren&apos;t in the source.** `raw_wms.pick_events` has `ds, picked_at, picker_id, amount`. The Model query uses `week` and the Load query uses `shift_id`, so neither would run. The plan never says how a shift is derived, whether from scanner upload, a time window on `picked_at`, or a join to a shift table. The grain (&quot;per picker per shift per ds&quot;) depends on that definition.
+2. **The Model and Load queries disagree.** Model groups by `week`. Load groups by `shift_id`. Only one can match the stated grain. Keep one definition and have the other reference it.
+3. **The rollout step does nothing.** Step 1 is an `UPDATE ... WHERE` against a table that doesn&apos;t exist yet, and `UPDATE` only touches rows that already exist. The backfill needs inserts, for example running the same `MERGE` once per `ds` over two years. The `SELECT ...` is also elided. &quot;Check row counts&quot; is too weak. Compare `SUM(amount)` per `ds` against the source as well.
+4. **The primary key is wrong.** The contract says `picker_id, shift_id`, but the grain and the `MERGE` key include `ds`. Without `ds` the key isn&apos;t unique across days, unless `shift_id` is globally unique. The plan should say which.
+
+**Should fix**
+
+5. **The model has no rate.** It&apos;s named pick rates but only sums `amount`. There&apos;s no time or hours denominator. `amount` is also undefined: units, lines, or quantity?
+6. **Late uploads aren&apos;t handled.** Scanners upload once per shift, and the load filters on `ds = @ds`. A shift that uploads after the run, or after the 07:00 UTC SLA, would be missing or partial. The plan should say whether it reloads the previous N days, and when the job is scheduled relative to the last upload. The `MERGE` is idempotent, so reloads are safe.
+7. **Privacy and access.**
+   - `picker_id` identifies individual workers, and this is performance data. &quot;Internal&quot; classification looks too low for the dataset (`fct_private`).
+   - The plan says identifiers are hashed with SHA256, but no query does that.
+   - An unsalted hash of low-entropy employee IDs is easy to reverse. Use a salted or keyed hash (HMAC), and state who holds the key.
+8. **The owner is TBD.** Assign an owner before this ships, since the SLA and access decisions need someone accountable.
+9. **Minor.** `require_partition_filter` is set on the source, so the `ds = @ds` filter is correct. Say whether `fct_pick_rates` is partitioned by `ds` too, so the `MERGE` doesn&apos;t scan the whole target.
+
+I can draft a corrected version of the plan once you&apos;ve settled how `shift_id` is defined (item 1).</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">3-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed `plan.md`. It isn&apos;t ready to build. The main problem is that the SQL uses columns the source table doesn&apos;t have.
+
+**Blocking**
+
+1. **`shift_id` and `week` aren&apos;t in the source.** `raw_wms.pick_events` has `ds, picked_at, picker_id, amount`. The Model query uses `week` and the Load query uses `shift_id`, so neither would run. The plan never says how a shift is derived, whether from scanner upload, a time window on `picked_at`, or a join to a shift table. The grain (&quot;per picker per shift per ds&quot;) depends on that definition.
+2. **The Model and Load queries disagree.** Model groups by `week`. Load groups by `shift_id`. Only one can match the stated grain. Keep one definition and have the other reference it.
+3. **The rollout step does nothing.** Step 1 is an `UPDATE ... WHERE` against a table that doesn&apos;t exist yet, and `UPDATE` only touches rows that already exist. The backfill needs inserts, for example running the same `MERGE` once per `ds` over two years. The `SELECT ...` is also elided. &quot;Check row counts&quot; is too weak. Compare `SUM(amount)` per `ds` against the source as well.
+4. **The primary key is wrong.** The contract says `picker_id, shift_id`, but the grain and the `MERGE` key include `ds`. Without `ds` the key isn&apos;t unique across days, unless `shift_id` is globally unique. The plan should say which.
+
+**Should fix**
+
+5. **The model has no rate.** It&apos;s named pick rates but only sums `amount`. There&apos;s no time or hours denominator. `amount` is also undefined: units, lines, or quantity?
+6. **Late uploads aren&apos;t handled.** Scanners upload once per shift, and the load filters on `ds = @ds`. A shift that uploads after the run, or after the 07:00 UTC SLA, would be missing or partial. The plan should say whether it reloads the previous N days, and when the job is scheduled relative to the last upload. The `MERGE` is idempotent, so reloads are safe.
+7. **Privacy and access.**
+   - `picker_id` identifies individual workers, and this is performance data. &quot;Internal&quot; classification looks too low for the dataset (`fct_private`).
+   - The plan says identifiers are hashed with SHA256, but no query does that.
+   - An unsalted hash of low-entropy employee IDs is easy to reverse. Use a salted or keyed hash (HMAC), and state who holds the key.
+8. **The owner is TBD.** Assign an owner before this ships, since the SLA and access decisions need someone accountable.
+9. **Minor.** `require_partition_filter` is set on the source, so the `ds = @ds` filter is correct. Say whether `fct_pick_rates` is partitioned by `ds` too, so the `MERGE` doesn&apos;t scan the whole target.
+
+I can draft a corrected version of the plan once you&apos;ve settled how `shift_id` is defined (item 1).</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">2 turns · $0.05 · 14:35:06 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan. It has several problems that I&apos;d fix before building. The first group would stop the model from running at all.
+
+**Blockers**
+1. **The columns don&apos;t match the source.** `raw_wms.pick_events` has only `ds, picked_at, picker_id, amount`.
+   - The Model query selects and groups by `week`, which doesn&apos;t exist.
+   - The Load query uses `shift_id`, which doesn&apos;t exist either.
+   - The two queries also have different grains. Model groups by week and Load by shift, while the stated grain is picker × shift × ds.
+   - Either the source needs a `shift_id` or the plan needs a rule that derives it, for example from `picked_at` and shift boundaries.
+2. **The rollout backfill won&apos;t work.**
+   - An `UPDATE` only changes rows that already exist. On a new table it will touch nothing.
+   - Use the same `MERGE`, or an `INSERT` per partition.
+   - `SELECT ...` is elided, so the actual scan is unspecified.
+   - `require_partition_filter` means it needs an explicit `ds` range. I&apos;d run it one `ds` at a time.
+   - If 400 GB is the whole table, two years is a big scan. Please confirm whether that figure is per day or total, and add a cost estimate.
+3. **The primary key is wrong.** The contract says `picker_id, shift_id`, but the grain and the MERGE key both include `ds`. The contract key should be `ds, picker_id, shift_id`.
+
+**Correctness gaps**
+- **No rate.** The model only sums `amount`, so it isn&apos;t a pick rate. It has no denominator such as hours worked or picks per hour, and it doesn&apos;t say whether `amount` is units, lines or weight.
+- **Which day a pick belongs to.** Uploads arrive once per shift, and `ds` is the partition key. The plan doesn&apos;t say whether `ds` is the upload date or the pick date. A shift that crosses midnight or a late upload would land in the wrong day.
+- **Duplicates and late data.** Scanner re-uploads aren&apos;t deduplicated, and a late shift upload isn&apos;t handled. The `MERGE` is idempotent, but a `@ds` run before all shifts have landed will give partial totals.
+- **Freshness SLA.** 07:00 UTC isn&apos;t tied to the shift schedule or the upload times. The plan doesn&apos;t say what happens if an upload is missing.
+- **Table setup.** There&apos;s no DDL for `fct_pick_rates`. It should be partitioned by `ds`, and the MERGE `ON` clause should filter on `ds` so partitions are pruned.
+- **Validation.** &quot;Check row counts&quot; is too weak. Add checks that `SUM(amount)` matches the source per `ds`, that the key has no duplicates, and that no nulls appear in the key columns.
+
+**Access and governance**
+- **Hashing isn&apos;t implemented.** The plan says identifiers are hashed with SHA256, but neither SQL query does it. An unsalted SHA256 of a picker ID can also be reversed by a dictionary attack, so use a salted hash or HMAC.
+- **Classification conflicts with the dataset.** The dataset is `fct_private`, the data is per-worker performance data, and the contract says `internal`. These need to agree, and this probably needs HR or privacy review.
+- **No owner.** The owner is TBD, so there&apos;s no one to answer for the SLA.
+
+I&apos;d settle the `shift_id` and `ds` definitions and the rate definition first. Everything else follows from those. Do you want me to draft a corrected version of the plan?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan. It has several problems that I&apos;d fix before building. The first group would stop the model from running at all.
+
+**Blockers**
+1. **The columns don&apos;t match the source.** `raw_wms.pick_events` has only `ds, picked_at, picker_id, amount`.
+   - The Model query selects and groups by `week`, which doesn&apos;t exist.
+   - The Load query uses `shift_id`, which doesn&apos;t exist either.
+   - The two queries also have different grains. Model groups by week and Load by shift, while the stated grain is picker × shift × ds.
+   - Either the source needs a `shift_id` or the plan needs a rule that derives it, for example from `picked_at` and shift boundaries.
+2. **The rollout backfill won&apos;t work.**
+   - An `UPDATE` only changes rows that already exist. On a new table it will touch nothing.
+   - Use the same `MERGE`, or an `INSERT` per partition.
+   - `SELECT ...` is elided, so the actual scan is unspecified.
+   - `require_partition_filter` means it needs an explicit `ds` range. I&apos;d run it one `ds` at a time.
+   - If 400 GB is the whole table, two years is a big scan. Please confirm whether that figure is per day or total, and add a cost estimate.
+3. **The primary key is wrong.** The contract says `picker_id, shift_id`, but the grain and the MERGE key both include `ds`. The contract key should be `ds, picker_id, shift_id`.
+
+**Correctness gaps**
+- **No rate.** The model only sums `amount`, so it isn&apos;t a pick rate. It has no denominator such as hours worked or picks per hour, and it doesn&apos;t say whether `amount` is units, lines or weight.
+- **Which day a pick belongs to.** Uploads arrive once per shift, and `ds` is the partition key. The plan doesn&apos;t say whether `ds` is the upload date or the pick date. A shift that crosses midnight or a late upload would land in the wrong day.
+- **Duplicates and late data.** Scanner re-uploads aren&apos;t deduplicated, and a late shift upload isn&apos;t handled. The `MERGE` is idempotent, but a `@ds` run before all shifts have landed will give partial totals.
+- **Freshness SLA.** 07:00 UTC isn&apos;t tied to the shift schedule or the upload times. The plan doesn&apos;t say what happens if an upload is missing.
+- **Table setup.** There&apos;s no DDL for `fct_pick_rates`. It should be partitioned by `ds`, and the MERGE `ON` clause should filter on `ds` so partitions are pruned.
+- **Validation.** &quot;Check row counts&quot; is too weak. Add checks that `SUM(amount)` matches the source per `ds`, that the key has no duplicates, and that no nulls appear in the key columns.
+
+**Access and governance**
+- **Hashing isn&apos;t implemented.** The plan says identifiers are hashed with SHA256, but neither SQL query does it. An unsalted SHA256 of a picker ID can also be reversed by a dictionary attack, so use a salted hash or HMAC.
+- **Classification conflicts with the dataset.** The dataset is `fct_private`, the data is per-worker performance data, and the contract says `internal`. These need to agree, and this probably needs HR or privacy review.
+- **No owner.** The owner is TBD, so there&apos;s no one to answer for the SLA.
+
+I&apos;d settle the `shift_id` and `ds` definitions and the rate definition first. Everything else follows from those. Do you want me to draft a corrected version of the plan?</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">3-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan. It has several problems that I&apos;d fix before building. The first group would stop the model from running at all.
+
+**Blockers**
+1. **The columns don&apos;t match the source.** `raw_wms.pick_events` has only `ds, picked_at, picker_id, amount`.
+   - The Model query selects and groups by `week`, which doesn&apos;t exist.
+   - The Load query uses `shift_id`, which doesn&apos;t exist either.
+   - The two queries also have different grains. Model groups by week and Load by shift, while the stated grain is picker × shift × ds.
+   - Either the source needs a `shift_id` or the plan needs a rule that derives it, for example from `picked_at` and shift boundaries.
+2. **The rollout backfill won&apos;t work.**
+   - An `UPDATE` only changes rows that already exist. On a new table it will touch nothing.
+   - Use the same `MERGE`, or an `INSERT` per partition.
+   - `SELECT ...` is elided, so the actual scan is unspecified.
+   - `require_partition_filter` means it needs an explicit `ds` range. I&apos;d run it one `ds` at a time.
+   - If 400 GB is the whole table, two years is a big scan. Please confirm whether that figure is per day or total, and add a cost estimate.
+3. **The primary key is wrong.** The contract says `picker_id, shift_id`, but the grain and the MERGE key both include `ds`. The contract key should be `ds, picker_id, shift_id`.
+
+**Correctness gaps**
+- **No rate.** The model only sums `amount`, so it isn&apos;t a pick rate. It has no denominator such as hours worked or picks per hour, and it doesn&apos;t say whether `amount` is units, lines or weight.
+- **Which day a pick belongs to.** Uploads arrive once per shift, and `ds` is the partition key. The plan doesn&apos;t say whether `ds` is the upload date or the pick date. A shift that crosses midnight or a late upload would land in the wrong day.
+- **Duplicates and late data.** Scanner re-uploads aren&apos;t deduplicated, and a late shift upload isn&apos;t handled. The `MERGE` is idempotent, but a `@ds` run before all shifts have landed will give partial totals.
+- **Freshness SLA.** 07:00 UTC isn&apos;t tied to the shift schedule or the upload times. The plan doesn&apos;t say what happens if an upload is missing.
+- **Table setup.** There&apos;s no DDL for `fct_pick_rates`. It should be partitioned by `ds`, and the MERGE `ON` clause should filter on `ds` so partitions are pruned.
+- **Validation.** &quot;Check row counts&quot; is too weak. Add checks that `SUM(amount)` matches the source per `ds`, that the key has no duplicates, and that no nulls appear in the key columns.
+
+**Access and governance**
+- **Hashing isn&apos;t implemented.** The plan says identifiers are hashed with SHA256, but neither SQL query does it. An unsalted SHA256 of a picker ID can also be reversed by a dictionary attack, so use a salted hash or HMAC.
+- **Classification conflicts with the dataset.** The dataset is `fct_private`, the data is per-worker performance data, and the contract says `internal`. These need to agree, and this probably needs HR or privacy review.
+- **No owner.** The owner is TBD, so there&apos;s no one to answer for the SLA.
+
+I&apos;d settle the `shift_id` and `ds` definitions and the rate definition first. Everything else follows from those. Do you want me to draft a corrected version of the plan?</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">2 turns · $0.05 · 14:35:32 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and found several problems. The first three would stop it from working as written.
+
+**Blocking**
+
+1. **The source schema doesn&apos;t match the queries.** `raw_wms.pick_events` has `ds, picked_at, picker_id, amount`. The model query uses `week` and the MERGE uses `shift_id`, and neither column exists. The plan needs to say where `shift_id` comes from. It could be a scanner field that&apos;s missing from the DDL, or derived from `picked_at`. This also matters for shifts that cross midnight, because `ds` may not match the shift&apos;s date.
+2. **The Model and Load sections disagree on grain.** The stated grain is picker × shift × ds. The Model query groups by `week`, and the MERGE groups by `shift_id`. The Model query looks like a leftover and should be removed or fixed.
+3. **The rollout backfill won&apos;t work.** `UPDATE` only changes rows that already exist, and `fct_pick_rates` starts empty, so the backfill would do nothing. It should run the MERGE (or an `INSERT`) per `ds` over the two-year range. The `UPDATE` is also elided (`SELECT ...`, `WHERE ...`), so I can&apos;t check it. Please also say whether &quot;about 400 GB&quot; is the total or per day. If it&apos;s the total, a two-year backfill scans most of it, and `require_partition_filter` means it has to be done in a loop or with an explicit range.
+
+**Privacy and access**
+
+4. **Hashing isn&apos;t in the model SQL.** The Access section says identifiers are hashed with SHA256, but both queries select raw `picker_id`. Unsalted SHA256 of low-entropy employee IDs is also easy to reverse, so use a salted hash or HMAC, with the key held outside the dataset.
+5. **The classification looks wrong.** This is per-worker productivity data, and it sits in a dataset called `fct_private`, but the contract says `classification: internal`. Please confirm that with whoever sets data classifications.
+
+**Correctness and design**
+
+6. **The contract&apos;s primary key leaves out `ds`.** The key is `picker_id, shift_id`, but the MERGE joins on `ds` as well. Either `shift_id` is globally unique, or the key should include `ds`.
+7. **The model has no rate.** It only sums `amount`. A pick rate needs a denominator such as hours worked or shift duration, or the model should be renamed.
+8. **The upload timing isn&apos;t handled.** Scanners upload once per shift, but the plan has no trigger or late-data handling. The 07:00 UTC SLA also isn&apos;t tied to when the last shift lands. It would help to reprocess the last N days, since the MERGE is idempotent. The MERGE also never deletes rows that disappear from the source.
+9. **There is no deduplication.** There&apos;s no event ID, so a re-uploaded scanner batch would double-count `amount`.
+10. **The MERGE may be expensive.** `d.ds = n.ds` isn&apos;t a constant, so BigQuery probably can&apos;t prune the target. Partition `fct_pick_rates` by `ds` and add a literal or scripted `ds` filter on the target.
+11. **The validation is thin.** &quot;Check row counts&quot; won&apos;t catch wrong sums. Add a reconciliation of `SUM(amount)` against the source per `ds`, a uniqueness test on the key, and null checks.
+
+**Smaller items**
+
+- `owner: TBD` should be filled in before the build.
+- The units of `amount` aren&apos;t stated (picks, items, or quantity).
+- The plan doesn&apos;t say how `fct_pick_rates` is partitioned or clustered.
+
+I&apos;d fix items 1–4 before building. Items 5–9 need decisions from the data team. Want me to draft a revised plan with these changes?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS FAIL PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✗ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and found several problems. The first three would stop it from working as written.
+
+**Blocking**
+
+1. **The source schema doesn&apos;t match the queries.** `raw_wms.pick_events` has `ds, picked_at, picker_id, amount`. The model query uses `week` and the MERGE uses `shift_id`, and neither column exists. The plan needs to say where `shift_id` comes from. It could be a scanner field that&apos;s missing from the DDL, or derived from `picked_at`. This also matters for shifts that cross midnight, because `ds` may not match the shift&apos;s date.
+2. **The Model and Load sections disagree on grain.** The stated grain is picker × shift × ds. The Model query groups by `week`, and the MERGE groups by `shift_id`. The Model query looks like a leftover and should be removed or fixed.
+3. **The rollout backfill won&apos;t work.** `UPDATE` only changes rows that already exist, and `fct_pick_rates` starts empty, so the backfill would do nothing. It should run the MERGE (or an `INSERT`) per `ds` over the two-year range. The `UPDATE` is also elided (`SELECT ...`, `WHERE ...`), so I can&apos;t check it. Please also say whether &quot;about 400 GB&quot; is the total or per day. If it&apos;s the total, a two-year backfill scans most of it, and `require_partition_filter` means it has to be done in a loop or with an explicit range.
+
+**Privacy and access**
+
+4. **Hashing isn&apos;t in the model SQL.** The Access section says identifiers are hashed with SHA256, but both queries select raw `picker_id`. Unsalted SHA256 of low-entropy employee IDs is also easy to reverse, so use a salted hash or HMAC, with the key held outside the dataset.
+5. **The classification looks wrong.** This is per-worker productivity data, and it sits in a dataset called `fct_private`, but the contract says `classification: internal`. Please confirm that with whoever sets data classifications.
+
+**Correctness and design**
+
+6. **The contract&apos;s primary key leaves out `ds`.** The key is `picker_id, shift_id`, but the MERGE joins on `ds` as well. Either `shift_id` is globally unique, or the key should include `ds`.
+7. **The model has no rate.** It only sums `amount`. A pick rate needs a denominator such as hours worked or shift duration, or the model should be renamed.
+8. **The upload timing isn&apos;t handled.** Scanners upload once per shift, but the plan has no trigger or late-data handling. The 07:00 UTC SLA also isn&apos;t tied to when the last shift lands. It would help to reprocess the last N days, since the MERGE is idempotent. The MERGE also never deletes rows that disappear from the source.
+9. **There is no deduplication.** There&apos;s no event ID, so a re-uploaded scanner batch would double-count `amount`.
+10. **The MERGE may be expensive.** `d.ds = n.ds` isn&apos;t a constant, so BigQuery probably can&apos;t prune the target. Partition `fct_pick_rates` by `ds` and add a literal or scripted `ds` filter on the target.
+11. **The validation is thin.** &quot;Check row counts&quot; won&apos;t catch wrong sums. Add a reconciliation of `SUM(amount)` against the source per `ds`, a uniqueness test on the key, and null checks.
+
+**Smaller items**
+
+- `owner: TBD` should be filled in before the build.
+- The units of `amount` aren&apos;t stated (picks, items, or quantity).
+- The plan doesn&apos;t say how `fct_pick_rates` is partitioned or clustered.
+
+I&apos;d fix items 1–4 before building. Items 5–9 need decisions from the data team. Want me to draft a revised plan with these changes?</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">3-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and found several problems. The first three would stop it from working as written.
+
+**Blocking**
+
+1. **The source schema doesn&apos;t match the queries.** `raw_wms.pick_events` has `ds, picked_at, picker_id, amount`. The model query uses `week` and the MERGE uses `shift_id`, and neither column exists. The plan needs to say where `shift_id` comes from. It could be a scanner field that&apos;s missing from the DDL, or derived from `picked_at`. This also matters for shifts that cross midnight, because `ds` may not match the shift&apos;s date.
+2. **The Model and Load sections disagree on grain.** The stated grain is picker × shift × ds. The Model query groups by `week`, and the MERGE groups by `shift_id`. The Model query looks like a leftover and should be removed or fixed.
+3. **The rollout backfill won&apos;t work.** `UPDATE` only changes rows that already exist, and `fct_pick_rates` starts empty, so the backfill would do nothing. It should run the MERGE (or an `INSERT`) per `ds` over the two-year range. The `UPDATE` is also elided (`SELECT ...`, `WHERE ...`), so I can&apos;t check it. Please also say whether &quot;about 400 GB&quot; is the total or per day. If it&apos;s the total, a two-year backfill scans most of it, and `require_partition_filter` means it has to be done in a loop or with an explicit range.
+
+**Privacy and access**
+
+4. **Hashing isn&apos;t in the model SQL.** The Access section says identifiers are hashed with SHA256, but both queries select raw `picker_id`. Unsalted SHA256 of low-entropy employee IDs is also easy to reverse, so use a salted hash or HMAC, with the key held outside the dataset.
+5. **The classification looks wrong.** This is per-worker productivity data, and it sits in a dataset called `fct_private`, but the contract says `classification: internal`. Please confirm that with whoever sets data classifications.
+
+**Correctness and design**
+
+6. **The contract&apos;s primary key leaves out `ds`.** The key is `picker_id, shift_id`, but the MERGE joins on `ds` as well. Either `shift_id` is globally unique, or the key should include `ds`.
+7. **The model has no rate.** It only sums `amount`. A pick rate needs a denominator such as hours worked or shift duration, or the model should be renamed.
+8. **The upload timing isn&apos;t handled.** Scanners upload once per shift, but the plan has no trigger or late-data handling. The 07:00 UTC SLA also isn&apos;t tied to when the last shift lands. It would help to reprocess the last N days, since the MERGE is idempotent. The MERGE also never deletes rows that disappear from the source.
+9. **There is no deduplication.** There&apos;s no event ID, so a re-uploaded scanner batch would double-count `amount`.
+10. **The MERGE may be expensive.** `d.ds = n.ds` isn&apos;t a constant, so BigQuery probably can&apos;t prune the target. Partition `fct_pick_rates` by `ds` and add a literal or scripted `ds` filter on the target.
+11. **The validation is thin.** &quot;Check row counts&quot; won&apos;t catch wrong sums. Add a reconciliation of `SUM(amount)` against the source per `ds`, a uniqueness test on the key, and null checks.
+
+**Smaller items**
+
+- `owner: TBD` should be filled in before the build.
+- The units of `amount` aren&apos;t stated (picks, items, or quantity).
+- The plan doesn&apos;t say how `fct_pick_rates` is partitioned or clustered.
+
+I&apos;d fix items 1–4 before building. Items 5–9 need decisions from the data team. Want me to draft a revised plan with these changes?</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:0.0%"></span></span>
+<span class="num">0%</span>
+<span class="muted num">2 turns · $0.05 · 14:36:09 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I found several problems. Items 1 to 3 would stop the build from working, so fix those first.
+
+**Blocking**
+1. **The query uses columns the source doesn&apos;t have.** `raw_wms.pick_events` has `ds, picked_at, picker_id, amount`. The Model query groups by `week` and the Load query groups by `shift_id`, and neither column exists. Either the source DDL is incomplete or both queries fail. If shifts are derived (for example from `picked_at`), the plan has to say how.
+2. **The Model and Load queries disagree.** The Model groups by `week`. The Load groups by `shift_id`. The Grain says &quot;per picker per shift per ds&quot;, and the Access section lists `shift_id`, so `week` looks like a mistake.
+3. **The primary key doesn&apos;t match the grain.** The contract says `picker_id, shift_id`, but the grain and the MERGE key include `ds`. If shift IDs aren&apos;t globally unique, the key will collide. It should be `ds, picker_id, shift_id`.
+4. **The rollout step can&apos;t backfill an empty table.** `UPDATE` only changes rows that already exist, so on a new table it does nothing. The step is also a sketch (`SELECT ...`, `WHERE ...`). Use the same MERGE (or an insert) per `ds`.
+
+**Cost and correctness**
+5. **The backfill cost isn&apos;t estimated.** The plan says &quot;about 400 GB&quot; without saying whether that is the total or per day. `require_partition_filter` forces one query per `ds`, so two years means about 730 runs. State the scan cost, and say whether the backfill runs in batches or in parallel.
+6. **Late and partial data aren&apos;t handled.** Scanners upload once per shift, but the load runs per `ds` against a 07:00 UTC SLA. Nothing says when the job runs, what happens if a shift uploads late, or whether `ds` is the pick date or the upload date. The MERGE is idempotent per key, but it won&apos;t catch data that lands in an already-loaded `ds`. Add a re-run or lookback window.
+7. **The row-count check is too weak.** Matching counts won&apos;t catch wrong sums. Also reconcile `SUM(amount)` per `ds` against the source.
+8. **The model doesn&apos;t compute a rate.** It only sums `amount`. A pick rate needs a denominator, such as hours or lines, or the name should change.
+
+**Governance**
+9. **The privacy handling is inconsistent.** Per-picker performance data is personal data, but the classification is `internal`. The dataset is `fct_private`. Hashing with unsalted SHA256 is easy to reverse for low-entropy IDs. The hashing also isn&apos;t in any of the SQL. Decide whether to use a salted or keyed hash, where it happens, and what the classification should be.
+10. **The owner is TBD.** Assign one before build.
+11. **The target table is undefined.** There&apos;s no DDL, partitioning or clustering. The MERGE target also isn&apos;t dataset-qualified, which matters because the Access section says the table lives in `fct_private`.
+
+I&apos;d fix 1 to 4 and the privacy decision (9) before building. Once you confirm how `shift_id` is derived, I can draft the corrected plan.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I found several problems. Items 1 to 3 would stop the build from working, so fix those first.
+
+**Blocking**
+1. **The query uses columns the source doesn&apos;t have.** `raw_wms.pick_events` has `ds, picked_at, picker_id, amount`. The Model query groups by `week` and the Load query groups by `shift_id`, and neither column exists. Either the source DDL is incomplete or both queries fail. If shifts are derived (for example from `picked_at`), the plan has to say how.
+2. **The Model and Load queries disagree.** The Model groups by `week`. The Load groups by `shift_id`. The Grain says &quot;per picker per shift per ds&quot;, and the Access section lists `shift_id`, so `week` looks like a mistake.
+3. **The primary key doesn&apos;t match the grain.** The contract says `picker_id, shift_id`, but the grain and the MERGE key include `ds`. If shift IDs aren&apos;t globally unique, the key will collide. It should be `ds, picker_id, shift_id`.
+4. **The rollout step can&apos;t backfill an empty table.** `UPDATE` only changes rows that already exist, so on a new table it does nothing. The step is also a sketch (`SELECT ...`, `WHERE ...`). Use the same MERGE (or an insert) per `ds`.
+
+**Cost and correctness**
+5. **The backfill cost isn&apos;t estimated.** The plan says &quot;about 400 GB&quot; without saying whether that is the total or per day. `require_partition_filter` forces one query per `ds`, so two years means about 730 runs. State the scan cost, and say whether the backfill runs in batches or in parallel.
+6. **Late and partial data aren&apos;t handled.** Scanners upload once per shift, but the load runs per `ds` against a 07:00 UTC SLA. Nothing says when the job runs, what happens if a shift uploads late, or whether `ds` is the pick date or the upload date. The MERGE is idempotent per key, but it won&apos;t catch data that lands in an already-loaded `ds`. Add a re-run or lookback window.
+7. **The row-count check is too weak.** Matching counts won&apos;t catch wrong sums. Also reconcile `SUM(amount)` per `ds` against the source.
+8. **The model doesn&apos;t compute a rate.** It only sums `amount`. A pick rate needs a denominator, such as hours or lines, or the name should change.
+
+**Governance**
+9. **The privacy handling is inconsistent.** Per-picker performance data is personal data, but the classification is `internal`. The dataset is `fct_private`. Hashing with unsalted SHA256 is easy to reverse for low-entropy IDs. The hashing also isn&apos;t in any of the SQL. Decide whether to use a salted or keyed hash, where it happens, and what the classification should be.
+10. **The owner is TBD.** Assign one before build.
+11. **The target table is undefined.** There&apos;s no DDL, partitioning or clustering. The MERGE target also isn&apos;t dataset-qualified, which matters because the Access section says the table lives in `fct_private`.
+
+I&apos;d fix 1 to 4 and the privacy decision (9) before building. Once you confirm how `shift_id` is derived, I can draft the corrected plan.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">3-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I found several problems. Items 1 to 3 would stop the build from working, so fix those first.
+
+**Blocking**
+1. **The query uses columns the source doesn&apos;t have.** `raw_wms.pick_events` has `ds, picked_at, picker_id, amount`. The Model query groups by `week` and the Load query groups by `shift_id`, and neither column exists. Either the source DDL is incomplete or both queries fail. If shifts are derived (for example from `picked_at`), the plan has to say how.
+2. **The Model and Load queries disagree.** The Model groups by `week`. The Load groups by `shift_id`. The Grain says &quot;per picker per shift per ds&quot;, and the Access section lists `shift_id`, so `week` looks like a mistake.
+3. **The primary key doesn&apos;t match the grain.** The contract says `picker_id, shift_id`, but the grain and the MERGE key include `ds`. If shift IDs aren&apos;t globally unique, the key will collide. It should be `ds, picker_id, shift_id`.
+4. **The rollout step can&apos;t backfill an empty table.** `UPDATE` only changes rows that already exist, so on a new table it does nothing. The step is also a sketch (`SELECT ...`, `WHERE ...`). Use the same MERGE (or an insert) per `ds`.
+
+**Cost and correctness**
+5. **The backfill cost isn&apos;t estimated.** The plan says &quot;about 400 GB&quot; without saying whether that is the total or per day. `require_partition_filter` forces one query per `ds`, so two years means about 730 runs. State the scan cost, and say whether the backfill runs in batches or in parallel.
+6. **Late and partial data aren&apos;t handled.** Scanners upload once per shift, but the load runs per `ds` against a 07:00 UTC SLA. Nothing says when the job runs, what happens if a shift uploads late, or whether `ds` is the pick date or the upload date. The MERGE is idempotent per key, but it won&apos;t catch data that lands in an already-loaded `ds`. Add a re-run or lookback window.
+7. **The row-count check is too weak.** Matching counts won&apos;t catch wrong sums. Also reconcile `SUM(amount)` per `ds` against the source.
+8. **The model doesn&apos;t compute a rate.** It only sums `amount`. A pick rate needs a denominator, such as hours or lines, or the name should change.
+
+**Governance**
+9. **The privacy handling is inconsistent.** Per-picker performance data is personal data, but the classification is `internal`. The dataset is `fct_private`. Hashing with unsalted SHA256 is easy to reverse for low-entropy IDs. The hashing also isn&apos;t in any of the SQL. Decide whether to use a salted or keyed hash, where it happens, and what the classification should be.
+10. **The owner is TBD.** Assign one before build.
+11. **The target table is undefined.** There&apos;s no DDL, partitioning or clustering. The MERGE target also isn&apos;t dataset-qualified, which matters because the Access section says the table lives in `fct_private`.
+
+I&apos;d fix 1 to 4 and the privacy decision (9) before building. Once you confirm how `shift_id` is derived, I can draft the corrected plan.</pre>
+</div>
+</details></div>
+</div>
+</section>
+</details>
+<details class="section" open>
+<summary>Prompt</summary>
+<div class="md"><p>The plan for the warehouse pick rates model is at docs/wraith/2026-10-12-pick-rates/plan.md. Review it before we build it.</p>
+</div>
+</details>
+<details class="section" open>
+<summary>Graders — what "good" means for this case</summary>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">1-rollback</span><span class="badge">llm</span></div>
+<div class="md"><p>Answer key, category rollback. Planted defect: the Rollout changes the live table (in place UPDATE backfill) with no snapshot, clone or restore step, so there is no way back. Location: the Rollout section (in place UPDATE backfill) of <code>fct_pick_rates</code>'s plan.</p>
+<p>PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.</p>
+</div>
+</div>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">2-contract</span><span class="badge">llm</span></div>
+<div class="md"><p>Answer key, category contract. Planted defect: in the Contract section owner is TBD, although AGENTS.md requires owner, primary_key, classification and freshness_sla. Location: the Contract section of <code>fct_pick_rates</code>'s plan.</p>
+<p>PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.</p>
+</div>
+</div>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">3-grain</span><span class="badge">llm</span></div>
+<div class="md"><p>Answer key, category grain. Planted defect: the Model SQL declares one row per picker per shift per ds but groups by only ds, picker_id, week, so rows of the same grain are merged. Location: the GROUP BY in the Model section SQL of <code>fct_pick_rates</code>'s plan.</p>
+<p>PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.</p>
+</div>
+</div>
+</details>
+</article>
+<footer>Generated by <code>claude plugin eval</code> · schema v1 · scores are not comparable across different suites</footer>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var bar=document.querySelector('.toolbar');
+  if(!bar)return;
+  bar.addEventListener('click',function(e){
+    var b=e.target&&e.target.closest('button');
+    if(!b)return;
+    var open=b.dataset.act==='expand';
+    document.querySelectorAll('details.section, details.grader').forEach(function(d){d.open=open});
+  });
+});
+// Collapsed details vanish from print/PDF; these pages are share artifacts.
+window.addEventListener('beforeprint',function(){
+  document.querySelectorAll('details').forEach(function(d){
+    if(!d.open){d.dataset.printOpened='1';d.open=true}
+  });
+});
+window.addEventListener('afterprint',function(){
+  document.querySelectorAll('details[data-print-opened]').forEach(function(d){
+    d.open=false;delete d.dataset.printOpened;
+  });
+});
+</script>
+</body>
+</html>

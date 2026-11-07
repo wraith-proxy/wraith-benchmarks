@@ -1,0 +1,598 @@
+{
+  "schema_sha256": "edb41f33ec46e84780e99872ab2bd67f074959d2bf3e9c9fc54e61f8982b0d93",
+  "summary": {
+    "with": {
+      "runs": 25,
+      "first_write_valid": 25,
+      "delivered_valid": 25
+    },
+    "without": {
+      "runs": 25,
+      "first_write_valid": 2,
+      "delivered_valid": 2
+    }
+  },
+  "cases": {
+    "contracts-accounts": {
+      "with": [
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        }
+      ],
+      "without": [
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp6q5aqzqi/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp90ekwbx_/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp_cmqv4gz/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpo5omom9w/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpl1fwhbz9/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpi2uwb3md/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpmdhc90zx/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmprxllmgsy/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpv6xtwvhn/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpcb6wwnl6/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        }
+      ]
+    },
+    "contracts-orders": {
+      "with": [
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        }
+      ],
+      "without": [
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp3myg64m9/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp2vnecjcf/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpty8gcst9/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpagwcd4bm/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp8oijxnfw/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp15qfq_b4/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp7zeq_94v/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp1pi3sbwu/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpv4innzln/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpfjzbky9y/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        }
+      ]
+    },
+    "contracts-page_events": {
+      "with": [
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        }
+      ],
+      "without": [
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpfd2l979f/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmps56x4qi9/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpyfc3zxyj/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp82cpizvp/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpkr9izbuy/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp8my8_m58/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpsyki_a0u/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpjvyibay8/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpr0oomdu8/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpilxz28fp/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        }
+      ]
+    },
+    "contracts-payments": {
+      "with": [
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        }
+      ],
+      "without": [
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpo6uhygrh/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpighw9jwv/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpda7yk_nv/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmps60roi3h/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpd2nsgwts/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpo_25m1p4/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpyrtt2bzm/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpynprrrsq/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        }
+      ]
+    },
+    "contracts-products": {
+      "with": [
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": true
+        }
+      ],
+      "without": [
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp1d1244g1/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmps2vz61k2/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpc4ddrgg3/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpwotnrwdh/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmppx9an2cz/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpye2owa67/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp75e07syv/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpj1e4168j/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)"
+          },
+          "bash_touched": false
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "bash_touched": false
+        }
+      ]
+    }
+  },
+  "traces_unavailable": 0
+}

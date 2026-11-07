@@ -1,0 +1,343 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.316",
+  "startedAt": "2026-11-07T08:40:17.834Z",
+  "durationSeconds": 191,
+  "costUsd": 0.43692859999999994,
+  "partial": false,
+  "suite": {
+    "root": "/work",
+    "ablation": "with-without",
+    "modelOverride": "claude-sonnet-5-5",
+    "judgeModel": "claude-haiku-5-5",
+    "caseFilter": "plan-review-p11",
+    "threshold": 1,
+    "concurrency": 1,
+    "plugins": [
+      {
+        "name": "wraith",
+        "version": "0.6.0",
+        "path": "/work"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "plan-review-p11",
+      "dir": "bench-plan-review/p11",
+      "source": "mixed",
+      "promptMarkdown": "The plan for the warehouse pick rates model is at docs/wraith/2026-10-12-pick-rates/plan.md. Review it before we build it.",
+      "runsPerCase": 5,
+      "timeoutSeconds": 600,
+      "maxTurns": 12,
+      "graders": [
+        {
+          "name": "1-rollback",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category rollback. Planted defect: the Rollout changes the live table (in place UPDATE backfill) with no snapshot, clone or restore step, so there is no way back. Location: the Rollout section (in place UPDATE backfill) of `fct_pick_rates`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category rollback. Planted defect: the Rollout changes the live table (in place UPDATE backfill) with no snapshot, clone or restore step, so there is no way back. Location: the Rollout section (in place UPDATE backfill) of `fct_pick_rates`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "2-contract",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category contract. Planted defect: in the Contract section owner is TBD, although AGENTS.md requires owner, primary_key, classification and freshness_sla. Location: the Contract section of `fct_pick_rates`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category contract. Planted defect: in the Contract section owner is TBD, although AGENTS.md requires owner, primary_key, classification and freshness_sla. Location: the Contract section of `fct_pick_rates`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "3-grain",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category grain. Planted defect: the Model SQL declares one row per picker per shift per ds but groups by only ds, picker_id, week, so rows of the same grain are merged. Location: the GROUP BY in the Model section SQL of `fct_pick_rates`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category grain. Planted defect: the Model SQL declares one row per picker per shift per ds but groups by only ds, picker_id, week, so rows of the same grain are merged. Location: the GROUP BY in the Model section SQL of `fct_pick_rates`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.11042489999999999,
+            "judgeCostUsd": 0.0013765000000000001,
+            "durationSeconds": 50,
+            "startedAt": "2026-11-07T08:40:17.865Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-BOV1js/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-rollback",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with four blockers. I didn't run any dry-runs, because the source table isn't in the repo and the plan's queries aren't runnable as written. I also didn't run the optional vendor second-pass skills.\n\n**Blockers**\n- **Grain (item 3):** The model groups by `week`, the load groups by `shift_id`, and the source DDL has neither column. `SUM(amount)` also isn't a rate, because there is no time denominator.\n- **Contract (item 2):** `owner` is TBD, but it's a required field. There is no contract file in `contracts/`. The primary key leaves out `ds`, so it disagrees with the stated grain.\n- **Backfill (item 5):** The rollout uses `UPDATE`, which inserts nothing, so it would load zero rows into a new table. The target table has no DDL and the MERGE has no `ds` predicate to prune partitions. Nothing bounds the cost of backfilling about 730 partitions.\n- **Personal data (item 7):** `picker_id` identifies workers, and the plan classifies it as `internal`, yet the dataset is named `fct_private`. A SHA256 hash of an ID, with no salt or key, can be brute-forced. No SQL applies the hash, and there is no erasure path or policy tags.\n\nI also logged seven lower-severity findings (all `should`):\n- no named consumer\n- temporal model not stated\n- cost estimate missing\n- no tests\n- downstream consumers not listed\n- no rollback\n- no late-arriving-data rule\n\nThe premise check found no existing pick model, table or contract in the repo, so nothing already answers this.\n\nThe author needs to resolve the blockers in the plan before we build it. I left the rest of the plan untouched, as the skill requires. Which grain do you want: per picker per shift per ds, or weekly? That decision drives the model SQL, the contract and the key."
+              },
+              {
+                "name": "2-contract",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with four blockers. I didn't run any dry-runs, because the source table isn't in the repo and the plan's queries aren't runnable as written. I also didn't run the optional vendor second-pass skills.\n\n**Blockers**\n- **Grain (item 3):** The model groups by `week`, the load groups by `shift_id`, and the source DDL has neither column. `SUM(amount)` also isn't a rate, because there is no time denominator.\n- **Contract (item 2):** `owner` is TBD, but it's a required field. There is no contract file in `contracts/`. The primary key leaves out `ds`, so it disagrees with the stated grain.\n- **Backfill (item 5):** The rollout uses `UPDATE`, which inserts nothing, so it would load zero rows into a new table. The target table has no DDL and the MERGE has no `ds` predicate to prune partitions. Nothing bounds the cost of backfilling about 730 partitions.\n- **Personal data (item 7):** `picker_id` identifies workers, and the plan classifies it as `internal`, yet the dataset is named `fct_private`. A SHA256 hash of an ID, with no salt or key, can be brute-forced. No SQL applies the hash, and there is no erasure path or policy tags.\n\nI also logged seven lower-severity findings (all `should`):\n- no named consumer\n- temporal model not stated\n- cost estimate missing\n- no tests\n- downstream consumers not listed\n- no rollback\n- no late-arriving-data rule\n\nThe premise check found no existing pick model, table or contract in the repo, so nothing already answers this.\n\nThe author needs to resolve the blockers in the plan before we build it. I left the rest of the plan untouched, as the skill requires. Which grain do you want: per picker per shift per ds, or weekly? That decision drives the model SQL, the contract and the key."
+              },
+              {
+                "name": "3-grain",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with four blockers. I didn't run any dry-runs, because the source table isn't in the repo and the plan's queries aren't runnable as written. I also didn't run the optional vendor second-pass skills.\n\n**Blockers**\n- **Grain (item 3):** The model groups by `week`, the load groups by `shift_id`, and the source DDL has neither column. `SUM(amount)` also isn't a rate, because there is no time denominator.\n- **Contract (item 2):** `owner` is TBD, but it's a required field. There is no contract file in `contracts/`. The primary key leaves out `ds`, so it disagrees with the stated grain.\n- **Backfill (item 5):** The rollout uses `UPDATE`, which inserts nothing, so it would load zero rows into a new table. The target table has no DDL and the MERGE has no `ds` predicate to prune partitions. Nothing bounds the cost of backfilling about 730 partitions.\n- **Personal data (item 7):** `picker_id` identifies workers, and the plan classifies it as `internal`, yet the dataset is named `fct_private`. A SHA256 hash of an ID, with no salt or key, can be brute-forced. No SQL applies the hash, and there is no erasure path or policy tags.\n\nI also logged seven lower-severity findings (all `should`):\n- no named consumer\n- temporal model not stated\n- cost estimate missing\n- no tests\n- downstream consumers not listed\n- no rollback\n- no late-arriving-data rule\n\nThe premise check found no existing pick model, table or contract in the repo, so nothing already answers this.\n\nThe author needs to resolve the blockers in the plan before we build it. I left the rest of the plan untouched, as the skill requires. Which grain do you want: per picker per shift per ds, or weekly? That decision drives the model SQL, the contract and the key."
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.11446419999999999,
+            "judgeCostUsd": 0.0017741000000000002,
+            "durationSeconds": 51,
+            "startedAt": "2026-11-07T08:41:07.653Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-AItaIW/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-rollback",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**. I didn't edit the rest of the plan.\n\nI found no existing pick-rates model, table or contract in the repo, so there's no premise blocker. I didn't run the `bq` dry-runs or `dbt ls`. There's no dbt project yet, and the plan's queries don't match the source schema, so they would fail anyway.\n\n**Blockers**\n- **Grain:**\n  - The Model SQL groups by `week` and the Load SQL by `shift_id`. Neither column exists in `raw_wms.pick_events`.\n  - The plan never says how shift is derived, including shifts that cross midnight.\n  - The primary key leaves out `ds`, though the MERGE keys on it.\n- **Pick rate:** The model only sums `amount`. There's no denominator, so it isn't a rate yet.\n- **Contract:** `owner` is TBD, and there's no contract file.\n- **Personal data:**\n  - `picker_id` identifies workers and the table measures their performance, so \"internal\" is the wrong classification.\n  - An unsalted SHA256 of a low-entropy ID can be reversed with a dictionary attack.\n  - The hashing step isn't in any query, and there's no erasure path.\n- **Backfill:** Rollout step 1 is an `UPDATE ... FROM` over two years. An UPDATE can't insert rows into an empty table, and `n` is undefined.\n- **Rollback:** There isn't one.\n\n**Should-fix**\n- The target table has no DDL, so the MERGE would scan the whole destination on every run.\n- The MERGE never deletes shifts that disappear from source.\n- There's no cost estimate against the 10 GB dev limit.\n- There are no tests and no null policy.\n- The 07:00 UTC freshness SLA isn't tied to when shifts end.\n- Late-arriving data isn't handled.\n- The consumer and the downstream models aren't listed.\n\nI skipped the vendor second pass, the Google companion skills (datalineage, bigquery-optimization). They ask the agent to set an attribution tag that reports usage to Google. Say if you want them run."
+              },
+              {
+                "name": "2-contract",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**. I didn't edit the rest of the plan.\n\nI found no existing pick-rates model, table or contract in the repo, so there's no premise blocker. I didn't run the `bq` dry-runs or `dbt ls`. There's no dbt project yet, and the plan's queries don't match the source schema, so they would fail anyway.\n\n**Blockers**\n- **Grain:**\n  - The Model SQL groups by `week` and the Load SQL by `shift_id`. Neither column exists in `raw_wms.pick_events`.\n  - The plan never says how shift is derived, including shifts that cross midnight.\n  - The primary key leaves out `ds`, though the MERGE keys on it.\n- **Pick rate:** The model only sums `amount`. There's no denominator, so it isn't a rate yet.\n- **Contract:** `owner` is TBD, and there's no contract file.\n- **Personal data:**\n  - `picker_id` identifies workers and the table measures their performance, so \"internal\" is the wrong classification.\n  - An unsalted SHA256 of a low-entropy ID can be reversed with a dictionary attack.\n  - The hashing step isn't in any query, and there's no erasure path.\n- **Backfill:** Rollout step 1 is an `UPDATE ... FROM` over two years. An UPDATE can't insert rows into an empty table, and `n` is undefined.\n- **Rollback:** There isn't one.\n\n**Should-fix**\n- The target table has no DDL, so the MERGE would scan the whole destination on every run.\n- The MERGE never deletes shifts that disappear from source.\n- There's no cost estimate against the 10 GB dev limit.\n- There are no tests and no null policy.\n- The 07:00 UTC freshness SLA isn't tied to when shifts end.\n- Late-arriving data isn't handled.\n- The consumer and the downstream models aren't listed.\n\nI skipped the vendor second pass, the Google companion skills (datalineage, bigquery-optimization). They ask the agent to set an attribution tag that reports usage to Google. Say if you want them run."
+              },
+              {
+                "name": "3-grain",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**. I didn't edit the rest of the plan.\n\nI found no existing pick-rates model, table or contract in the repo, so there's no premise blocker. I didn't run the `bq` dry-runs or `dbt ls`. There's no dbt project yet, and the plan's queries don't match the source schema, so they would fail anyway.\n\n**Blockers**\n- **Grain:**\n  - The Model SQL groups by `week` and the Load SQL by `shift_id`. Neither column exists in `raw_wms.pick_events`.\n  - The plan never says how shift is derived, including shifts that cross midnight.\n  - The primary key leaves out `ds`, though the MERGE keys on it.\n- **Pick rate:** The model only sums `amount`. There's no denominator, so it isn't a rate yet.\n- **Contract:** `owner` is TBD, and there's no contract file.\n- **Personal data:**\n  - `picker_id` identifies workers and the table measures their performance, so \"internal\" is the wrong classification.\n  - An unsalted SHA256 of a low-entropy ID can be reversed with a dictionary attack.\n  - The hashing step isn't in any query, and there's no erasure path.\n- **Backfill:** Rollout step 1 is an `UPDATE ... FROM` over two years. An UPDATE can't insert rows into an empty table, and `n` is undefined.\n- **Rollback:** There isn't one.\n\n**Should-fix**\n- The target table has no DDL, so the MERGE would scan the whole destination on every run.\n- The MERGE never deletes shifts that disappear from source.\n- There's no cost estimate against the 10 GB dev limit.\n- There are no tests and no null policy.\n- The 07:00 UTC freshness SLA isn't tied to when shifts end.\n- Late-arriving data isn't handled.\n- The consumer and the downstream models aren't listed.\n\nI skipped the vendor second pass, the Google companion skills (datalineage, bigquery-optimization). They ask the agent to set an attribution tag that reports usage to Google. Say if you want them run."
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.11815229999999999,
+            "judgeCostUsd": 0.0015970000000000008,
+            "durationSeconds": 53,
+            "startedAt": "2026-11-07T08:41:58.530Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-oN9N6N/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-rollback",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to `docs/wraith/2026-10-12-pick-rates/plan.md`. I didn't touch the rest of the plan. **Verdict: NOT READY**, with four blockers.\n\nI found no existing model, table or contract that already covers this. I couldn't run a dry-run because `raw_wms.pick_events` and `fct_pick_rates` don't exist in the repo or a dbt project. The cost findings are therefore estimates, and the plan needs a real dry-run.\n\n**Blockers**\n1. **Grain (item 3):** the source has no `shift_id` or `week` column. The Model query groups by `week` and the Load groups by `shift_id`. The plan doesn't say how a shift is derived.\n2. **Personal data (item 7):** a picker is a person, but the contract says `internal`. SHA256 of an ID can be reversed by enumeration. There is no keyed hash or crypto-shred path, and raw `picker_id` access isn't addressed.\n3. **Contract (item 2):** `owner` is `TBD`, which is a required field. No ODCS file is planned, and the change isn't classified as additive or breaking.\n4. **Backfill (item 5):** the `UPDATE ... FROM` is malformed. On an empty table it would update zero rows, so it can't backfill anything. It should be a per-`ds` loop that runs the Load MERGE.\n\n**Main \"should\" findings**\n- **Consumer and rate (item 1):** no consumer or decision is named, and a model called \"pick rates\" only sums `amount`, with no time denominator.\n- **Primary key (item 3):** it omits `ds`.\n- **Target table (item 6):** `fct_pick_rates` has no DDL. The MERGE `ON` clause won't prune the target, which will fail once a partition filter is required.\n- **Deletes (item 5):** the MERGE never deletes, so a shift corrected downward leaves a stale row.\n- **Late data (item 11):** nothing covers uploads that arrive after their `ds`.\n- **Tests, SLA, downstream, rollback:** no tests, the 07:00 UTC SLA isn't tied to shift upload times, no downstream consumers are listed, and there is no rollback.\n\nThe full table in the plan has the required change for each finding, plus two nits.\n\nDecision for you: who owns the model, and what is the \"rate\"? Those two answers unblock the contract and the grain."
+              },
+              {
+                "name": "2-contract",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to `docs/wraith/2026-10-12-pick-rates/plan.md`. I didn't touch the rest of the plan. **Verdict: NOT READY**, with four blockers.\n\nI found no existing model, table or contract that already covers this. I couldn't run a dry-run because `raw_wms.pick_events` and `fct_pick_rates` don't exist in the repo or a dbt project. The cost findings are therefore estimates, and the plan needs a real dry-run.\n\n**Blockers**\n1. **Grain (item 3):** the source has no `shift_id` or `week` column. The Model query groups by `week` and the Load groups by `shift_id`. The plan doesn't say how a shift is derived.\n2. **Personal data (item 7):** a picker is a person, but the contract says `internal`. SHA256 of an ID can be reversed by enumeration. There is no keyed hash or crypto-shred path, and raw `picker_id` access isn't addressed.\n3. **Contract (item 2):** `owner` is `TBD`, which is a required field. No ODCS file is planned, and the change isn't classified as additive or breaking.\n4. **Backfill (item 5):** the `UPDATE ... FROM` is malformed. On an empty table it would update zero rows, so it can't backfill anything. It should be a per-`ds` loop that runs the Load MERGE.\n\n**Main \"should\" findings**\n- **Consumer and rate (item 1):** no consumer or decision is named, and a model called \"pick rates\" only sums `amount`, with no time denominator.\n- **Primary key (item 3):** it omits `ds`.\n- **Target table (item 6):** `fct_pick_rates` has no DDL. The MERGE `ON` clause won't prune the target, which will fail once a partition filter is required.\n- **Deletes (item 5):** the MERGE never deletes, so a shift corrected downward leaves a stale row.\n- **Late data (item 11):** nothing covers uploads that arrive after their `ds`.\n- **Tests, SLA, downstream, rollback:** no tests, the 07:00 UTC SLA isn't tied to shift upload times, no downstream consumers are listed, and there is no rollback.\n\nThe full table in the plan has the required change for each finding, plus two nits.\n\nDecision for you: who owns the model, and what is the \"rate\"? Those two answers unblock the contract and the grain."
+              },
+              {
+                "name": "3-grain",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to `docs/wraith/2026-10-12-pick-rates/plan.md`. I didn't touch the rest of the plan. **Verdict: NOT READY**, with four blockers.\n\nI found no existing model, table or contract that already covers this. I couldn't run a dry-run because `raw_wms.pick_events` and `fct_pick_rates` don't exist in the repo or a dbt project. The cost findings are therefore estimates, and the plan needs a real dry-run.\n\n**Blockers**\n1. **Grain (item 3):** the source has no `shift_id` or `week` column. The Model query groups by `week` and the Load groups by `shift_id`. The plan doesn't say how a shift is derived.\n2. **Personal data (item 7):** a picker is a person, but the contract says `internal`. SHA256 of an ID can be reversed by enumeration. There is no keyed hash or crypto-shred path, and raw `picker_id` access isn't addressed.\n3. **Contract (item 2):** `owner` is `TBD`, which is a required field. No ODCS file is planned, and the change isn't classified as additive or breaking.\n4. **Backfill (item 5):** the `UPDATE ... FROM` is malformed. On an empty table it would update zero rows, so it can't backfill anything. It should be a per-`ds` loop that runs the Load MERGE.\n\n**Main \"should\" findings**\n- **Consumer and rate (item 1):** no consumer or decision is named, and a model called \"pick rates\" only sums `amount`, with no time denominator.\n- **Primary key (item 3):** it omits `ds`.\n- **Target table (item 6):** `fct_pick_rates` has no DDL. The MERGE `ON` clause won't prune the target, which will fail once a partition filter is required.\n- **Deletes (item 5):** the MERGE never deletes, so a shift corrected downward leaves a stale row.\n- **Late data (item 11):** nothing covers uploads that arrive after their `ds`.\n- **Tests, SLA, downstream, rollback:** no tests, the 07:00 UTC SLA isn't tied to shift upload times, no downstream consumers are listed, and there is no rollback.\n\nThe full table in the plan has the required change for each finding, plus two nits.\n\nDecision for you: who owns the model, and what is the \"rate\"? Those two answers unblock the contract and the grain."
+              }
+            ]
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 0.0938872,
+            "judgeCostUsd": 0,
+            "durationSeconds": 32,
+            "startedAt": "2026-11-07T08:42:51.603Z",
+            "error": "exit 1: You've hit your 5-hour limit · resets 12:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-wS2gBU/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-07T08:43:23.766Z",
+            "error": "exit 1: You've hit your 5-hour limit · resets 12:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-Pwy3P9/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          }
+        ],
+        "without": [
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-07T08:43:24.676Z",
+            "error": "exit 1: You've hit your 5-hour limit · resets 12:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-YYpwBX/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-07T08:43:25.575Z",
+            "error": "exit 1: You've hit your 5-hour limit · resets 12:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-KwYydX/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-07T08:43:26.473Z",
+            "error": "exit 1: You've hit your 5-hour limit · resets 12:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-HoUjFx/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-07T08:43:27.356Z",
+            "error": "exit 1: You've hit your 5-hour limit · resets 12:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-NeQEpk/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-07T08:43:28.249Z",
+            "error": "exit 1: You've hit your 5-hour limit · resets 12:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-GePpY5/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.2,
+        "passRate": 0,
+        "passRateWithout": 0
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 0,
+    "overallScore": 0.2,
+    "overallPassRate": 0
+  }
+}

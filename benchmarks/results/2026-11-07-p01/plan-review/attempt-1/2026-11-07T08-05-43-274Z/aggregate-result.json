@@ -1,0 +1,647 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.316",
+  "startedAt": "2026-11-07T08:05:43.274Z",
+  "durationSeconds": 447,
+  "costUsd": 0.8026916,
+  "partial": false,
+  "suite": {
+    "root": "/work",
+    "ablation": "with-without",
+    "modelOverride": "claude-sonnet-5-5",
+    "judgeModel": "claude-haiku-5-5",
+    "caseFilter": "plan-review-p01",
+    "threshold": 1,
+    "concurrency": 1,
+    "plugins": [
+      {
+        "name": "wraith",
+        "version": "0.6.0",
+        "path": "/work"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "plan-review-p01",
+      "dir": "bench-plan-review/p01",
+      "source": "mixed",
+      "promptMarkdown": "The plan for the daily revenue mart is at docs/wraith/2026-10-12-daily-revenue/plan.md. Review it before we build it.",
+      "runsPerCase": 5,
+      "timeoutSeconds": 600,
+      "maxTurns": 12,
+      "graders": [
+        {
+          "name": "1-grain",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category grain. Planted defect: the Model SQL declares one row per order per ds but joins raw_shop.order_lines (many rows per order) without aggregating, so rows repeat per raw_shop.order_lines row. Location: the Model section SQL, JOIN raw_shop.order_lines with no GROUP BY of `mart_daily_revenue`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category grain. Planted defect: the Model SQL declares one row per order per ds but joins raw_shop.order_lines (many rows per order) without aggregating, so rows repeat per raw_shop.order_lines row. Location: the Model section SQL, JOIN raw_shop.order_lines with no GROUP BY of `mart_daily_revenue`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "2-dedup",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category dedup. Planted defect: the source delivers at least once (Pub/Sub export, retried when an ack times out) and the Load section uses a plain INSERT with no MERGE or dedup on order_id, so redelivered rows are duplicated. Location: the Load section, INSERT INTO ... SELECT of `mart_daily_revenue`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category dedup. Planted defect: the source delivers at least once (Pub/Sub export, retried when an ack times out) and the Load section uses a plain INSERT with no MERGE or dedup on order_id, so redelivered rows are duplicated. Location: the Load section, INSERT INTO ... SELECT of `mart_daily_revenue`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "3-scan",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category scan. Planted defect: raw_shop.orders (about 4 TB) is created without PARTITION BY or CLUSTER BY and the query filters on DATE(order_ts), so every run scans the whole table. Location: the Source section DDL and query of `mart_daily_revenue`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category scan. Planted defect: raw_shop.orders (about 4 TB) is created without PARTITION BY or CLUSTER BY and the query filters on DATE(order_ts), so every run scans the whole table. Location: the Source section DDL and query of `mart_daily_revenue`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.110045,
+            "judgeCostUsd": 0.002619,
+            "durationSeconds": 54,
+            "startedAt": "2026-11-07T08:05:43.360Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-jeiB0u/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, because four blockers need fixing before we build.\n\nI did not run a dry-run. There is no dbt project here, and `raw_shop.orders` isn't reachable. The cost figure is arithmetic from the plan's \"about 4 TB\".\n\n**Blockers**\n1. **Duplicates inflate revenue.** The Pub/Sub export retries on ack timeout, so the source can hold duplicate orders. The load does `SUM(amount)` per order with no dedup, so each duplicate adds to revenue.\n2. **The model and load queries disagree.** The model joins `order_lines`, which gives one row per order line, and selects `status` and `line_total`. The load reads only `orders` and outputs `ds, order_id, amount`. Neither query reliably gives the stated grain of one row per order per ds.\n3. **The load is not idempotent.** `INSERT INTO` appends a second copy if you rerun a ds, and the backfill has no statement.\n4. **No partitioning is stated.** On an unpartitioned 4 TB table, `WHERE ds = @ds` scans about 4 TB per run. That is roughly 400 times the 10 GB dev limit.\n\n**Should-fix**\n- **Late data:** the source query filters on `DATE(order_ts)` and the load filters on `ds`, and late-arriving orders aren't handled.\n- **Contract:**\n  - There is no contract file.\n  - The change isn't classified as additive or breaking.\n  - The primary key should be `(ds, order_id)`.\n- **Personal data:** the plan says identifiers are hashed, but the load never hashes anything. An unsalted SHA256 of an order ID is pseudonymous, not anonymous, and there is no erasure path.\n- **Quality:** there are no tests. The inner join silently drops orders that have no lines.\n- **Consumers:** none are named, and neither are downstream models or dashboards.\n- **Rollback:** the snapshot name is fixed, so a rerun fails. Row counts won't catch wrong amounts, and the restore statement isn't written.\n\n**Nit:** the plan doesn't say it is a ds snapshot with no SCD2.\n\nThe plan's author needs to resolve these findings, since the skill doesn't edit the rest of the plan. I can walk through them with you, or send them to the architect agent to redraft."
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, because four blockers need fixing before we build.\n\nI did not run a dry-run. There is no dbt project here, and `raw_shop.orders` isn't reachable. The cost figure is arithmetic from the plan's \"about 4 TB\".\n\n**Blockers**\n1. **Duplicates inflate revenue.** The Pub/Sub export retries on ack timeout, so the source can hold duplicate orders. The load does `SUM(amount)` per order with no dedup, so each duplicate adds to revenue.\n2. **The model and load queries disagree.** The model joins `order_lines`, which gives one row per order line, and selects `status` and `line_total`. The load reads only `orders` and outputs `ds, order_id, amount`. Neither query reliably gives the stated grain of one row per order per ds.\n3. **The load is not idempotent.** `INSERT INTO` appends a second copy if you rerun a ds, and the backfill has no statement.\n4. **No partitioning is stated.** On an unpartitioned 4 TB table, `WHERE ds = @ds` scans about 4 TB per run. That is roughly 400 times the 10 GB dev limit.\n\n**Should-fix**\n- **Late data:** the source query filters on `DATE(order_ts)` and the load filters on `ds`, and late-arriving orders aren't handled.\n- **Contract:**\n  - There is no contract file.\n  - The change isn't classified as additive or breaking.\n  - The primary key should be `(ds, order_id)`.\n- **Personal data:** the plan says identifiers are hashed, but the load never hashes anything. An unsalted SHA256 of an order ID is pseudonymous, not anonymous, and there is no erasure path.\n- **Quality:** there are no tests. The inner join silently drops orders that have no lines.\n- **Consumers:** none are named, and neither are downstream models or dashboards.\n- **Rollback:** the snapshot name is fixed, so a rerun fails. Row counts won't catch wrong amounts, and the restore statement isn't written.\n\n**Nit:** the plan doesn't say it is a ds snapshot with no SCD2.\n\nThe plan's author needs to resolve these findings, since the skill doesn't edit the rest of the plan. I can walk through them with you, or send them to the architect agent to redraft."
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: FAIL PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, because four blockers need fixing before we build.\n\nI did not run a dry-run. There is no dbt project here, and `raw_shop.orders` isn't reachable. The cost figure is arithmetic from the plan's \"about 4 TB\".\n\n**Blockers**\n1. **Duplicates inflate revenue.** The Pub/Sub export retries on ack timeout, so the source can hold duplicate orders. The load does `SUM(amount)` per order with no dedup, so each duplicate adds to revenue.\n2. **The model and load queries disagree.** The model joins `order_lines`, which gives one row per order line, and selects `status` and `line_total`. The load reads only `orders` and outputs `ds, order_id, amount`. Neither query reliably gives the stated grain of one row per order per ds.\n3. **The load is not idempotent.** `INSERT INTO` appends a second copy if you rerun a ds, and the backfill has no statement.\n4. **No partitioning is stated.** On an unpartitioned 4 TB table, `WHERE ds = @ds` scans about 4 TB per run. That is roughly 400 times the 10 GB dev limit.\n\n**Should-fix**\n- **Late data:** the source query filters on `DATE(order_ts)` and the load filters on `ds`, and late-arriving orders aren't handled.\n- **Contract:**\n  - There is no contract file.\n  - The change isn't classified as additive or breaking.\n  - The primary key should be `(ds, order_id)`.\n- **Personal data:** the plan says identifiers are hashed, but the load never hashes anything. An unsalted SHA256 of an order ID is pseudonymous, not anonymous, and there is no erasure path.\n- **Quality:** there are no tests. The inner join silently drops orders that have no lines.\n- **Consumers:** none are named, and neither are downstream models or dashboards.\n- **Rollback:** the snapshot name is fixed, so a rerun fails. Row counts won't catch wrong amounts, and the restore statement isn't written.\n\n**Nit:** the plan doesn't say it is a ds snapshot with no SCD2.\n\nThe plan's author needs to resolve these findings, since the skill doesn't edit the rest of the plan. I can walk through them with you, or send them to the architect agent to redraft."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.1194134,
+            "judgeCostUsd": 0.0032547999999999987,
+            "durationSeconds": 66,
+            "startedAt": "2026-11-07T08:06:37.048Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-EYkK0r/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with five blockers. I haven't touched the rest of the plan.\n\nI found no existing revenue model, table or contract in the repo, so there's no premise blocker. I couldn't dry-run any queries because `raw_shop.orders` and the dbt project aren't in the repo. The cost figures come from the plan's own 4 TB estimate.\n\n**Blockers**\n- **Duplicate source rows:** Pub/Sub retries mean `raw_shop.orders` can contain the same order twice. `SUM(amount) GROUP BY order_id` would double-count those orders and inflate revenue. The plan needs deduplication before aggregating.\n- **Reruns aren't safe:** `INSERT INTO` has no delete or overwrite, so rerunning a ds appends the rows again. The backfill is also not written down.\n- **Grain and model inconsistencies:**\n  - The model query joins `order_lines`, which gives one row per order line, not per order.\n  - It selects `status` and `line_total`, which aren't in the source schema.\n  - It doesn't match the load query.\n- **No partitioning:** On an unpartitioned 4 TB source, each run scans about 4 TB. That is roughly 400 times the 10 GB dev cap.\n- **Hashing and classification:** The plan says identifiers are hashed with SHA256, but no SQL does it. An unsalted hash of an order id can be reversed by enumeration. The `internal` classification also conflicts with a dataset named `mart_private`.\n\n**Should-fix**\n- Name the consumer and the cost of a wrong or late number.\n- Move the contract into `contracts/` and set the primary key to `(ds, order_id)`.\n- Define what `ds` means (order date or load date) and how late-arriving rows are handled.\n- Add real quality tests.\n- List the downstream consumers.\n- Make the rollback runnable.\n\nThere is also one nit about dataset locations.\n\nThe review table in the plan gives the exact edit for each finding. The duplicate-rows and `ds` definition issues are worth settling first, because they decide what the dedup and the idempotent load look like."
+              },
+              {
+                "name": "2-dedup",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with five blockers. I haven't touched the rest of the plan.\n\nI found no existing revenue model, table or contract in the repo, so there's no premise blocker. I couldn't dry-run any queries because `raw_shop.orders` and the dbt project aren't in the repo. The cost figures come from the plan's own 4 TB estimate.\n\n**Blockers**\n- **Duplicate source rows:** Pub/Sub retries mean `raw_shop.orders` can contain the same order twice. `SUM(amount) GROUP BY order_id` would double-count those orders and inflate revenue. The plan needs deduplication before aggregating.\n- **Reruns aren't safe:** `INSERT INTO` has no delete or overwrite, so rerunning a ds appends the rows again. The backfill is also not written down.\n- **Grain and model inconsistencies:**\n  - The model query joins `order_lines`, which gives one row per order line, not per order.\n  - It selects `status` and `line_total`, which aren't in the source schema.\n  - It doesn't match the load query.\n- **No partitioning:** On an unpartitioned 4 TB source, each run scans about 4 TB. That is roughly 400 times the 10 GB dev cap.\n- **Hashing and classification:** The plan says identifiers are hashed with SHA256, but no SQL does it. An unsalted hash of an order id can be reversed by enumeration. The `internal` classification also conflicts with a dataset named `mart_private`.\n\n**Should-fix**\n- Name the consumer and the cost of a wrong or late number.\n- Move the contract into `contracts/` and set the primary key to `(ds, order_id)`.\n- Define what `ds` means (order date or load date) and how late-arriving rows are handled.\n- Add real quality tests.\n- List the downstream consumers.\n- Make the rollback runnable.\n\nThere is also one nit about dataset locations.\n\nThe review table in the plan gives the exact edit for each finding. The duplicate-rows and `ds` definition issues are worth settling first, because they decide what the dedup and the idempotent load look like."
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with five blockers. I haven't touched the rest of the plan.\n\nI found no existing revenue model, table or contract in the repo, so there's no premise blocker. I couldn't dry-run any queries because `raw_shop.orders` and the dbt project aren't in the repo. The cost figures come from the plan's own 4 TB estimate.\n\n**Blockers**\n- **Duplicate source rows:** Pub/Sub retries mean `raw_shop.orders` can contain the same order twice. `SUM(amount) GROUP BY order_id` would double-count those orders and inflate revenue. The plan needs deduplication before aggregating.\n- **Reruns aren't safe:** `INSERT INTO` has no delete or overwrite, so rerunning a ds appends the rows again. The backfill is also not written down.\n- **Grain and model inconsistencies:**\n  - The model query joins `order_lines`, which gives one row per order line, not per order.\n  - It selects `status` and `line_total`, which aren't in the source schema.\n  - It doesn't match the load query.\n- **No partitioning:** On an unpartitioned 4 TB source, each run scans about 4 TB. That is roughly 400 times the 10 GB dev cap.\n- **Hashing and classification:** The plan says identifiers are hashed with SHA256, but no SQL does it. An unsalted hash of an order id can be reversed by enumeration. The `internal` classification also conflicts with a dataset named `mart_private`.\n\n**Should-fix**\n- Name the consumer and the cost of a wrong or late number.\n- Move the contract into `contracts/` and set the primary key to `(ds, order_id)`.\n- Define what `ds` means (order date or load date) and how late-arriving rows are handled.\n- Add real quality tests.\n- List the downstream consumers.\n- Make the rollback runnable.\n\nThere is also one nit about dataset locations.\n\nThe review table in the plan gives the exact edit for each finding. The duplicate-rows and `ds` definition issues are worth settling first, because they decide what the dedup and the idempotent load look like."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.127299,
+            "judgeCostUsd": 0.0031300999999999985,
+            "durationSeconds": 66,
+            "startedAt": "2026-11-07T08:07:42.988Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-fsytZ1/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. **The verdict is NOT READY**, because of three blockers. I didn't edit any other part of the plan.\n\n**Blockers**\n1. **Double-counted revenue.** Pub/Sub retries when an ack times out, so the source can hold duplicate orders. `SUM(amount) GROUP BY order_id` then multiplies those orders' amounts. The load should keep one row per order instead of summing.\n2. **Reruns aren't safe.** The load is a plain `INSERT INTO` with no delete or overwrite, so rerunning a `ds` doubles its rows. The backfill is only \"rebuild for the ds range\", with no command.\n3. **The Model and Load SQL disagree.**\n   - The model joins `order_lines`, which gives one row per order line and breaks the stated grain.\n   - It selects `o.status`, which isn't in the `orders` DDL, and `line_total` where the load uses `amount`.\n   - The inner join also drops orders that have no lines.\n\n**Other findings (should fix)**\n- **Consumer and `ds`:**\n  - No consumer, decision or cost of wrong is named.\n  - `ds` is undefined: the source query uses `DATE(order_ts)` and the load uses the `ds` column.\n- **Contract:**\n  - It's an inline stub, not an ODCS file in `contracts/`.\n  - It sets `primary_key: order_id`, but the grain makes the key `(ds, order_id)`.\n- **Cost:**\n  - The 4 TB source has no partitioning, clustering or `require_partition_filter`.\n  - A full scan is about $25 per run at on-demand list price, and it would also fail under the 10 GB dev byte cap.\n- **Personal data:**\n  - The plan says `order_id` is SHA256-hashed, but no SQL does it.\n  - Hashing the key would break the join to `order_lines` and the contract key.\n  - The `internal` classification conflicts with a dataset named `mart_private`.\n- **Quality:** the only check is \"row counts\" with no threshold, and the inner join drops rows silently.\n- **Rollback:**\n  - `CREATE SNAPSHOT TABLE` fails if the backup already exists, and on the first build.\n  - There is no expiry on the snapshot and no written restore command.\n- **Lineage:** no downstream consumers are listed.\n\nI couldn't check two things. I had no warehouse or `bq` access, so I didn't dry-run any query, and the cost figure is an estimate. I also couldn't confirm that no revenue table already exists in the warehouse. The repo has no dbt project or contracts, so nothing in it already covers this. Please check the warehouse before building.\n\nOnce the author has resolved the blockers, I can re-review."
+              },
+              {
+                "name": "2-dedup",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. **The verdict is NOT READY**, because of three blockers. I didn't edit any other part of the plan.\n\n**Blockers**\n1. **Double-counted revenue.** Pub/Sub retries when an ack times out, so the source can hold duplicate orders. `SUM(amount) GROUP BY order_id` then multiplies those orders' amounts. The load should keep one row per order instead of summing.\n2. **Reruns aren't safe.** The load is a plain `INSERT INTO` with no delete or overwrite, so rerunning a `ds` doubles its rows. The backfill is only \"rebuild for the ds range\", with no command.\n3. **The Model and Load SQL disagree.**\n   - The model joins `order_lines`, which gives one row per order line and breaks the stated grain.\n   - It selects `o.status`, which isn't in the `orders` DDL, and `line_total` where the load uses `amount`.\n   - The inner join also drops orders that have no lines.\n\n**Other findings (should fix)**\n- **Consumer and `ds`:**\n  - No consumer, decision or cost of wrong is named.\n  - `ds` is undefined: the source query uses `DATE(order_ts)` and the load uses the `ds` column.\n- **Contract:**\n  - It's an inline stub, not an ODCS file in `contracts/`.\n  - It sets `primary_key: order_id`, but the grain makes the key `(ds, order_id)`.\n- **Cost:**\n  - The 4 TB source has no partitioning, clustering or `require_partition_filter`.\n  - A full scan is about $25 per run at on-demand list price, and it would also fail under the 10 GB dev byte cap.\n- **Personal data:**\n  - The plan says `order_id` is SHA256-hashed, but no SQL does it.\n  - Hashing the key would break the join to `order_lines` and the contract key.\n  - The `internal` classification conflicts with a dataset named `mart_private`.\n- **Quality:** the only check is \"row counts\" with no threshold, and the inner join drops rows silently.\n- **Rollback:**\n  - `CREATE SNAPSHOT TABLE` fails if the backup already exists, and on the first build.\n  - There is no expiry on the snapshot and no written restore command.\n- **Lineage:** no downstream consumers are listed.\n\nI couldn't check two things. I had no warehouse or `bq` access, so I didn't dry-run any query, and the cost figure is an estimate. I also couldn't confirm that no revenue table already exists in the warehouse. The repo has no dbt project or contracts, so nothing in it already covers this. Please check the warehouse before building.\n\nOnce the author has resolved the blockers, I can re-review."
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: FAIL PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. **The verdict is NOT READY**, because of three blockers. I didn't edit any other part of the plan.\n\n**Blockers**\n1. **Double-counted revenue.** Pub/Sub retries when an ack times out, so the source can hold duplicate orders. `SUM(amount) GROUP BY order_id` then multiplies those orders' amounts. The load should keep one row per order instead of summing.\n2. **Reruns aren't safe.** The load is a plain `INSERT INTO` with no delete or overwrite, so rerunning a `ds` doubles its rows. The backfill is only \"rebuild for the ds range\", with no command.\n3. **The Model and Load SQL disagree.**\n   - The model joins `order_lines`, which gives one row per order line and breaks the stated grain.\n   - It selects `o.status`, which isn't in the `orders` DDL, and `line_total` where the load uses `amount`.\n   - The inner join also drops orders that have no lines.\n\n**Other findings (should fix)**\n- **Consumer and `ds`:**\n  - No consumer, decision or cost of wrong is named.\n  - `ds` is undefined: the source query uses `DATE(order_ts)` and the load uses the `ds` column.\n- **Contract:**\n  - It's an inline stub, not an ODCS file in `contracts/`.\n  - It sets `primary_key: order_id`, but the grain makes the key `(ds, order_id)`.\n- **Cost:**\n  - The 4 TB source has no partitioning, clustering or `require_partition_filter`.\n  - A full scan is about $25 per run at on-demand list price, and it would also fail under the 10 GB dev byte cap.\n- **Personal data:**\n  - The plan says `order_id` is SHA256-hashed, but no SQL does it.\n  - Hashing the key would break the join to `order_lines` and the contract key.\n  - The `internal` classification conflicts with a dataset named `mart_private`.\n- **Quality:** the only check is \"row counts\" with no threshold, and the inner join drops rows silently.\n- **Rollback:**\n  - `CREATE SNAPSHOT TABLE` fails if the backup already exists, and on the first build.\n  - There is no expiry on the snapshot and no written restore command.\n- **Lineage:** no downstream consumers are listed.\n\nI couldn't check two things. I had no warehouse or `bq` access, so I didn't dry-run any query, and the cost figure is an estimate. I also couldn't confirm that no revenue table already exists in the warehouse. The repo has no dbt project or contracts, so nothing in it already covers this. Please check the warehouse before building.\n\nOnce the author has resolved the blockers, I can re-review."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.10787219999999999,
+            "judgeCostUsd": 0.001713499999999998,
+            "durationSeconds": 45,
+            "startedAt": "2026-11-07T08:08:49.359Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-C2viEd/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with three blockers.\n\nI didn't run a dry-run. `raw_shop.*` isn't defined in this repo and the plan sets no partitioning, so the cost figure below is an estimate from the plan's \"about 4 TB\". I also couldn't find any existing revenue model or contract in `dbt/` or `contracts/`. So nothing already answers this and the plan's premise holds.\n\n**Blockers**\n- **Grain and query mismatch:** the plan says one row per order, but the Model query joins `order_lines` and returns one row per order line. It also selects `status` and `line_total`, which aren't in the source DDL or the Load. The contract key is `order_id` alone, where it should be `(ds, order_id)`.\n- **Reruns duplicate rows:** the Load is a bare `INSERT`, so rerunning a ds appends duplicates. The source is a Pub/Sub export that retries on ack timeout, so duplicate source rows are expected. `SUM(amount)` would double-count them. The backfill path isn't written either.\n- **Cost:** the 4 TB source has no partitioning, clustering or `require_partition_filter`. Each run would scan about 4 TB, roughly 400 times the 10 GB `dev_max_bytes_billed`.\n\nI also logged seven should-fix items and one nit:\n- Consumer and decision aren't named.\n- The contract is inline, not an ODCS file.\n- `DATE(order_ts)` and `ds` are used inconsistently, and late-arriving rows aren't handled.\n- Unsalted SHA256 on identifiers is weaker than the plan assumes, and the classification is `internal`.\n- There are no tests, and the inner join silently drops orders that have no lines.\n- Downstream consumers aren't listed.\n- The rollback snapshot fails on first run and never expires.\n- The grain wording needs to match the key (the nit).\n\nI didn't edit the rest of the plan. The table has the required change for each finding, so the author can resolve them."
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with three blockers.\n\nI didn't run a dry-run. `raw_shop.*` isn't defined in this repo and the plan sets no partitioning, so the cost figure below is an estimate from the plan's \"about 4 TB\". I also couldn't find any existing revenue model or contract in `dbt/` or `contracts/`. So nothing already answers this and the plan's premise holds.\n\n**Blockers**\n- **Grain and query mismatch:** the plan says one row per order, but the Model query joins `order_lines` and returns one row per order line. It also selects `status` and `line_total`, which aren't in the source DDL or the Load. The contract key is `order_id` alone, where it should be `(ds, order_id)`.\n- **Reruns duplicate rows:** the Load is a bare `INSERT`, so rerunning a ds appends duplicates. The source is a Pub/Sub export that retries on ack timeout, so duplicate source rows are expected. `SUM(amount)` would double-count them. The backfill path isn't written either.\n- **Cost:** the 4 TB source has no partitioning, clustering or `require_partition_filter`. Each run would scan about 4 TB, roughly 400 times the 10 GB `dev_max_bytes_billed`.\n\nI also logged seven should-fix items and one nit:\n- Consumer and decision aren't named.\n- The contract is inline, not an ODCS file.\n- `DATE(order_ts)` and `ds` are used inconsistently, and late-arriving rows aren't handled.\n- Unsalted SHA256 on identifiers is weaker than the plan assumes, and the classification is `internal`.\n- There are no tests, and the inner join silently drops orders that have no lines.\n- Downstream consumers aren't listed.\n- The rollback snapshot fails on first run and never expires.\n- The grain wording needs to match the key (the nit).\n\nI didn't edit the rest of the plan. The table has the required change for each finding, so the author can resolve them."
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with three blockers.\n\nI didn't run a dry-run. `raw_shop.*` isn't defined in this repo and the plan sets no partitioning, so the cost figure below is an estimate from the plan's \"about 4 TB\". I also couldn't find any existing revenue model or contract in `dbt/` or `contracts/`. So nothing already answers this and the plan's premise holds.\n\n**Blockers**\n- **Grain and query mismatch:** the plan says one row per order, but the Model query joins `order_lines` and returns one row per order line. It also selects `status` and `line_total`, which aren't in the source DDL or the Load. The contract key is `order_id` alone, where it should be `(ds, order_id)`.\n- **Reruns duplicate rows:** the Load is a bare `INSERT`, so rerunning a ds appends duplicates. The source is a Pub/Sub export that retries on ack timeout, so duplicate source rows are expected. `SUM(amount)` would double-count them. The backfill path isn't written either.\n- **Cost:** the 4 TB source has no partitioning, clustering or `require_partition_filter`. Each run would scan about 4 TB, roughly 400 times the 10 GB `dev_max_bytes_billed`.\n\nI also logged seven should-fix items and one nit:\n- Consumer and decision aren't named.\n- The contract is inline, not an ODCS file.\n- `DATE(order_ts)` and `ds` are used inconsistently, and late-arriving rows aren't handled.\n- Unsalted SHA256 on identifiers is weaker than the plan assumes, and the classification is `internal`.\n- There are no tests, and the inner join silently drops orders that have no lines.\n- Downstream consumers aren't listed.\n- The rollback snapshot fails on first run and never expires.\n- The grain wording needs to match the key (the nit).\n\nI didn't edit the rest of the plan. The table has the required change for each finding, so the author can resolve them."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.1060795,
+            "judgeCostUsd": 0.002388099999999999,
+            "durationSeconds": 50,
+            "startedAt": "2026-11-07T08:09:34.489Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-xRQ6y0/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with four blockers. I didn't edit the rest of the plan.\n\nI didn't dry-run any queries, so the cost figure is an estimate from the stated 4 TB. I also didn't check the warehouse for an existing revenue table or the companion Google skills. The repo has no dbt models or contracts, so Step 0 found nothing to reuse, but that only covers the repo.\n\n**Blockers**\n1. **Duplicate source rows.** Pub/Sub retries can duplicate rows in `raw_shop.orders`, and the load sums `amount` per order. Every duplicate inflates revenue, so the load needs a dedupe on `order_id`.\n2. **Model and load disagree.** The model joins `order_lines`, which fans out to one row per line, and selects `status` and `line_total`. The load ignores both and sums `orders.amount`. `order_lines` and `status` aren't in the source DDL. The plan must pick one definition of revenue and key the grain on `(ds, order_id)`.\n3. **Load isn't rerunnable.** The load is a plain `INSERT`, so rerunning a ds (including the rollout's rebuild step) duplicates rows. No backfill path is written. It needs a `MERGE` or a partition overwrite.\n4. **No partitioning.** There is no partitioning, clustering or `require_partition_filter`, and `DATE(order_ts) = @ds` can't prune on `ds`. If the table is unpartitioned, each run scans about 4 TB, roughly 400 times the 10 GB dev limit.\n\n**Should-fix items**\n- **Late-arriving data** isn't handled.\n- **Hashing claim.** The plan says identifiers are hashed with SHA256, but the load doesn't hash anything. Unsalted SHA256 of an ID is also reversible, and there's no crypto-shred path.\n- **Contract.** It's inline rather than an ODCS file in `contracts/`. Its `primary_key: order_id` conflicts with the per-ds grain, and it doesn't classify the change as additive or breaking.\n- **Consumer and lineage.** No consumer or decision is named, and downstream models and dashboards aren't listed.\n- **Tests and schedule.** There are no tests and no schedule to meet the 07:00 UTC freshness SLA.\n- **Rollback.** Step 1 clones a table that won't exist on the first run. The snapshot has no expiry, and the restore steps aren't written.\n\nTwo nits are in the section too: the dataset location and the temporal model aren't stated.\n\nDo you want me to revise the plan to resolve the findings, or would you rather walk through the blockers first?"
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with four blockers. I didn't edit the rest of the plan.\n\nI didn't dry-run any queries, so the cost figure is an estimate from the stated 4 TB. I also didn't check the warehouse for an existing revenue table or the companion Google skills. The repo has no dbt models or contracts, so Step 0 found nothing to reuse, but that only covers the repo.\n\n**Blockers**\n1. **Duplicate source rows.** Pub/Sub retries can duplicate rows in `raw_shop.orders`, and the load sums `amount` per order. Every duplicate inflates revenue, so the load needs a dedupe on `order_id`.\n2. **Model and load disagree.** The model joins `order_lines`, which fans out to one row per line, and selects `status` and `line_total`. The load ignores both and sums `orders.amount`. `order_lines` and `status` aren't in the source DDL. The plan must pick one definition of revenue and key the grain on `(ds, order_id)`.\n3. **Load isn't rerunnable.** The load is a plain `INSERT`, so rerunning a ds (including the rollout's rebuild step) duplicates rows. No backfill path is written. It needs a `MERGE` or a partition overwrite.\n4. **No partitioning.** There is no partitioning, clustering or `require_partition_filter`, and `DATE(order_ts) = @ds` can't prune on `ds`. If the table is unpartitioned, each run scans about 4 TB, roughly 400 times the 10 GB dev limit.\n\n**Should-fix items**\n- **Late-arriving data** isn't handled.\n- **Hashing claim.** The plan says identifiers are hashed with SHA256, but the load doesn't hash anything. Unsalted SHA256 of an ID is also reversible, and there's no crypto-shred path.\n- **Contract.** It's inline rather than an ODCS file in `contracts/`. Its `primary_key: order_id` conflicts with the per-ds grain, and it doesn't classify the change as additive or breaking.\n- **Consumer and lineage.** No consumer or decision is named, and downstream models and dashboards aren't listed.\n- **Tests and schedule.** There are no tests and no schedule to meet the 07:00 UTC freshness SLA.\n- **Rollback.** Step 1 clones a table that won't exist on the first run. The snapshot has no expiry, and the restore steps aren't written.\n\nTwo nits are in the section too: the dataset location and the temporal model aren't stated.\n\nDo you want me to revise the plan to resolve the findings, or would you rather walk through the blockers first?"
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with four blockers. I didn't edit the rest of the plan.\n\nI didn't dry-run any queries, so the cost figure is an estimate from the stated 4 TB. I also didn't check the warehouse for an existing revenue table or the companion Google skills. The repo has no dbt models or contracts, so Step 0 found nothing to reuse, but that only covers the repo.\n\n**Blockers**\n1. **Duplicate source rows.** Pub/Sub retries can duplicate rows in `raw_shop.orders`, and the load sums `amount` per order. Every duplicate inflates revenue, so the load needs a dedupe on `order_id`.\n2. **Model and load disagree.** The model joins `order_lines`, which fans out to one row per line, and selects `status` and `line_total`. The load ignores both and sums `orders.amount`. `order_lines` and `status` aren't in the source DDL. The plan must pick one definition of revenue and key the grain on `(ds, order_id)`.\n3. **Load isn't rerunnable.** The load is a plain `INSERT`, so rerunning a ds (including the rollout's rebuild step) duplicates rows. No backfill path is written. It needs a `MERGE` or a partition overwrite.\n4. **No partitioning.** There is no partitioning, clustering or `require_partition_filter`, and `DATE(order_ts) = @ds` can't prune on `ds`. If the table is unpartitioned, each run scans about 4 TB, roughly 400 times the 10 GB dev limit.\n\n**Should-fix items**\n- **Late-arriving data** isn't handled.\n- **Hashing claim.** The plan says identifiers are hashed with SHA256, but the load doesn't hash anything. Unsalted SHA256 of an ID is also reversible, and there's no crypto-shred path.\n- **Contract.** It's inline rather than an ODCS file in `contracts/`. Its `primary_key: order_id` conflicts with the per-ds grain, and it doesn't classify the change as additive or breaking.\n- **Consumer and lineage.** No consumer or decision is named, and downstream models and dashboards aren't listed.\n- **Tests and schedule.** There are no tests and no schedule to meet the 07:00 UTC freshness SLA.\n- **Rollback.** Step 1 clones a table that won't exist on the first run. The snapshot has no expiry, and the restore steps aren't written.\n\nTwo nits are in the section too: the dataset location and the temporal model aren't stated.\n\nDo you want me to revise the plan to resolve the findings, or would you rather walk through the blockers first?"
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0500233,
+            "judgeCostUsd": 0.0019315999999999986,
+            "durationSeconds": 34,
+            "startedAt": "2026-11-07T08:10:24.030Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-aY4jNp/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and found several problems. The first three would give wrong revenue numbers, so I'd fix them before building.\n\n**Blockers**\n\n1. **Duplicates inflate revenue.** The source is a Pub/Sub export that retries when an ack times out, which means delivery is at-least-once and `raw_shop.orders` can hold duplicate rows. The Load step then runs `SUM(amount) ... GROUP BY ds, order_id`, so every redelivered order is double-counted. Dedupe first, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY order_ts DESC) = 1`, and then take the amount from the surviving row. The plan also doesn't say whether an order can legitimately have several rows. If it can, you have no way to tell those rows from retries.\n\n2. **The Model and Load sections disagree.**\n   - The Model joins `order_lines`, which gives one row per line. That breaks the stated grain of one row per order per ds.\n   - The Model selects `status` and `line_total`. `status` isn't in the `raw_shop.orders` schema, and `order_lines` isn't described anywhere.\n   - The Load ignores the Model and reads only `orders`, producing `ds, order_id, amount`.\n   - Decide which one is the real design, then make the grain, the columns and the contract match it.\n\n3. **The Load isn't idempotent.** It's a plain `INSERT`, and Rollout step 2 rebuilds a ds range. Re-running a day, or rebuilding a range, appends duplicates on top of the existing rows. Use `MERGE`, or a delete-then-insert for that ds in one transaction, or a partition overwrite.\n\n**Should fix**\n\n4. **The ds definition is inconsistent, and scan cost is unclear.**\n   - The Source query filters on `DATE(order_ts) = @ds`, but the Model and Load filter on `ds = @ds`. If the two can differ (timezone, late arrivals), different steps will pick up different orders.\n   - The table is about 4 TB, and the plan says nothing about partitioning or clustering. If it's partitioned on `ds`, wrapping `order_ts` in `DATE()` defeats pruning. `SELECT *` also scans every column.\n   - State which date column is authoritative, and the table's partitioning.\n\n5. **The hashing claim isn't implemented, and the scheme is weak.**\n   - The Access section says identifiers are hashed with SHA256, but the Load selects `order_id` raw.\n   - The contract also names `order_id` as the primary key. Say whether the mart keeps the raw ID or a hashed one.\n   - Unsalted SHA256 over sequential or guessable IDs is easy to reverse. Use a keyed hash (HMAC) or a salt if hashing is meant to protect anything.\n\n6. **The Rollout checks are weak.**\n   - \"Check row counts\" has no pass criterion. Add checks for uniqueness of `order_id`, `SUM(amount)` against the source after dedupe, and no nulls.\n   - `CREATE SNAPSHOT TABLE ... CLONE` fails if `_bak` already exists. The plan doesn't say which dataset holds the snapshot, so it may not inherit the `mart_private` restrictions. It also has no expiration.\n   - Time travel won't help if the table is dropped and recreated rather than overwritten. Treat the snapshot as the only reliable undo.\n\n7. **The Contract is incomplete.** The 07:00 UTC freshness SLA has no late-arrival or backfill policy, and no alerting or tests. The classification is `internal`, but the dataset is named `mart_private`. Confirm that's intentional.\n\n**Questions for the data team**\n- Is `amount` per order, or per row that can repeat?\n- Is `order_lines` in scope? If it is, should the mart be at line grain?\n- Should the mart hold raw or hashed IDs?\n\nI can rewrite the Model and Load sections with the dedupe and `MERGE` fixes once you've answered those questions."
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and found several problems. The first three would give wrong revenue numbers, so I'd fix them before building.\n\n**Blockers**\n\n1. **Duplicates inflate revenue.** The source is a Pub/Sub export that retries when an ack times out, which means delivery is at-least-once and `raw_shop.orders` can hold duplicate rows. The Load step then runs `SUM(amount) ... GROUP BY ds, order_id`, so every redelivered order is double-counted. Dedupe first, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY order_ts DESC) = 1`, and then take the amount from the surviving row. The plan also doesn't say whether an order can legitimately have several rows. If it can, you have no way to tell those rows from retries.\n\n2. **The Model and Load sections disagree.**\n   - The Model joins `order_lines`, which gives one row per line. That breaks the stated grain of one row per order per ds.\n   - The Model selects `status` and `line_total`. `status` isn't in the `raw_shop.orders` schema, and `order_lines` isn't described anywhere.\n   - The Load ignores the Model and reads only `orders`, producing `ds, order_id, amount`.\n   - Decide which one is the real design, then make the grain, the columns and the contract match it.\n\n3. **The Load isn't idempotent.** It's a plain `INSERT`, and Rollout step 2 rebuilds a ds range. Re-running a day, or rebuilding a range, appends duplicates on top of the existing rows. Use `MERGE`, or a delete-then-insert for that ds in one transaction, or a partition overwrite.\n\n**Should fix**\n\n4. **The ds definition is inconsistent, and scan cost is unclear.**\n   - The Source query filters on `DATE(order_ts) = @ds`, but the Model and Load filter on `ds = @ds`. If the two can differ (timezone, late arrivals), different steps will pick up different orders.\n   - The table is about 4 TB, and the plan says nothing about partitioning or clustering. If it's partitioned on `ds`, wrapping `order_ts` in `DATE()` defeats pruning. `SELECT *` also scans every column.\n   - State which date column is authoritative, and the table's partitioning.\n\n5. **The hashing claim isn't implemented, and the scheme is weak.**\n   - The Access section says identifiers are hashed with SHA256, but the Load selects `order_id` raw.\n   - The contract also names `order_id` as the primary key. Say whether the mart keeps the raw ID or a hashed one.\n   - Unsalted SHA256 over sequential or guessable IDs is easy to reverse. Use a keyed hash (HMAC) or a salt if hashing is meant to protect anything.\n\n6. **The Rollout checks are weak.**\n   - \"Check row counts\" has no pass criterion. Add checks for uniqueness of `order_id`, `SUM(amount)` against the source after dedupe, and no nulls.\n   - `CREATE SNAPSHOT TABLE ... CLONE` fails if `_bak` already exists. The plan doesn't say which dataset holds the snapshot, so it may not inherit the `mart_private` restrictions. It also has no expiration.\n   - Time travel won't help if the table is dropped and recreated rather than overwritten. Treat the snapshot as the only reliable undo.\n\n7. **The Contract is incomplete.** The 07:00 UTC freshness SLA has no late-arrival or backfill policy, and no alerting or tests. The classification is `internal`, but the dataset is named `mart_private`. Confirm that's intentional.\n\n**Questions for the data team**\n- Is `amount` per order, or per row that can repeat?\n- Is `order_lines` in scope? If it is, should the mart be at line grain?\n- Should the mart hold raw or hashed IDs?\n\nI can rewrite the Model and Load sections with the dedupe and `MERGE` fixes once you've answered those questions."
+              },
+              {
+                "name": "3-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and found several problems. The first three would give wrong revenue numbers, so I'd fix them before building.\n\n**Blockers**\n\n1. **Duplicates inflate revenue.** The source is a Pub/Sub export that retries when an ack times out, which means delivery is at-least-once and `raw_shop.orders` can hold duplicate rows. The Load step then runs `SUM(amount) ... GROUP BY ds, order_id`, so every redelivered order is double-counted. Dedupe first, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY order_ts DESC) = 1`, and then take the amount from the surviving row. The plan also doesn't say whether an order can legitimately have several rows. If it can, you have no way to tell those rows from retries.\n\n2. **The Model and Load sections disagree.**\n   - The Model joins `order_lines`, which gives one row per line. That breaks the stated grain of one row per order per ds.\n   - The Model selects `status` and `line_total`. `status` isn't in the `raw_shop.orders` schema, and `order_lines` isn't described anywhere.\n   - The Load ignores the Model and reads only `orders`, producing `ds, order_id, amount`.\n   - Decide which one is the real design, then make the grain, the columns and the contract match it.\n\n3. **The Load isn't idempotent.** It's a plain `INSERT`, and Rollout step 2 rebuilds a ds range. Re-running a day, or rebuilding a range, appends duplicates on top of the existing rows. Use `MERGE`, or a delete-then-insert for that ds in one transaction, or a partition overwrite.\n\n**Should fix**\n\n4. **The ds definition is inconsistent, and scan cost is unclear.**\n   - The Source query filters on `DATE(order_ts) = @ds`, but the Model and Load filter on `ds = @ds`. If the two can differ (timezone, late arrivals), different steps will pick up different orders.\n   - The table is about 4 TB, and the plan says nothing about partitioning or clustering. If it's partitioned on `ds`, wrapping `order_ts` in `DATE()` defeats pruning. `SELECT *` also scans every column.\n   - State which date column is authoritative, and the table's partitioning.\n\n5. **The hashing claim isn't implemented, and the scheme is weak.**\n   - The Access section says identifiers are hashed with SHA256, but the Load selects `order_id` raw.\n   - The contract also names `order_id` as the primary key. Say whether the mart keeps the raw ID or a hashed one.\n   - Unsalted SHA256 over sequential or guessable IDs is easy to reverse. Use a keyed hash (HMAC) or a salt if hashing is meant to protect anything.\n\n6. **The Rollout checks are weak.**\n   - \"Check row counts\" has no pass criterion. Add checks for uniqueness of `order_id`, `SUM(amount)` against the source after dedupe, and no nulls.\n   - `CREATE SNAPSHOT TABLE ... CLONE` fails if `_bak` already exists. The plan doesn't say which dataset holds the snapshot, so it may not inherit the `mart_private` restrictions. It also has no expiration.\n   - Time travel won't help if the table is dropped and recreated rather than overwritten. Treat the snapshot as the only reliable undo.\n\n7. **The Contract is incomplete.** The 07:00 UTC freshness SLA has no late-arrival or backfill policy, and no alerting or tests. The classification is `internal`, but the dataset is named `mart_private`. Confirm that's intentional.\n\n**Questions for the data team**\n- Is `amount` per order, or per row that can repeat?\n- Is `order_lines` in scope? If it is, should the mart be at line grain?\n- Should the mart hold raw or hashed IDs?\n\nI can rewrite the Model and Load sections with the dedupe and `MERGE` fixes once you've answered those questions."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.04741290000000001,
+            "judgeCostUsd": 0.001691200000000002,
+            "durationSeconds": 29,
+            "startedAt": "2026-11-07T08:10:58.188Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-VIUOiC/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan and found four problems that would produce wrong numbers, plus several smaller gaps. I haven't changed anything.\n\n## Blockers\n\n1. **Duplicates inflate revenue.** The source is a Pub/Sub export that retries when an ack times out, so it delivers at least once and `raw_shop.orders` can hold duplicate rows. The load runs `SUM(amount) ... GROUP BY ds, order_id`, which adds a retried order's amount again. Dedupe first, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY order_ts DESC) = 1`, and don't sum. `primary_key: order_id` in the contract is only true after that step.\n\n2. **The load isn't idempotent.** It's a plain `INSERT`, so the \"rebuild for the ds range\" in rollout step 2 appends a second copy of every row. Use `MERGE` on `order_id`, or delete the ds range and insert it in one transaction. The plan also has no `CREATE TABLE` for the mart, so the partitioning and clustering are undefined.\n\n3. **The Model section contradicts the Load section.**\n   - The model joins `order_lines`, which gives one row per line, not the \"one row per order\" grain it states. Revenue would also be counted once per line unless you aggregate first.\n   - The model selects `o.status`, but the DDL for `raw_shop.orders` has no such column.\n   - `raw_shop.order_lines` is never declared as a source.\n   - The load ignores the model and uses `amount` rather than `line_total`.\n   \n   Decide which one is the real definition of revenue and delete the other.\n\n4. **The identifier hashing isn't implemented, and the access setup is inconsistent.** Access says identifiers are hashed with SHA256, but the load emits raw `order_id`. If you do hash them, unsalted SHA256 of predictable IDs can be reversed by brute force, so use a keyed hash or a salt. The dataset is named `mart_private` but the contract says `classification: internal`. Pick one.\n\n## Should fix\n\n- **Date filters disagree.** The source query filters `DATE(order_ts) = @ds`, but the model and load filter `ds = @ds`. Those can differ by timezone or late arrival, so name which one defines the day. The plan also doesn't say whether the 4 TB table is partitioned on `ds`. If it isn't, each run scans the whole table, and `DATE(order_ts)` can't prune partitions.\n- **Rollout checks are weak.**\n  - Comparing row counts won't catch the duplicate or fan-out problems above. Also compare `SUM(amount)` and `COUNT(DISTINCT order_id)` against the deduped source.\n  - `CREATE SNAPSHOT TABLE ... CLONE` fails on the first run, because the mart doesn't exist yet. It also fails on later runs if `_bak` already exists, so name it with a date.\n  - Restoring the full snapshot would discard anything loaded after it was taken. Time travel on the affected range is the safer undo.\n- **The freshness SLA has no support.** The contract promises 07:00 UTC, but the plan has no schedule, no late-data cutoff and no alerting. Retried Pub/Sub deliveries can arrive after the day closes, so say how late data is handled, for example by reprocessing the last N days.\n\nI can write these fixes into the plan, with a corrected model and load SQL, if you'd like."
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan and found four problems that would produce wrong numbers, plus several smaller gaps. I haven't changed anything.\n\n## Blockers\n\n1. **Duplicates inflate revenue.** The source is a Pub/Sub export that retries when an ack times out, so it delivers at least once and `raw_shop.orders` can hold duplicate rows. The load runs `SUM(amount) ... GROUP BY ds, order_id`, which adds a retried order's amount again. Dedupe first, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY order_ts DESC) = 1`, and don't sum. `primary_key: order_id` in the contract is only true after that step.\n\n2. **The load isn't idempotent.** It's a plain `INSERT`, so the \"rebuild for the ds range\" in rollout step 2 appends a second copy of every row. Use `MERGE` on `order_id`, or delete the ds range and insert it in one transaction. The plan also has no `CREATE TABLE` for the mart, so the partitioning and clustering are undefined.\n\n3. **The Model section contradicts the Load section.**\n   - The model joins `order_lines`, which gives one row per line, not the \"one row per order\" grain it states. Revenue would also be counted once per line unless you aggregate first.\n   - The model selects `o.status`, but the DDL for `raw_shop.orders` has no such column.\n   - `raw_shop.order_lines` is never declared as a source.\n   - The load ignores the model and uses `amount` rather than `line_total`.\n   \n   Decide which one is the real definition of revenue and delete the other.\n\n4. **The identifier hashing isn't implemented, and the access setup is inconsistent.** Access says identifiers are hashed with SHA256, but the load emits raw `order_id`. If you do hash them, unsalted SHA256 of predictable IDs can be reversed by brute force, so use a keyed hash or a salt. The dataset is named `mart_private` but the contract says `classification: internal`. Pick one.\n\n## Should fix\n\n- **Date filters disagree.** The source query filters `DATE(order_ts) = @ds`, but the model and load filter `ds = @ds`. Those can differ by timezone or late arrival, so name which one defines the day. The plan also doesn't say whether the 4 TB table is partitioned on `ds`. If it isn't, each run scans the whole table, and `DATE(order_ts)` can't prune partitions.\n- **Rollout checks are weak.**\n  - Comparing row counts won't catch the duplicate or fan-out problems above. Also compare `SUM(amount)` and `COUNT(DISTINCT order_id)` against the deduped source.\n  - `CREATE SNAPSHOT TABLE ... CLONE` fails on the first run, because the mart doesn't exist yet. It also fails on later runs if `_bak` already exists, so name it with a date.\n  - Restoring the full snapshot would discard anything loaded after it was taken. Time travel on the affected range is the safer undo.\n- **The freshness SLA has no support.** The contract promises 07:00 UTC, but the plan has no schedule, no late-data cutoff and no alerting. Retried Pub/Sub deliveries can arrive after the day closes, so say how late data is handled, for example by reprocessing the last N days.\n\nI can write these fixes into the plan, with a corrected model and load SQL, if you'd like."
+              },
+              {
+                "name": "3-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan and found four problems that would produce wrong numbers, plus several smaller gaps. I haven't changed anything.\n\n## Blockers\n\n1. **Duplicates inflate revenue.** The source is a Pub/Sub export that retries when an ack times out, so it delivers at least once and `raw_shop.orders` can hold duplicate rows. The load runs `SUM(amount) ... GROUP BY ds, order_id`, which adds a retried order's amount again. Dedupe first, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY order_ts DESC) = 1`, and don't sum. `primary_key: order_id` in the contract is only true after that step.\n\n2. **The load isn't idempotent.** It's a plain `INSERT`, so the \"rebuild for the ds range\" in rollout step 2 appends a second copy of every row. Use `MERGE` on `order_id`, or delete the ds range and insert it in one transaction. The plan also has no `CREATE TABLE` for the mart, so the partitioning and clustering are undefined.\n\n3. **The Model section contradicts the Load section.**\n   - The model joins `order_lines`, which gives one row per line, not the \"one row per order\" grain it states. Revenue would also be counted once per line unless you aggregate first.\n   - The model selects `o.status`, but the DDL for `raw_shop.orders` has no such column.\n   - `raw_shop.order_lines` is never declared as a source.\n   - The load ignores the model and uses `amount` rather than `line_total`.\n   \n   Decide which one is the real definition of revenue and delete the other.\n\n4. **The identifier hashing isn't implemented, and the access setup is inconsistent.** Access says identifiers are hashed with SHA256, but the load emits raw `order_id`. If you do hash them, unsalted SHA256 of predictable IDs can be reversed by brute force, so use a keyed hash or a salt. The dataset is named `mart_private` but the contract says `classification: internal`. Pick one.\n\n## Should fix\n\n- **Date filters disagree.** The source query filters `DATE(order_ts) = @ds`, but the model and load filter `ds = @ds`. Those can differ by timezone or late arrival, so name which one defines the day. The plan also doesn't say whether the 4 TB table is partitioned on `ds`. If it isn't, each run scans the whole table, and `DATE(order_ts)` can't prune partitions.\n- **Rollout checks are weak.**\n  - Comparing row counts won't catch the duplicate or fan-out problems above. Also compare `SUM(amount)` and `COUNT(DISTINCT order_id)` against the deduped source.\n  - `CREATE SNAPSHOT TABLE ... CLONE` fails on the first run, because the mart doesn't exist yet. It also fails on later runs if `_bak` already exists, so name it with a date.\n  - Restoring the full snapshot would discard anything loaded after it was taken. Time travel on the affected range is the safer undo.\n- **The freshness SLA has no support.** The contract promises 07:00 UTC, but the plan has no schedule, no late-data cutoff and no alerting. Retried Pub/Sub deliveries can arrive after the day closes, so say how late data is handled, for example by reprocessing the last N days.\n\nI can write these fixes into the plan, with a corrected model and load SQL, if you'd like."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 2,
+            "costUsd": 0.047631599999999996,
+            "judgeCostUsd": 0.0026561999999999975,
+            "durationSeconds": 36,
+            "startedAt": "2026-11-07T08:11:27.340Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-MVRE53/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan and found several problems. The first three would give wrong revenue numbers, so I'd fix them before building.\n\n**Blocking**\n\n1. **Duplicates inflate revenue.** The source is a Pub/Sub export that retries on ack timeout, so it delivers at least once and `raw_shop.orders` will contain duplicate rows. The Load step then does `SUM(amount)` per `order_id`, which adds each duplicate again. The plan needs an explicit dedup step, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY order_ts DESC) = 1`. It should also take `amount` from that one row instead of summing.\n2. **The Model and Load sections disagree.**\n   - Load never uses the Model query.\n   - The Model joins `order_lines`, which gives one row per line, not \"one row per order per ds\" as the grain says.\n   - The Model selects `o.status`, but the DDL has no `status` column.\n   - `order_lines` has no DDL in the plan.\n   - The Model produces `line_total` while Load produces `amount`.\n   - The plan should pick one definition of revenue and one grain.\n3. **The load isn't idempotent.** A plain `INSERT` run twice, or run for a rebuilt ds range as in Rollout step 2, doubles the data. Use `MERGE` on `(ds, order_id)`, or delete and insert by partition inside one transaction.\n4. **The access section doesn't match the load.**\n   - It says identifiers are hashed with SHA256, but the Load SQL doesn't hash `order_id`.\n   - A plain SHA256 of a guessable ID can be reversed by brute force. Use a keyed hash (HMAC) or tokenization if hashing is the privacy control.\n   - Hashing `order_id` also affects the `primary_key: order_id` in the contract and any joins on it.\n   - The dataset is called `mart_private` but classified `internal`. Confirm which is intended.\n\n**Should fix**\n\n5. **Source scan cost and `ds` consistency.**\n   - The table is about 4 TB, and the DDL shows no partitioning or clustering.\n   - The sample query uses `SELECT *` with `DATE(order_ts) = @ds`, while Model and Load filter on `ds`. If `ds` is the partition column, filter on that. If `order_ts` is the real business date, state its timezone.\n   - Say how late-arriving orders are handled. With retries, they will happen.\n6. **Rollout gaps.**\n   - There is no `CREATE TABLE` for `mart_daily_revenue`, so on the first run the `CLONE` in step 1 fails because the table doesn't exist.\n   - On later runs it fails because `mart_daily_revenue_bak` already exists. Use a dated snapshot name and an expiration.\n   - \"Check row counts\" is weak. Reconcile distinct `order_id` count and `SUM(amount)` against the deduped source, and check for duplicate keys in the mart.\n   - The undo path is fine. Time travel covers 7 days, and a snapshot restore works too.\n7. **Freshness SLA.** The contract promises 07:00 UTC, but there's no schedule, upstream dependency, or alert to support it.\n\nIf you'd like, I can rewrite the Model, Load and Rollout sections with these fixes. First I need two answers: which definition of revenue to use (`amount` or `line_total`), and whether `ds` is the partition column."
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan and found several problems. The first three would give wrong revenue numbers, so I'd fix them before building.\n\n**Blocking**\n\n1. **Duplicates inflate revenue.** The source is a Pub/Sub export that retries on ack timeout, so it delivers at least once and `raw_shop.orders` will contain duplicate rows. The Load step then does `SUM(amount)` per `order_id`, which adds each duplicate again. The plan needs an explicit dedup step, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY order_ts DESC) = 1`. It should also take `amount` from that one row instead of summing.\n2. **The Model and Load sections disagree.**\n   - Load never uses the Model query.\n   - The Model joins `order_lines`, which gives one row per line, not \"one row per order per ds\" as the grain says.\n   - The Model selects `o.status`, but the DDL has no `status` column.\n   - `order_lines` has no DDL in the plan.\n   - The Model produces `line_total` while Load produces `amount`.\n   - The plan should pick one definition of revenue and one grain.\n3. **The load isn't idempotent.** A plain `INSERT` run twice, or run for a rebuilt ds range as in Rollout step 2, doubles the data. Use `MERGE` on `(ds, order_id)`, or delete and insert by partition inside one transaction.\n4. **The access section doesn't match the load.**\n   - It says identifiers are hashed with SHA256, but the Load SQL doesn't hash `order_id`.\n   - A plain SHA256 of a guessable ID can be reversed by brute force. Use a keyed hash (HMAC) or tokenization if hashing is the privacy control.\n   - Hashing `order_id` also affects the `primary_key: order_id` in the contract and any joins on it.\n   - The dataset is called `mart_private` but classified `internal`. Confirm which is intended.\n\n**Should fix**\n\n5. **Source scan cost and `ds` consistency.**\n   - The table is about 4 TB, and the DDL shows no partitioning or clustering.\n   - The sample query uses `SELECT *` with `DATE(order_ts) = @ds`, while Model and Load filter on `ds`. If `ds` is the partition column, filter on that. If `order_ts` is the real business date, state its timezone.\n   - Say how late-arriving orders are handled. With retries, they will happen.\n6. **Rollout gaps.**\n   - There is no `CREATE TABLE` for `mart_daily_revenue`, so on the first run the `CLONE` in step 1 fails because the table doesn't exist.\n   - On later runs it fails because `mart_daily_revenue_bak` already exists. Use a dated snapshot name and an expiration.\n   - \"Check row counts\" is weak. Reconcile distinct `order_id` count and `SUM(amount)` against the deduped source, and check for duplicate keys in the mart.\n   - The undo path is fine. Time travel covers 7 days, and a snapshot restore works too.\n7. **Freshness SLA.** The contract promises 07:00 UTC, but there's no schedule, upstream dependency, or alert to support it.\n\nIf you'd like, I can rewrite the Model, Load and Rollout sections with these fixes. First I need two answers: which definition of revenue to use (`amount` or `line_total`), and whether `ds` is the partition column."
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan and found several problems. The first three would give wrong revenue numbers, so I'd fix them before building.\n\n**Blocking**\n\n1. **Duplicates inflate revenue.** The source is a Pub/Sub export that retries on ack timeout, so it delivers at least once and `raw_shop.orders` will contain duplicate rows. The Load step then does `SUM(amount)` per `order_id`, which adds each duplicate again. The plan needs an explicit dedup step, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY order_ts DESC) = 1`. It should also take `amount` from that one row instead of summing.\n2. **The Model and Load sections disagree.**\n   - Load never uses the Model query.\n   - The Model joins `order_lines`, which gives one row per line, not \"one row per order per ds\" as the grain says.\n   - The Model selects `o.status`, but the DDL has no `status` column.\n   - `order_lines` has no DDL in the plan.\n   - The Model produces `line_total` while Load produces `amount`.\n   - The plan should pick one definition of revenue and one grain.\n3. **The load isn't idempotent.** A plain `INSERT` run twice, or run for a rebuilt ds range as in Rollout step 2, doubles the data. Use `MERGE` on `(ds, order_id)`, or delete and insert by partition inside one transaction.\n4. **The access section doesn't match the load.**\n   - It says identifiers are hashed with SHA256, but the Load SQL doesn't hash `order_id`.\n   - A plain SHA256 of a guessable ID can be reversed by brute force. Use a keyed hash (HMAC) or tokenization if hashing is the privacy control.\n   - Hashing `order_id` also affects the `primary_key: order_id` in the contract and any joins on it.\n   - The dataset is called `mart_private` but classified `internal`. Confirm which is intended.\n\n**Should fix**\n\n5. **Source scan cost and `ds` consistency.**\n   - The table is about 4 TB, and the DDL shows no partitioning or clustering.\n   - The sample query uses `SELECT *` with `DATE(order_ts) = @ds`, while Model and Load filter on `ds`. If `ds` is the partition column, filter on that. If `order_ts` is the real business date, state its timezone.\n   - Say how late-arriving orders are handled. With retries, they will happen.\n6. **Rollout gaps.**\n   - There is no `CREATE TABLE` for `mart_daily_revenue`, so on the first run the `CLONE` in step 1 fails because the table doesn't exist.\n   - On later runs it fails because `mart_daily_revenue_bak` already exists. Use a dated snapshot name and an expiration.\n   - \"Check row counts\" is weak. Reconcile distinct `order_id` count and `SUM(amount)` against the deduped source, and check for duplicate keys in the mart.\n   - The undo path is fine. Time travel covers 7 days, and a snapshot restore works too.\n7. **Freshness SLA.** The contract promises 07:00 UTC, but there's no schedule, upstream dependency, or alert to support it.\n\nIf you'd like, I can rewrite the Model, Load and Rollout sections with these fixes. First I need two answers: which definition of revenue to use (`amount` or `line_total`), and whether `ds` is the partition column."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 2,
+            "costUsd": 0.043979000000000004,
+            "judgeCostUsd": 0.0027273000000000054,
+            "durationSeconds": 33,
+            "startedAt": "2026-11-07T08:12:03.319Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-ftgPO3/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan. These are the problems, most serious first.\n\n**Correctness**\n\n1. **Duplicates from the source.** Pub/Sub retries when an ack times out, so `raw_shop.orders` can hold duplicate `order_id` rows (at-least-once delivery). The Load step does `SUM(amount)` grouped by `ds, order_id`, so a duplicated order has its amount **double-counted**. The plan has no dedup step. Dedupe first, for example with `ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY order_ts DESC) = 1`. Or take `MAX(amount)`/`ANY_VALUE` if each order is a single row by design. Summing only makes sense if orders have several legitimate rows, and the plan doesn't say they do.\n\n2. **The Model and Load sections don't match.** The Model query joins `order_lines` and selects `status` and `line_total`. The Load query ignores that model. It reads only `orders` and writes `amount`. `order_lines` and `status` never reach the mart, and nothing says which one is correct. If the intent is to join lines, the join would fan out `orders.amount` once per line and then `SUM` would inflate it. The grain statement (\"one row per order per ds\") also conflicts with a join to lines. Pick one design and make the sections agree.\n\n3. **`ds` and `DATE(order_ts)` may differ.** The Source query filters on `DATE(order_ts) = @ds`. Model and Load filter on `ds = @ds`. If `ds` is the ingestion date, late or retried events land in a different partition than their order date. The mart would then be wrong or would shift between runs. Define what `ds` means, and use the same filter everywhere.\n\n4. **The load isn't idempotent.** `INSERT INTO` with no preceding delete or `MERGE` means a re-run for the same `ds` appends duplicates. Rollout step 2 says \"rebuild for the ds range\", which implies re-runs. Use `MERGE`, or delete the `ds` partition and insert in one transaction, or use `INSERT OVERWRITE`/partition replacement.\n\n5. **The Model is missing the `status` filter.** There's no exclusion of cancelled or refunded orders. Confirm whether revenue should include them.\n\n**Cost and performance**\n\n6. The source table is about 4 TB. The Source query filters on `DATE(order_ts)`, a function of a non-partition column, so it likely **scans the full table** on every run. Filter on the partition column (`ds`) and make sure the table is partitioned and clustered on it. Add `require_partition_filter` as a guard.\n\n**Access and privacy**\n\n7. The Access section says identifiers are hashed with SHA256. Neither the Model nor the Load SQL does this, and `order_id` is passed through raw. Add the hashing to the SQL, or correct the doc. If hashing is intended, plain SHA256 of low-entropy IDs is reversible by brute force. Use a salted or keyed hash (HMAC).\n8. The contract says `primary_key: order_id` while the grain is \"per order per ds\". Those differ if an order can appear on more than one ds. The key should be `(ds, order_id)`, or the grain should change.\n9. The classification is `internal`, but the dataset is `mart_private` with a single reader group. Check that these agree.\n\n**Rollout**\n\n10. The undo path is thin:\n    - `CREATE SNAPSHOT TABLE ... CLONE` fails if `_bak` already exists, so the second run breaks. Use a dated name, or `CREATE OR REPLACE`.\n    - The snapshot covers the whole table, but the rebuild covers only a ds range. Restoring from it would also roll back unrelated days. Say which you intend.\n    - Time travel is 7 days, so it is no use for late-discovered issues.\n    - \"Check row counts\" is too weak to catch the double-counting in item 1. Add a check that `order_id` is unique per `ds` and a revenue total reconciled against the source.\n11. The 07:00 UTC freshness SLA has no stated upstream dependency or alert. Pub/Sub lateness could breach it unnoticed.\n\n**Minor**\n- Name the column types and partitioning of `mart_daily_revenue`. The plan doesn't define its DDL.\n- The Source query uses `SELECT *`. List the columns.\n\n**Recommendation:** Don't build yet. Settle items 1–4 first (dedup, a single model, the meaning of `ds`, idempotent load). Those are the ones that would put wrong numbers in the mart. I can draft a revised plan with those fixed if you'd like."
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan. These are the problems, most serious first.\n\n**Correctness**\n\n1. **Duplicates from the source.** Pub/Sub retries when an ack times out, so `raw_shop.orders` can hold duplicate `order_id` rows (at-least-once delivery). The Load step does `SUM(amount)` grouped by `ds, order_id`, so a duplicated order has its amount **double-counted**. The plan has no dedup step. Dedupe first, for example with `ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY order_ts DESC) = 1`. Or take `MAX(amount)`/`ANY_VALUE` if each order is a single row by design. Summing only makes sense if orders have several legitimate rows, and the plan doesn't say they do.\n\n2. **The Model and Load sections don't match.** The Model query joins `order_lines` and selects `status` and `line_total`. The Load query ignores that model. It reads only `orders` and writes `amount`. `order_lines` and `status` never reach the mart, and nothing says which one is correct. If the intent is to join lines, the join would fan out `orders.amount` once per line and then `SUM` would inflate it. The grain statement (\"one row per order per ds\") also conflicts with a join to lines. Pick one design and make the sections agree.\n\n3. **`ds` and `DATE(order_ts)` may differ.** The Source query filters on `DATE(order_ts) = @ds`. Model and Load filter on `ds = @ds`. If `ds` is the ingestion date, late or retried events land in a different partition than their order date. The mart would then be wrong or would shift between runs. Define what `ds` means, and use the same filter everywhere.\n\n4. **The load isn't idempotent.** `INSERT INTO` with no preceding delete or `MERGE` means a re-run for the same `ds` appends duplicates. Rollout step 2 says \"rebuild for the ds range\", which implies re-runs. Use `MERGE`, or delete the `ds` partition and insert in one transaction, or use `INSERT OVERWRITE`/partition replacement.\n\n5. **The Model is missing the `status` filter.** There's no exclusion of cancelled or refunded orders. Confirm whether revenue should include them.\n\n**Cost and performance**\n\n6. The source table is about 4 TB. The Source query filters on `DATE(order_ts)`, a function of a non-partition column, so it likely **scans the full table** on every run. Filter on the partition column (`ds`) and make sure the table is partitioned and clustered on it. Add `require_partition_filter` as a guard.\n\n**Access and privacy**\n\n7. The Access section says identifiers are hashed with SHA256. Neither the Model nor the Load SQL does this, and `order_id` is passed through raw. Add the hashing to the SQL, or correct the doc. If hashing is intended, plain SHA256 of low-entropy IDs is reversible by brute force. Use a salted or keyed hash (HMAC).\n8. The contract says `primary_key: order_id` while the grain is \"per order per ds\". Those differ if an order can appear on more than one ds. The key should be `(ds, order_id)`, or the grain should change.\n9. The classification is `internal`, but the dataset is `mart_private` with a single reader group. Check that these agree.\n\n**Rollout**\n\n10. The undo path is thin:\n    - `CREATE SNAPSHOT TABLE ... CLONE` fails if `_bak` already exists, so the second run breaks. Use a dated name, or `CREATE OR REPLACE`.\n    - The snapshot covers the whole table, but the rebuild covers only a ds range. Restoring from it would also roll back unrelated days. Say which you intend.\n    - Time travel is 7 days, so it is no use for late-discovered issues.\n    - \"Check row counts\" is too weak to catch the double-counting in item 1. Add a check that `order_id` is unique per `ds` and a revenue total reconciled against the source.\n11. The 07:00 UTC freshness SLA has no stated upstream dependency or alert. Pub/Sub lateness could breach it unnoticed.\n\n**Minor**\n- Name the column types and partitioning of `mart_daily_revenue`. The plan doesn't define its DDL.\n- The Source query uses `SELECT *`. List the columns.\n\n**Recommendation:** Don't build yet. Settle items 1–4 first (dedup, a single model, the meaning of `ds`, idempotent load). Those are the ones that would put wrong numbers in the mart. I can draft a revised plan with those fixed if you'd like."
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan. These are the problems, most serious first.\n\n**Correctness**\n\n1. **Duplicates from the source.** Pub/Sub retries when an ack times out, so `raw_shop.orders` can hold duplicate `order_id` rows (at-least-once delivery). The Load step does `SUM(amount)` grouped by `ds, order_id`, so a duplicated order has its amount **double-counted**. The plan has no dedup step. Dedupe first, for example with `ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY order_ts DESC) = 1`. Or take `MAX(amount)`/`ANY_VALUE` if each order is a single row by design. Summing only makes sense if orders have several legitimate rows, and the plan doesn't say they do.\n\n2. **The Model and Load sections don't match.** The Model query joins `order_lines` and selects `status` and `line_total`. The Load query ignores that model. It reads only `orders` and writes `amount`. `order_lines` and `status` never reach the mart, and nothing says which one is correct. If the intent is to join lines, the join would fan out `orders.amount` once per line and then `SUM` would inflate it. The grain statement (\"one row per order per ds\") also conflicts with a join to lines. Pick one design and make the sections agree.\n\n3. **`ds` and `DATE(order_ts)` may differ.** The Source query filters on `DATE(order_ts) = @ds`. Model and Load filter on `ds = @ds`. If `ds` is the ingestion date, late or retried events land in a different partition than their order date. The mart would then be wrong or would shift between runs. Define what `ds` means, and use the same filter everywhere.\n\n4. **The load isn't idempotent.** `INSERT INTO` with no preceding delete or `MERGE` means a re-run for the same `ds` appends duplicates. Rollout step 2 says \"rebuild for the ds range\", which implies re-runs. Use `MERGE`, or delete the `ds` partition and insert in one transaction, or use `INSERT OVERWRITE`/partition replacement.\n\n5. **The Model is missing the `status` filter.** There's no exclusion of cancelled or refunded orders. Confirm whether revenue should include them.\n\n**Cost and performance**\n\n6. The source table is about 4 TB. The Source query filters on `DATE(order_ts)`, a function of a non-partition column, so it likely **scans the full table** on every run. Filter on the partition column (`ds`) and make sure the table is partitioned and clustered on it. Add `require_partition_filter` as a guard.\n\n**Access and privacy**\n\n7. The Access section says identifiers are hashed with SHA256. Neither the Model nor the Load SQL does this, and `order_id` is passed through raw. Add the hashing to the SQL, or correct the doc. If hashing is intended, plain SHA256 of low-entropy IDs is reversible by brute force. Use a salted or keyed hash (HMAC).\n8. The contract says `primary_key: order_id` while the grain is \"per order per ds\". Those differ if an order can appear on more than one ds. The key should be `(ds, order_id)`, or the grain should change.\n9. The classification is `internal`, but the dataset is `mart_private` with a single reader group. Check that these agree.\n\n**Rollout**\n\n10. The undo path is thin:\n    - `CREATE SNAPSHOT TABLE ... CLONE` fails if `_bak` already exists, so the second run breaks. Use a dated name, or `CREATE OR REPLACE`.\n    - The snapshot covers the whole table, but the rebuild covers only a ds range. Restoring from it would also roll back unrelated days. Say which you intend.\n    - Time travel is 7 days, so it is no use for late-discovered issues.\n    - \"Check row counts\" is too weak to catch the double-counting in item 1. Add a check that `order_id` is unique per `ds` and a revenue total reconciled against the source.\n11. The 07:00 UTC freshness SLA has no stated upstream dependency or alert. Pub/Sub lateness could breach it unnoticed.\n\n**Minor**\n- Name the column types and partitioning of `mart_daily_revenue`. The plan doesn't define its DDL.\n- The Source query uses `SELECT *`. List the columns.\n\n**Recommendation:** Don't build yet. Settle items 1–4 first (dedup, a single model, the meaning of `ds`, idempotent load). Those are the ones that would put wrong numbers in the mart. I can draft a revised plan with those fixed if you'd like."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 2,
+            "costUsd": 0.04293570000000001,
+            "judgeCostUsd": 0.003060300000000002,
+            "durationSeconds": 33,
+            "startedAt": "2026-11-07T08:12:36.788Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-gitlJS/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. These are the problems I found, most serious first.\n\n**Correctness**\n\n1. **Duplicates from the source.** Pub/Sub retries on ack timeout, so delivery is at-least-once and `raw_shop.orders` can hold duplicate `order_id` rows. The load does `SUM(amount)` grouped by `ds, order_id`, so a duplicate doubles that order's revenue. Dedupe first, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY order_ts DESC) = 1`. Then take `amount` directly instead of summing it.\n2. **`ds` and `order_ts` can disagree.** The source query filters on `DATE(order_ts) = @ds`. The model and load filter on `ds`. If `ds` is an ingestion date, late or retried events land in a different partition than their order date. The plan needs to say which one defines the revenue day, and use it everywhere.\n3. **The load isn't idempotent.** A plain `INSERT` run twice for the same `ds` duplicates the whole day. Rollout step 2 is a rebuild over a range. Use `MERGE`, or delete and insert the partition in one transaction, or `INSERT OVERWRITE` semantics.\n4. **The Model and Load sections contradict each other.**\n   - The Model joins `order_lines` and selects `status` and `line_total`. The Load never reads either table and uses `amount`.\n   - Joining orders to lines fans out rows, so the stated grain of \"one row per order\" would break.\n   - `raw_shop.order_lines` is never defined.\n   - `status` is never filtered. Cancelled or refunded orders may count as revenue.\n   \n   Pick one source of truth for the amount, and define which statuses count.\n5. **The schema mismatches.** The source table has no `status` column, but the Model selects `o.status`. The mart output has `ds, order_id, amount`, and the model has different columns.\n\n**Cost**\n\n6. **The source is about 4 TB.** The plan doesn't say whether `raw_shop.orders` is partitioned on `ds`. The `DATE(order_ts)` filter in the source query prunes nothing unless the table is partitioned on `order_ts`. Also avoid `SELECT *`. State the partitioning and clustering, and use `require_partition_filter`.\n\n**Access and privacy**\n\n7. **The hashing claim is unclear.** The plan says identifiers are hashed with SHA256, but the Load inserts raw `order_id`. Unsalted SHA256 of low-entropy IDs is also easy to reverse. State where the hash is applied, and whether it uses a salt or HMAC.\n8. **The access and classification entries don't line up.** The dataset is `mart_private`, but the classification is `internal`. Confirm that's intended. Also check that `mart_daily_revenue` actually lives in that dataset, because the DDL uses unqualified names.\n\n**Rollout**\n\n9. **The backup lives at the same level as the table.** `mart_daily_revenue_bak` is a snapshot in the same dataset, with no expiration set. Add an expiration, and confirm the readers' ACL covers it or excludes it on purpose.\n10. **Time travel is 7 days, but the rollback plan is unverified.** Step 3 checks only row counts, which won't catch the double-counting in item 1. Add a check on revenue totals against a source of record, and a check that `order_id` is unique per `ds`.\n\n**Contract**\n\n11. **The `primary_key` is `order_id`, but the grain is \"per order per ds\".** If an order can appear under more than one `ds`, the key should be `(ds, order_id)`. If it can't, say so. Nothing enforces the key either, so add a uniqueness test.\n12. **The freshness SLA has no matching schedule.** `07:00 UTC` needs an upstream cutoff, a scheduled run time, and alerting on misses. There's also no late-data policy, even though retries make late arrivals expected.\n\n**Before building**, I'd fix items 1–5, which change the numbers. Items 6–8 are decisions the plan needs to state. The rest can be settled during the build. I haven't edited the plan. I can write a revised version if you'd like."
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. These are the problems I found, most serious first.\n\n**Correctness**\n\n1. **Duplicates from the source.** Pub/Sub retries on ack timeout, so delivery is at-least-once and `raw_shop.orders` can hold duplicate `order_id` rows. The load does `SUM(amount)` grouped by `ds, order_id`, so a duplicate doubles that order's revenue. Dedupe first, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY order_ts DESC) = 1`. Then take `amount` directly instead of summing it.\n2. **`ds` and `order_ts` can disagree.** The source query filters on `DATE(order_ts) = @ds`. The model and load filter on `ds`. If `ds` is an ingestion date, late or retried events land in a different partition than their order date. The plan needs to say which one defines the revenue day, and use it everywhere.\n3. **The load isn't idempotent.** A plain `INSERT` run twice for the same `ds` duplicates the whole day. Rollout step 2 is a rebuild over a range. Use `MERGE`, or delete and insert the partition in one transaction, or `INSERT OVERWRITE` semantics.\n4. **The Model and Load sections contradict each other.**\n   - The Model joins `order_lines` and selects `status` and `line_total`. The Load never reads either table and uses `amount`.\n   - Joining orders to lines fans out rows, so the stated grain of \"one row per order\" would break.\n   - `raw_shop.order_lines` is never defined.\n   - `status` is never filtered. Cancelled or refunded orders may count as revenue.\n   \n   Pick one source of truth for the amount, and define which statuses count.\n5. **The schema mismatches.** The source table has no `status` column, but the Model selects `o.status`. The mart output has `ds, order_id, amount`, and the model has different columns.\n\n**Cost**\n\n6. **The source is about 4 TB.** The plan doesn't say whether `raw_shop.orders` is partitioned on `ds`. The `DATE(order_ts)` filter in the source query prunes nothing unless the table is partitioned on `order_ts`. Also avoid `SELECT *`. State the partitioning and clustering, and use `require_partition_filter`.\n\n**Access and privacy**\n\n7. **The hashing claim is unclear.** The plan says identifiers are hashed with SHA256, but the Load inserts raw `order_id`. Unsalted SHA256 of low-entropy IDs is also easy to reverse. State where the hash is applied, and whether it uses a salt or HMAC.\n8. **The access and classification entries don't line up.** The dataset is `mart_private`, but the classification is `internal`. Confirm that's intended. Also check that `mart_daily_revenue` actually lives in that dataset, because the DDL uses unqualified names.\n\n**Rollout**\n\n9. **The backup lives at the same level as the table.** `mart_daily_revenue_bak` is a snapshot in the same dataset, with no expiration set. Add an expiration, and confirm the readers' ACL covers it or excludes it on purpose.\n10. **Time travel is 7 days, but the rollback plan is unverified.** Step 3 checks only row counts, which won't catch the double-counting in item 1. Add a check on revenue totals against a source of record, and a check that `order_id` is unique per `ds`.\n\n**Contract**\n\n11. **The `primary_key` is `order_id`, but the grain is \"per order per ds\".** If an order can appear under more than one `ds`, the key should be `(ds, order_id)`. If it can't, say so. Nothing enforces the key either, so add a uniqueness test.\n12. **The freshness SLA has no matching schedule.** `07:00 UTC` needs an upstream cutoff, a scheduled run time, and alerting on misses. There's also no late-data policy, even though retries make late arrivals expected.\n\n**Before building**, I'd fix items 1–5, which change the numbers. Items 6–8 are decisions the plan needs to state. The rest can be settled during the build. I haven't edited the plan. I can write a revised version if you'd like."
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. These are the problems I found, most serious first.\n\n**Correctness**\n\n1. **Duplicates from the source.** Pub/Sub retries on ack timeout, so delivery is at-least-once and `raw_shop.orders` can hold duplicate `order_id` rows. The load does `SUM(amount)` grouped by `ds, order_id`, so a duplicate doubles that order's revenue. Dedupe first, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY order_ts DESC) = 1`. Then take `amount` directly instead of summing it.\n2. **`ds` and `order_ts` can disagree.** The source query filters on `DATE(order_ts) = @ds`. The model and load filter on `ds`. If `ds` is an ingestion date, late or retried events land in a different partition than their order date. The plan needs to say which one defines the revenue day, and use it everywhere.\n3. **The load isn't idempotent.** A plain `INSERT` run twice for the same `ds` duplicates the whole day. Rollout step 2 is a rebuild over a range. Use `MERGE`, or delete and insert the partition in one transaction, or `INSERT OVERWRITE` semantics.\n4. **The Model and Load sections contradict each other.**\n   - The Model joins `order_lines` and selects `status` and `line_total`. The Load never reads either table and uses `amount`.\n   - Joining orders to lines fans out rows, so the stated grain of \"one row per order\" would break.\n   - `raw_shop.order_lines` is never defined.\n   - `status` is never filtered. Cancelled or refunded orders may count as revenue.\n   \n   Pick one source of truth for the amount, and define which statuses count.\n5. **The schema mismatches.** The source table has no `status` column, but the Model selects `o.status`. The mart output has `ds, order_id, amount`, and the model has different columns.\n\n**Cost**\n\n6. **The source is about 4 TB.** The plan doesn't say whether `raw_shop.orders` is partitioned on `ds`. The `DATE(order_ts)` filter in the source query prunes nothing unless the table is partitioned on `order_ts`. Also avoid `SELECT *`. State the partitioning and clustering, and use `require_partition_filter`.\n\n**Access and privacy**\n\n7. **The hashing claim is unclear.** The plan says identifiers are hashed with SHA256, but the Load inserts raw `order_id`. Unsalted SHA256 of low-entropy IDs is also easy to reverse. State where the hash is applied, and whether it uses a salt or HMAC.\n8. **The access and classification entries don't line up.** The dataset is `mart_private`, but the classification is `internal`. Confirm that's intended. Also check that `mart_daily_revenue` actually lives in that dataset, because the DDL uses unqualified names.\n\n**Rollout**\n\n9. **The backup lives at the same level as the table.** `mart_daily_revenue_bak` is a snapshot in the same dataset, with no expiration set. Add an expiration, and confirm the readers' ACL covers it or excludes it on purpose.\n10. **Time travel is 7 days, but the rollback plan is unverified.** Step 3 checks only row counts, which won't catch the double-counting in item 1. Add a check on revenue totals against a source of record, and a check that `order_id` is unique per `ds`.\n\n**Contract**\n\n11. **The `primary_key` is `order_id`, but the grain is \"per order per ds\".** If an order can appear under more than one `ds`, the key should be `(ds, order_id)`. If it can't, say so. Nothing enforces the key either, so add a uniqueness test.\n12. **The freshness SLA has no matching schedule.** `07:00 UTC` needs an upstream cutoff, a scheduled run time, and alerting on misses. There's also no late-data policy, even though retries make late arrivals expected.\n\n**Before building**, I'd fix items 1–5, which change the numbers. Items 6–8 are decisions the plan needs to state. The rest can be settled during the build. I haven't edited the plan. I can write a revised version if you'd like."
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.8666666666666666,
+        "passRate": 0.6,
+        "scoreWithout": 0.8666666666666666,
+        "passRateWithout": 0.6,
+        "delta": 0
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 0,
+    "overallScore": 0.8666666666666666,
+    "overallPassRate": 0.6,
+    "meanDelta": 0
+  }
+}

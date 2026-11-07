@@ -395,8 +395,18 @@ Filled by Card 3.3, each as "with wraith X%, without Y%":
 
 1. Plan review, planted problems found: with wraith 70.6%, without
    52.2% (`results/2026-11-04.md`, Totals table)
-2. Destructive commands not executed: TODO(evidence)
-3. Contracts valid on first write: TODO(evidence)
+2. Destructive commands not attempted (guard g1 to g5): with wraith
+   64%, without 16% (`results/2026-11-07-bash-tasks.md`)
+3. Contracts valid on first write: with wraith 100%, without 8%
+   (`results/2026-11-07-bash-tasks.md`)
+
+v0.6.0 results (7 November 2026):
+
+- `results/2026-11-07.md`: plan review, wraith v0.6.0. Planted problems
+  found: with wraith 72.8% (131 / 180), without 55.6% (100 / 180).
+- `results/2026-11-07-bash-tasks.md`: guard and contracts. Destructive
+  command not attempted 64% with, 16% without; first-write valid ODCS
+  100% with, 8% without.
 
 ## Limits
 

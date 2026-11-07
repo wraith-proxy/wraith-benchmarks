@@ -1,0 +1,647 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.316",
+  "startedAt": "2026-11-07T08:33:00.432Z",
+  "durationSeconds": 364,
+  "costUsd": 0.7524048999999999,
+  "partial": false,
+  "suite": {
+    "root": "/work",
+    "ablation": "with-without",
+    "modelOverride": "claude-sonnet-5-5",
+    "judgeModel": "claude-haiku-5-5",
+    "caseFilter": "plan-review-p10",
+    "threshold": 1,
+    "concurrency": 1,
+    "plugins": [
+      {
+        "name": "wraith",
+        "version": "0.6.0",
+        "path": "/work"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "plan-review-p10",
+      "dir": "bench-plan-review/p10",
+      "source": "mixed",
+      "promptMarkdown": "The plan for the loyalty members table is at docs/wraith/2026-10-12-loyalty-members/plan.md. Review it before we build it.",
+      "runsPerCase": 5,
+      "timeoutSeconds": 600,
+      "maxTurns": 12,
+      "graders": [
+        {
+          "name": "1-pii",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category pii. Planted defect: columns member_name, email, home_address, birth_date are personal data and the dataset partner_open is readable by allAuthenticatedUsers. Location: the Access section of `dim_loyalty_members`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category pii. Planted defect: columns member_name, email, home_address, birth_date are personal data and the dataset partner_open is readable by allAuthenticatedUsers. Location: the Access section of `dim_loyalty_members`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "2-rollback",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category rollback. Planted defect: the Rollout changes the live table (rename then DROP of the old table) with no snapshot, clone or restore step, so there is no way back. Location: the Rollout section (rename then DROP of the old table) of `dim_loyalty_members`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category rollback. Planted defect: the Rollout changes the live table (rename then DROP of the old table) with no snapshot, clone or restore step, so there is no way back. Location: the Rollout section (rename then DROP of the old table) of `dim_loyalty_members`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "3-contract",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category contract. Planted defect: in the Contract section classification is missing, although AGENTS.md requires owner, primary_key, classification and freshness_sla. Location: the Contract section of `dim_loyalty_members`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category contract. Planted defect: in the Contract section classification is missing, although AGENTS.md requires owner, primary_key, classification and freshness_sla. Location: the Contract section of `dim_loyalty_members`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.11280130000000001,
+            "judgeCostUsd": 0.0019838,
+            "durationSeconds": 52,
+            "startedAt": "2026-11-07T08:33:00.464Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-ka7059/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to the end of `plan.md`. The verdict is **NOT READY**. I left the rest of the plan unchanged.\n\n**Blockers**\n- **Personal data is exposed.** `partner_open` is readable by `allAuthenticatedUsers`, so any Google account could read `email`, `home_address` and `birth_date`. None of those columns are classified.\n- **The column list contradicts itself.** Access lists `member_name`, `email`, `home_address` and `birth_date`. The source table and the model SQL don't have them.\n- **The contract is incomplete.**\n  - It has no `classification`, which `AGENTS.md` requires.\n  - No contract file is named.\n  - `primary_key: member_id` conflicts with the grain of one row per member per ds.\n  - The change isn't classified as additive or breaking.\n- **`SUM(amount)` may double count.** If the CRM export re-delivers a member, the sum inflates on rerun. `updated_at` is never used. The plan needs to say whether source rows are versions (take the latest) or additive.\n\n**Should fix**\n- The consumer, the decision, and the cost of wrong, late or down are not named.\n- The MERGE never deletes, so members who disappear from a re-delivered ds keep stale rows. It also scans the target without a partition filter, and no backfill path is written.\n- The target table has no DDL (partitioning, clustering, `require_partition_filter`) and no cost estimate.\n- The only quality rule is the freshness SLA. There are no uniqueness, not-null or row-count checks.\n- The rollout breaks consumers between the rename and the create. The drop then removes the only copy with no validation gate, no rollback is written, and no downstream consumers are listed.\n- Late-arriving rows are not addressed.\n\n**Nit:** `dim_` and the vague `amount` name.\n\n**Not done**\n- I ran no dry-runs, because the plan gives no target DDL and I didn't query the warehouse.\n- I found no existing loyalty model or contract in this repo, so the premise holds. I didn't check the warehouse itself.\n- I skipped the vendor second pass. Those skills set an attribution tag that reports usage to Google, so that's your call.\n\nI'd resolve the four blockers first, starting with the access and personal-data decision. Do you want me to draft the plan edits?"
+              },
+              {
+                "name": "2-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to the end of `plan.md`. The verdict is **NOT READY**. I left the rest of the plan unchanged.\n\n**Blockers**\n- **Personal data is exposed.** `partner_open` is readable by `allAuthenticatedUsers`, so any Google account could read `email`, `home_address` and `birth_date`. None of those columns are classified.\n- **The column list contradicts itself.** Access lists `member_name`, `email`, `home_address` and `birth_date`. The source table and the model SQL don't have them.\n- **The contract is incomplete.**\n  - It has no `classification`, which `AGENTS.md` requires.\n  - No contract file is named.\n  - `primary_key: member_id` conflicts with the grain of one row per member per ds.\n  - The change isn't classified as additive or breaking.\n- **`SUM(amount)` may double count.** If the CRM export re-delivers a member, the sum inflates on rerun. `updated_at` is never used. The plan needs to say whether source rows are versions (take the latest) or additive.\n\n**Should fix**\n- The consumer, the decision, and the cost of wrong, late or down are not named.\n- The MERGE never deletes, so members who disappear from a re-delivered ds keep stale rows. It also scans the target without a partition filter, and no backfill path is written.\n- The target table has no DDL (partitioning, clustering, `require_partition_filter`) and no cost estimate.\n- The only quality rule is the freshness SLA. There are no uniqueness, not-null or row-count checks.\n- The rollout breaks consumers between the rename and the create. The drop then removes the only copy with no validation gate, no rollback is written, and no downstream consumers are listed.\n- Late-arriving rows are not addressed.\n\n**Nit:** `dim_` and the vague `amount` name.\n\n**Not done**\n- I ran no dry-runs, because the plan gives no target DDL and I didn't query the warehouse.\n- I found no existing loyalty model or contract in this repo, so the premise holds. I didn't check the warehouse itself.\n- I skipped the vendor second pass. Those skills set an attribution tag that reports usage to Google, so that's your call.\n\nI'd resolve the four blockers first, starting with the access and personal-data decision. Do you want me to draft the plan edits?"
+              },
+              {
+                "name": "3-contract",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to the end of `plan.md`. The verdict is **NOT READY**. I left the rest of the plan unchanged.\n\n**Blockers**\n- **Personal data is exposed.** `partner_open` is readable by `allAuthenticatedUsers`, so any Google account could read `email`, `home_address` and `birth_date`. None of those columns are classified.\n- **The column list contradicts itself.** Access lists `member_name`, `email`, `home_address` and `birth_date`. The source table and the model SQL don't have them.\n- **The contract is incomplete.**\n  - It has no `classification`, which `AGENTS.md` requires.\n  - No contract file is named.\n  - `primary_key: member_id` conflicts with the grain of one row per member per ds.\n  - The change isn't classified as additive or breaking.\n- **`SUM(amount)` may double count.** If the CRM export re-delivers a member, the sum inflates on rerun. `updated_at` is never used. The plan needs to say whether source rows are versions (take the latest) or additive.\n\n**Should fix**\n- The consumer, the decision, and the cost of wrong, late or down are not named.\n- The MERGE never deletes, so members who disappear from a re-delivered ds keep stale rows. It also scans the target without a partition filter, and no backfill path is written.\n- The target table has no DDL (partitioning, clustering, `require_partition_filter`) and no cost estimate.\n- The only quality rule is the freshness SLA. There are no uniqueness, not-null or row-count checks.\n- The rollout breaks consumers between the rename and the create. The drop then removes the only copy with no validation gate, no rollback is written, and no downstream consumers are listed.\n- Late-arriving rows are not addressed.\n\n**Nit:** `dim_` and the vague `amount` name.\n\n**Not done**\n- I ran no dry-runs, because the plan gives no target DDL and I didn't query the warehouse.\n- I found no existing loyalty model or contract in this repo, so the premise holds. I didn't check the warehouse itself.\n- I skipped the vendor second pass. Those skills set an attribution tag that reports usage to Google, so that's your call.\n\nI'd resolve the four blockers first, starting with the access and personal-data decision. Do you want me to draft the plan edits?"
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 9,
+            "costUsd": 0.11244749999999998,
+            "judgeCostUsd": 0.0017125999999999999,
+            "durationSeconds": 48,
+            "startedAt": "2026-11-07T08:33:52.678Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-IIi3gd/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **Verdict: NOT READY**, because of four blockers. I didn't edit the rest of the plan, so you'll need to resolve the findings.\n\nI didn't run any dry runs. There is no dev table or dbt project in the repo to run them against, so the cost estimate is still open. `dbt/` and `contracts/` are both empty, so nothing already covers loyalty members.\n\n**Blockers**\n- **Personal data exposed (item 7):** `partner_open` is readable by `allAuthenticatedUsers`, which means any Google account. The table lists `email`, `home_address`, `birth_date` and `member_name`. The plan has no classification and no crypto-shred path.\n- **Columns don't match (item 3):** `member_name`, `email`, `home_address` and `birth_date` appear in Access. They aren't in the source DDL or the model SQL.\n- **Contract (items 2 and 3):**\n  - `primary_key: member_id` contradicts the grain of one row per member per `ds`.\n  - `classification`, which AGENTS.md requires, is missing.\n  - There is no contract file, and the change isn't marked additive or breaking.\n- **Rollout (item 10):** the plan renames the live table, creates the new one, then drops the old one with no check in between. Consumers have no table during the swap, and there is no rollback. The rename also implies a table already exists, but the Goal says \"build\".\n\n**Should-fix**\n- `SUM(amount)` double counts if the CRM export re-delivers rows, and `updated_at` goes unused.\n- The MERGE never removes members that drop out of a rerun, so reruns aren't idempotent. It also scans an unpartitioned target, and there is no backfill path.\n- The target has no partitioning or clustering, and bytes per run aren't estimated.\n- There are no tests, and nothing checks the freshness SLA.\n- Downstream consumers aren't listed.\n- Late-arriving rows aren't handled.\n- The consumer and decision aren't named.\n\nTwo questions need your answer before the plan can move on. Does a `dim_loyalty_members` table exist today? Which columns should the table actually hold?"
+              },
+              {
+                "name": "2-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **Verdict: NOT READY**, because of four blockers. I didn't edit the rest of the plan, so you'll need to resolve the findings.\n\nI didn't run any dry runs. There is no dev table or dbt project in the repo to run them against, so the cost estimate is still open. `dbt/` and `contracts/` are both empty, so nothing already covers loyalty members.\n\n**Blockers**\n- **Personal data exposed (item 7):** `partner_open` is readable by `allAuthenticatedUsers`, which means any Google account. The table lists `email`, `home_address`, `birth_date` and `member_name`. The plan has no classification and no crypto-shred path.\n- **Columns don't match (item 3):** `member_name`, `email`, `home_address` and `birth_date` appear in Access. They aren't in the source DDL or the model SQL.\n- **Contract (items 2 and 3):**\n  - `primary_key: member_id` contradicts the grain of one row per member per `ds`.\n  - `classification`, which AGENTS.md requires, is missing.\n  - There is no contract file, and the change isn't marked additive or breaking.\n- **Rollout (item 10):** the plan renames the live table, creates the new one, then drops the old one with no check in between. Consumers have no table during the swap, and there is no rollback. The rename also implies a table already exists, but the Goal says \"build\".\n\n**Should-fix**\n- `SUM(amount)` double counts if the CRM export re-delivers rows, and `updated_at` goes unused.\n- The MERGE never removes members that drop out of a rerun, so reruns aren't idempotent. It also scans an unpartitioned target, and there is no backfill path.\n- The target has no partitioning or clustering, and bytes per run aren't estimated.\n- There are no tests, and nothing checks the freshness SLA.\n- Downstream consumers aren't listed.\n- Late-arriving rows aren't handled.\n- The consumer and decision aren't named.\n\nTwo questions need your answer before the plan can move on. Does a `dim_loyalty_members` table exist today? Which columns should the table actually hold?"
+              },
+              {
+                "name": "3-contract",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **Verdict: NOT READY**, because of four blockers. I didn't edit the rest of the plan, so you'll need to resolve the findings.\n\nI didn't run any dry runs. There is no dev table or dbt project in the repo to run them against, so the cost estimate is still open. `dbt/` and `contracts/` are both empty, so nothing already covers loyalty members.\n\n**Blockers**\n- **Personal data exposed (item 7):** `partner_open` is readable by `allAuthenticatedUsers`, which means any Google account. The table lists `email`, `home_address`, `birth_date` and `member_name`. The plan has no classification and no crypto-shred path.\n- **Columns don't match (item 3):** `member_name`, `email`, `home_address` and `birth_date` appear in Access. They aren't in the source DDL or the model SQL.\n- **Contract (items 2 and 3):**\n  - `primary_key: member_id` contradicts the grain of one row per member per `ds`.\n  - `classification`, which AGENTS.md requires, is missing.\n  - There is no contract file, and the change isn't marked additive or breaking.\n- **Rollout (item 10):** the plan renames the live table, creates the new one, then drops the old one with no check in between. Consumers have no table during the swap, and there is no rollback. The rename also implies a table already exists, but the Goal says \"build\".\n\n**Should-fix**\n- `SUM(amount)` double counts if the CRM export re-delivers rows, and `updated_at` goes unused.\n- The MERGE never removes members that drop out of a rerun, so reruns aren't idempotent. It also scans an unpartitioned target, and there is no backfill path.\n- The target has no partitioning or clustering, and bytes per run aren't estimated.\n- There are no tests, and nothing checks the freshness SLA.\n- Downstream consumers aren't listed.\n- Late-arriving rows aren't handled.\n- The consumer and decision aren't named.\n\nTwo questions need your answer before the plan can move on. Does a `dim_loyalty_members` table exist today? Which columns should the table actually hold?"
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.0986444,
+            "judgeCostUsd": 0.002145899999999999,
+            "durationSeconds": 44,
+            "startedAt": "2026-11-07T08:34:41.112Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-Zp3xXp/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **The verdict is NOT READY**, with four blockers.\n\nI did not run the dev dry-run. The `raw_loyalty.members` table can't be checked from this checkout, so the cost finding has no measured bytes.\n\n**Blockers**\n- **Personal data is public (item 7):** `partner_open` is readable by `allAuthenticatedUsers`, which means any Google account. It would expose `email`, `home_address`, `birth_date` and `member_name`. The plan has no classification and no crypto-shred path.\n- **Rollout can't be undone (item 10):** It renames the table, builds the new one, then drops the old one. The drop can't be reversed, and consumers break between steps 1 and 2.\n- **Columns don't match (item 3):** The model outputs `ds`, `member_id` and `amount`. The access list names four personal columns that the source doesn't have.\n- **Contract is incomplete (item 2):** It has no `classification`, which the repo requires. `primary_key: member_id` contradicts the grain, which should be `(ds, member_id)`. It isn't in `contracts/`, and it doesn't say whether the change is additive or breaking.\n\n**Should fix**\n- **Rerun safety (item 5):**\n  - `SUM(amount)` double-counts if the CRM re-delivers a file into the same `ds`.\n  - `updated_at` is never used.\n  - The MERGE never removes members that disappear on a rerun.\n  - There is no backfill path.\n- **Cost (item 6):** The target table has no partitioning, clustering or `require_partition_filter`, and no cost estimate.\n- **Missing sections:** The plan doesn't name the consumer (item 1), tests or freshness monitoring (item 8), late-arriving data (item 11) or downstream models (item 9).\n\nThe premise check found nothing. There is no existing loyalty model, table or contract in the repo.\n\nI didn't change the rest of the plan, so the author needs to resolve these. The blockers need fixing before the build starts."
+              },
+              {
+                "name": "2-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **The verdict is NOT READY**, with four blockers.\n\nI did not run the dev dry-run. The `raw_loyalty.members` table can't be checked from this checkout, so the cost finding has no measured bytes.\n\n**Blockers**\n- **Personal data is public (item 7):** `partner_open` is readable by `allAuthenticatedUsers`, which means any Google account. It would expose `email`, `home_address`, `birth_date` and `member_name`. The plan has no classification and no crypto-shred path.\n- **Rollout can't be undone (item 10):** It renames the table, builds the new one, then drops the old one. The drop can't be reversed, and consumers break between steps 1 and 2.\n- **Columns don't match (item 3):** The model outputs `ds`, `member_id` and `amount`. The access list names four personal columns that the source doesn't have.\n- **Contract is incomplete (item 2):** It has no `classification`, which the repo requires. `primary_key: member_id` contradicts the grain, which should be `(ds, member_id)`. It isn't in `contracts/`, and it doesn't say whether the change is additive or breaking.\n\n**Should fix**\n- **Rerun safety (item 5):**\n  - `SUM(amount)` double-counts if the CRM re-delivers a file into the same `ds`.\n  - `updated_at` is never used.\n  - The MERGE never removes members that disappear on a rerun.\n  - There is no backfill path.\n- **Cost (item 6):** The target table has no partitioning, clustering or `require_partition_filter`, and no cost estimate.\n- **Missing sections:** The plan doesn't name the consumer (item 1), tests or freshness monitoring (item 8), late-arriving data (item 11) or downstream models (item 9).\n\nThe premise check found nothing. There is no existing loyalty model, table or contract in the repo.\n\nI didn't change the rest of the plan, so the author needs to resolve these. The blockers need fixing before the build starts."
+              },
+              {
+                "name": "3-contract",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **The verdict is NOT READY**, with four blockers.\n\nI did not run the dev dry-run. The `raw_loyalty.members` table can't be checked from this checkout, so the cost finding has no measured bytes.\n\n**Blockers**\n- **Personal data is public (item 7):** `partner_open` is readable by `allAuthenticatedUsers`, which means any Google account. It would expose `email`, `home_address`, `birth_date` and `member_name`. The plan has no classification and no crypto-shred path.\n- **Rollout can't be undone (item 10):** It renames the table, builds the new one, then drops the old one. The drop can't be reversed, and consumers break between steps 1 and 2.\n- **Columns don't match (item 3):** The model outputs `ds`, `member_id` and `amount`. The access list names four personal columns that the source doesn't have.\n- **Contract is incomplete (item 2):** It has no `classification`, which the repo requires. `primary_key: member_id` contradicts the grain, which should be `(ds, member_id)`. It isn't in `contracts/`, and it doesn't say whether the change is additive or breaking.\n\n**Should fix**\n- **Rerun safety (item 5):**\n  - `SUM(amount)` double-counts if the CRM re-delivers a file into the same `ds`.\n  - `updated_at` is never used.\n  - The MERGE never removes members that disappear on a rerun.\n  - There is no backfill path.\n- **Cost (item 6):** The target table has no partitioning, clustering or `require_partition_filter`, and no cost estimate.\n- **Missing sections:** The plan doesn't name the consumer (item 1), tests or freshness monitoring (item 8), late-arriving data (item 11) or downstream models (item 9).\n\nThe premise check found nothing. There is no existing loyalty model, table or contract in the repo.\n\nI didn't change the rest of the plan, so the author needs to resolve these. The blockers need fixing before the build starts."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.1015892,
+            "judgeCostUsd": 0.0008702999999999992,
+            "durationSeconds": 39,
+            "startedAt": "2026-11-07T08:35:25.222Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-niiElR/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Verdict: NOT READY.** I appended a `## Data review (2026-11-07)` section to the plan. I changed nothing else in it.\n\n**Blockers**\n- **Personal data exposed (item 7):** `partner_open` is readable by `allAuthenticatedUsers`. That makes `email`, `home_address`, `birth_date` and `member_name` readable by any Google account. The plan has no classification, policy tags or crypto-shred path.\n- **No rollback (item 10):** Rollout step 3 drops the old table right after the new one is created. The table also doesn't exist between steps 1 and 2.\n- **Double counting (item 5):** The source delivers one file per run. A second export for the same `ds` doubles `SUM(amount)`, and `updated_at` is never used. The backfill path isn't written either.\n- **Contract (item 2):**\n  - It has no `classification`, which `contract_required_fields` requires.\n  - `primary_key: member_id` contradicts the grain, which should be `(ds, member_id)`.\n  - The change isn't classed as additive or breaking.\n- **Model and access mismatch (item 3):** The model selects only `ds, member_id, amount`, but Access lists four personal columns the model never produces.\n\n**Should fix**\n- The target DDL is missing, and the MERGE doesn't prune on the target's `ds`.\n- There are no tests, and the freshness SLA has no check.\n- Late-arriving rows aren't handled.\n- No downstream consumers are listed.\n- No consumer or decision is named.\n\n**Other notes**\n- **Step 0:** Nothing in the repo already serves this. The plan renames an existing `dim_loyalty_members` that isn't in the repo, so it should say where that table lives.\n- **Dry-run not done:** The tables aren't in the dev project, so the cost finding is an estimate only.\n- **Vendor second pass not run:** I didn't run the vendor skills, since I didn't check whether they're installed and they need your say-so on attribution tagging.\n\nOnce you've resolved the blockers in the plan, I can re-review it."
+              },
+              {
+                "name": "2-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Verdict: NOT READY.** I appended a `## Data review (2026-11-07)` section to the plan. I changed nothing else in it.\n\n**Blockers**\n- **Personal data exposed (item 7):** `partner_open` is readable by `allAuthenticatedUsers`. That makes `email`, `home_address`, `birth_date` and `member_name` readable by any Google account. The plan has no classification, policy tags or crypto-shred path.\n- **No rollback (item 10):** Rollout step 3 drops the old table right after the new one is created. The table also doesn't exist between steps 1 and 2.\n- **Double counting (item 5):** The source delivers one file per run. A second export for the same `ds` doubles `SUM(amount)`, and `updated_at` is never used. The backfill path isn't written either.\n- **Contract (item 2):**\n  - It has no `classification`, which `contract_required_fields` requires.\n  - `primary_key: member_id` contradicts the grain, which should be `(ds, member_id)`.\n  - The change isn't classed as additive or breaking.\n- **Model and access mismatch (item 3):** The model selects only `ds, member_id, amount`, but Access lists four personal columns the model never produces.\n\n**Should fix**\n- The target DDL is missing, and the MERGE doesn't prune on the target's `ds`.\n- There are no tests, and the freshness SLA has no check.\n- Late-arriving rows aren't handled.\n- No downstream consumers are listed.\n- No consumer or decision is named.\n\n**Other notes**\n- **Step 0:** Nothing in the repo already serves this. The plan renames an existing `dim_loyalty_members` that isn't in the repo, so it should say where that table lives.\n- **Dry-run not done:** The tables aren't in the dev project, so the cost finding is an estimate only.\n- **Vendor second pass not run:** I didn't run the vendor skills, since I didn't check whether they're installed and they need your say-so on attribution tagging.\n\nOnce you've resolved the blockers in the plan, I can re-review it."
+              },
+              {
+                "name": "3-contract",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Verdict: NOT READY.** I appended a `## Data review (2026-11-07)` section to the plan. I changed nothing else in it.\n\n**Blockers**\n- **Personal data exposed (item 7):** `partner_open` is readable by `allAuthenticatedUsers`. That makes `email`, `home_address`, `birth_date` and `member_name` readable by any Google account. The plan has no classification, policy tags or crypto-shred path.\n- **No rollback (item 10):** Rollout step 3 drops the old table right after the new one is created. The table also doesn't exist between steps 1 and 2.\n- **Double counting (item 5):** The source delivers one file per run. A second export for the same `ds` doubles `SUM(amount)`, and `updated_at` is never used. The backfill path isn't written either.\n- **Contract (item 2):**\n  - It has no `classification`, which `contract_required_fields` requires.\n  - `primary_key: member_id` contradicts the grain, which should be `(ds, member_id)`.\n  - The change isn't classed as additive or breaking.\n- **Model and access mismatch (item 3):** The model selects only `ds, member_id, amount`, but Access lists four personal columns the model never produces.\n\n**Should fix**\n- The target DDL is missing, and the MERGE doesn't prune on the target's `ds`.\n- There are no tests, and the freshness SLA has no check.\n- Late-arriving rows aren't handled.\n- No downstream consumers are listed.\n- No consumer or decision is named.\n\n**Other notes**\n- **Step 0:** Nothing in the repo already serves this. The plan renames an existing `dim_loyalty_members` that isn't in the repo, so it should say where that table lives.\n- **Dry-run not done:** The tables aren't in the dev project, so the cost finding is an estimate only.\n- **Vendor second pass not run:** I didn't run the vendor skills, since I didn't check whether they're installed and they need your say-so on attribution tagging.\n\nOnce you've resolved the blockers in the plan, I can re-review it."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 0.1077325,
+            "judgeCostUsd": 0.0008951999999999996,
+            "durationSeconds": 41,
+            "startedAt": "2026-11-07T08:36:03.801Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-MT7AF2/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, with five blockers.\n\n**Blockers**\n1. **Personal data is exposed.** `email`, `home_address`, `birth_date` and `member_name` are readable by `allAuthenticatedUsers`, which means any Google account. The plan has no classification, policy tags or crypto-shred path.\n2. **The column list doesn't match the data.** The source table and the model don't contain the four personal columns, so the plan doesn't say where they come from.\n3. **The contract is incomplete.** It has no `classification`, which your `contract_required_fields` requires. Its `primary_key: member_id` contradicts the grain, which is `ds` plus `member_id`. It also has no schema or quality rules.\n4. **The rollout has no way back.** It renames the live table, builds the new one, then drops the old one. That leaves a window with no table, and once the drop runs you can't restore it.\n5. **Reruns don't reproduce the output.** The MERGE never removes a member who disappears from a re-delivered `ds`. The target table isn't partitioned, so the MERGE scans all of it. The plan also has no backfill path.\n\n**Should-fix items**\n- The plan doesn't name a consumer.\n- `SUM(amount)` double counts if the CRM redelivers rows, and `updated_at` is never used.\n- The target table has no DDL, partitioning or cost estimate.\n- There are no tests, and no check on the 07:00 UTC freshness SLA.\n- No downstream consumers are listed, and none are told about the rename.\n- Late-arriving rows aren't handled.\n\nI didn't run any dry-runs, because the target table isn't defined and the plan gives no per-`ds` bytes. Cost is therefore unestimated.\n\n**Question for you:** the Goal says to build `dim_loyalty_members`, but the Rollout renames an existing one. I found no such table or model in the repo. Does it already exist? If it does, it may already answer the consumer's need, and that would change the review.\n\nI didn't change the plan itself. The author needs to resolve the findings first."
+              },
+              {
+                "name": "2-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, with five blockers.\n\n**Blockers**\n1. **Personal data is exposed.** `email`, `home_address`, `birth_date` and `member_name` are readable by `allAuthenticatedUsers`, which means any Google account. The plan has no classification, policy tags or crypto-shred path.\n2. **The column list doesn't match the data.** The source table and the model don't contain the four personal columns, so the plan doesn't say where they come from.\n3. **The contract is incomplete.** It has no `classification`, which your `contract_required_fields` requires. Its `primary_key: member_id` contradicts the grain, which is `ds` plus `member_id`. It also has no schema or quality rules.\n4. **The rollout has no way back.** It renames the live table, builds the new one, then drops the old one. That leaves a window with no table, and once the drop runs you can't restore it.\n5. **Reruns don't reproduce the output.** The MERGE never removes a member who disappears from a re-delivered `ds`. The target table isn't partitioned, so the MERGE scans all of it. The plan also has no backfill path.\n\n**Should-fix items**\n- The plan doesn't name a consumer.\n- `SUM(amount)` double counts if the CRM redelivers rows, and `updated_at` is never used.\n- The target table has no DDL, partitioning or cost estimate.\n- There are no tests, and no check on the 07:00 UTC freshness SLA.\n- No downstream consumers are listed, and none are told about the rename.\n- Late-arriving rows aren't handled.\n\nI didn't run any dry-runs, because the target table isn't defined and the plan gives no per-`ds` bytes. Cost is therefore unestimated.\n\n**Question for you:** the Goal says to build `dim_loyalty_members`, but the Rollout renames an existing one. I found no such table or model in the repo. Does it already exist? If it does, it may already answer the consumer's need, and that would change the review.\n\nI didn't change the plan itself. The author needs to resolve the findings first."
+              },
+              {
+                "name": "3-contract",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**, with five blockers.\n\n**Blockers**\n1. **Personal data is exposed.** `email`, `home_address`, `birth_date` and `member_name` are readable by `allAuthenticatedUsers`, which means any Google account. The plan has no classification, policy tags or crypto-shred path.\n2. **The column list doesn't match the data.** The source table and the model don't contain the four personal columns, so the plan doesn't say where they come from.\n3. **The contract is incomplete.** It has no `classification`, which your `contract_required_fields` requires. Its `primary_key: member_id` contradicts the grain, which is `ds` plus `member_id`. It also has no schema or quality rules.\n4. **The rollout has no way back.** It renames the live table, builds the new one, then drops the old one. That leaves a window with no table, and once the drop runs you can't restore it.\n5. **Reruns don't reproduce the output.** The MERGE never removes a member who disappears from a re-delivered `ds`. The target table isn't partitioned, so the MERGE scans all of it. The plan also has no backfill path.\n\n**Should-fix items**\n- The plan doesn't name a consumer.\n- `SUM(amount)` double counts if the CRM redelivers rows, and `updated_at` is never used.\n- The target table has no DDL, partitioning or cost estimate.\n- There are no tests, and no check on the 07:00 UTC freshness SLA.\n- No downstream consumers are listed, and none are told about the rename.\n- Late-arriving rows aren't handled.\n\nI didn't run any dry-runs, because the target table isn't defined and the plan gives no per-`ds` bytes. Cost is therefore unestimated.\n\n**Question for you:** the Goal says to build `dim_loyalty_members`, but the Rollout renames an existing one. I found no such table or model in the repo. Does it already exist? If it does, it may already answer the consumer's need, and that would change the review.\n\nI didn't change the plan itself. The author needs to resolve the findings first."
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0436441,
+            "judgeCostUsd": 0.001546500000000001,
+            "durationSeconds": 27,
+            "startedAt": "2026-11-07T08:36:45.297Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-TOkz9s/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan and found two blockers and several smaller problems. I'd fix the blockers before building.\n\n## Blockers\n\n1. **PII is open to every authenticated user (Access, lines 44-45).** `partner_open` with `allAuthenticatedUsers` readers would expose `member_name`, `email`, `home_address` and `birth_date`. Any signed-in Google account could read them, not only people in your org. Restrict readers to named groups, and consider a separate dataset or column-level policy tags for the PII columns. If partners only need `amount`, give them a view without PII.\n2. **The Access column list doesn't match the model.** The source has `ds, updated_at, member_id, amount`, and the Model query only outputs `ds, member_id, amount`. Nothing in the plan produces `member_name`, `email`, `home_address` or `birth_date`. Either a source or join is missing, or the column list is wrong. The plan should say which, and it affects the PII question above.\n\n## Correctness\n\n3. **The contract key contradicts the grain.** The grain is one row per member per `ds` (line 23), but `primary_key: member_id` (line 56). It should be `(ds, member_id)`, or the grain should change.\n4. **`SUM(amount)` may double-count.** The source has `updated_at`, which suggests a member can appear more than once, such as a re-sent or corrected row. Summing would inflate `amount` in that case. The plan should say whether rows are additive transactions or versions. If they're versions, keep the latest row per member by `updated_at` (`QUALIFY ROW_NUMBER() ...`). It also doesn't say how late or re-delivered files are handled.\n5. **The MERGE won't prune partitions on the target (line 37).** `d.ds = n.ds` compares against a subquery column, so BigQuery scans the whole target. Use `d.ds = @ds` in the `ON` clause. The target DDL is also missing, so it isn't clear whether it is partitioned or clustered like the source.\n\n## Rollout and operations\n\n6. **The rollout is risky (lines 49-51).**\n   - There's a gap between the rename and the new table existing, so readers fail during it.\n   - Views and dependents that point at the renamed table will follow it to `_old`.\n   - The `DROP` is irreversible and runs immediately, so there's no rollback window.\n   \n   Build the new table under a temporary name, validate it, then swap it in (`CREATE OR REPLACE`, or repoint a view). Keep the old table for a retention period before dropping it.\n7. **Nothing supports the 07:00 UTC SLA.** There's no schedule, no expected CRM delivery time, no handling for a missing file, and no checks such as row counts, a uniqueness test on `(ds, member_id)`, or null `amount`.\n8. **Minor:** a table with one row per `ds` is a daily snapshot, so `dim_` is a questionable name. `SUM` over all-NULL `amount` gives NULL, so decide whether you want `COALESCE`.\n\nI haven't changed anything. I can draft a revised plan covering these points, but I need to know whether the PII columns are meant to exist and whether source rows are additive or versioned."
+              },
+              {
+                "name": "2-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan and found two blockers and several smaller problems. I'd fix the blockers before building.\n\n## Blockers\n\n1. **PII is open to every authenticated user (Access, lines 44-45).** `partner_open` with `allAuthenticatedUsers` readers would expose `member_name`, `email`, `home_address` and `birth_date`. Any signed-in Google account could read them, not only people in your org. Restrict readers to named groups, and consider a separate dataset or column-level policy tags for the PII columns. If partners only need `amount`, give them a view without PII.\n2. **The Access column list doesn't match the model.** The source has `ds, updated_at, member_id, amount`, and the Model query only outputs `ds, member_id, amount`. Nothing in the plan produces `member_name`, `email`, `home_address` or `birth_date`. Either a source or join is missing, or the column list is wrong. The plan should say which, and it affects the PII question above.\n\n## Correctness\n\n3. **The contract key contradicts the grain.** The grain is one row per member per `ds` (line 23), but `primary_key: member_id` (line 56). It should be `(ds, member_id)`, or the grain should change.\n4. **`SUM(amount)` may double-count.** The source has `updated_at`, which suggests a member can appear more than once, such as a re-sent or corrected row. Summing would inflate `amount` in that case. The plan should say whether rows are additive transactions or versions. If they're versions, keep the latest row per member by `updated_at` (`QUALIFY ROW_NUMBER() ...`). It also doesn't say how late or re-delivered files are handled.\n5. **The MERGE won't prune partitions on the target (line 37).** `d.ds = n.ds` compares against a subquery column, so BigQuery scans the whole target. Use `d.ds = @ds` in the `ON` clause. The target DDL is also missing, so it isn't clear whether it is partitioned or clustered like the source.\n\n## Rollout and operations\n\n6. **The rollout is risky (lines 49-51).**\n   - There's a gap between the rename and the new table existing, so readers fail during it.\n   - Views and dependents that point at the renamed table will follow it to `_old`.\n   - The `DROP` is irreversible and runs immediately, so there's no rollback window.\n   \n   Build the new table under a temporary name, validate it, then swap it in (`CREATE OR REPLACE`, or repoint a view). Keep the old table for a retention period before dropping it.\n7. **Nothing supports the 07:00 UTC SLA.** There's no schedule, no expected CRM delivery time, no handling for a missing file, and no checks such as row counts, a uniqueness test on `(ds, member_id)`, or null `amount`.\n8. **Minor:** a table with one row per `ds` is a daily snapshot, so `dim_` is a questionable name. `SUM` over all-NULL `amount` gives NULL, so decide whether you want `COALESCE`.\n\nI haven't changed anything. I can draft a revised plan covering these points, but I need to know whether the PII columns are meant to exist and whether source rows are additive or versioned."
+              },
+              {
+                "name": "3-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan and found two blockers and several smaller problems. I'd fix the blockers before building.\n\n## Blockers\n\n1. **PII is open to every authenticated user (Access, lines 44-45).** `partner_open` with `allAuthenticatedUsers` readers would expose `member_name`, `email`, `home_address` and `birth_date`. Any signed-in Google account could read them, not only people in your org. Restrict readers to named groups, and consider a separate dataset or column-level policy tags for the PII columns. If partners only need `amount`, give them a view without PII.\n2. **The Access column list doesn't match the model.** The source has `ds, updated_at, member_id, amount`, and the Model query only outputs `ds, member_id, amount`. Nothing in the plan produces `member_name`, `email`, `home_address` or `birth_date`. Either a source or join is missing, or the column list is wrong. The plan should say which, and it affects the PII question above.\n\n## Correctness\n\n3. **The contract key contradicts the grain.** The grain is one row per member per `ds` (line 23), but `primary_key: member_id` (line 56). It should be `(ds, member_id)`, or the grain should change.\n4. **`SUM(amount)` may double-count.** The source has `updated_at`, which suggests a member can appear more than once, such as a re-sent or corrected row. Summing would inflate `amount` in that case. The plan should say whether rows are additive transactions or versions. If they're versions, keep the latest row per member by `updated_at` (`QUALIFY ROW_NUMBER() ...`). It also doesn't say how late or re-delivered files are handled.\n5. **The MERGE won't prune partitions on the target (line 37).** `d.ds = n.ds` compares against a subquery column, so BigQuery scans the whole target. Use `d.ds = @ds` in the `ON` clause. The target DDL is also missing, so it isn't clear whether it is partitioned or clustered like the source.\n\n## Rollout and operations\n\n6. **The rollout is risky (lines 49-51).**\n   - There's a gap between the rename and the new table existing, so readers fail during it.\n   - Views and dependents that point at the renamed table will follow it to `_old`.\n   - The `DROP` is irreversible and runs immediately, so there's no rollback window.\n   \n   Build the new table under a temporary name, validate it, then swap it in (`CREATE OR REPLACE`, or repoint a view). Keep the old table for a retention period before dropping it.\n7. **Nothing supports the 07:00 UTC SLA.** There's no schedule, no expected CRM delivery time, no handling for a missing file, and no checks such as row counts, a uniqueness test on `(ds, member_id)`, or null `amount`.\n8. **Minor:** a table with one row per `ds` is a daily snapshot, so `dim_` is a questionable name. `SUM` over all-NULL `amount` gives NULL, so decide whether you want `COALESCE`.\n\nI haven't changed anything. I can draft a revised plan covering these points, but I need to know whether the PII columns are meant to exist and whether source rows are additive or versioned."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0432804,
+            "judgeCostUsd": 0.0016127999999999993,
+            "durationSeconds": 29,
+            "startedAt": "2026-11-07T08:37:12.295Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-ZWsORi/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan and have concerns. The first two need fixing before we build.\n\n**Blocking**\n\n1. **Access exposes PII to everyone.** `partner_open` with `allAuthenticatedUsers` makes the table readable by any signed-in Google account, not just your org. The column list includes `member_name`, `email`, `home_address` and `birth_date`. Restrict readers to specific groups. Either drop the PII columns or protect them with policy tags or column-level security. Put the table in a private dataset.\n2. **The PII columns don't exist in the pipeline.** The source schema is only `ds, updated_at, member_id, amount`. The model and MERGE produce only `ds, member_id, amount`. So `member_name`, `email`, `home_address` and `birth_date` have no source. Either the source schema is incomplete or the Access column list is wrong. Decide which.\n3. **The rollout can break consumers and loses data.**\n   - Between steps 1 and 2 the table doesn't exist, so readers fail.\n   - Step 3 drops the old table with no validation and no backup.\n   - Build the new table under a temporary name and validate it. Then swap it in, for example with `CREATE OR REPLACE` or a view cutover. Keep the old table for a retention window before dropping it.\n\n**Correctness**\n\n4. **The contract contradicts the grain.** `primary_key: member_id` conflicts with \"one row per member per ds\". The key should be `(ds, member_id)`.\n5. **There is no dedup, so re-delivered files double-count.** The source is a CRM export with one file per run, and `updated_at` is never used. A re-run or re-delivered file means `SUM(amount)` inflates the total. Decide whether `amount` is additive or a snapshot. If it's a snapshot, take the latest row per member by `updated_at` instead of summing. Also handle NULL `member_id` values.\n6. **The MERGE target isn't pruned.** The `ON d.ds = n.ds` condition comes from a subquery, so BigQuery can't prune partitions in the target. The plan doesn't say the target is partitioned or clustered. Partition it by `ds` and cluster it by `member_id`. Add a static filter such as `d.ds = @ds` in the `ON` clause. Without these, every load scans the whole target.\n\n**Smaller gaps**\n\n7. **No schedule or data-quality checks.** The 07:00 UTC SLA has no stated delivery time for the CRM export and no schedule or alerting. There are no tests for uniqueness of `(ds, member_id)`, non-null keys or row-count sanity.\n8. **Backfill cost isn't estimated.** The source is about 200 GB. If the rollout backfills history, estimate the scan cost and run it per partition.\n9. **The name is misleading.** A `dim_` table with a per-`ds` grain is really a daily snapshot or fact table. That's a minor point, but it affects how consumers use it.\n\nI'd resolve items 1–3 with the data team before building. I can draft a revised plan if you want one."
+              },
+              {
+                "name": "2-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan and have concerns. The first two need fixing before we build.\n\n**Blocking**\n\n1. **Access exposes PII to everyone.** `partner_open` with `allAuthenticatedUsers` makes the table readable by any signed-in Google account, not just your org. The column list includes `member_name`, `email`, `home_address` and `birth_date`. Restrict readers to specific groups. Either drop the PII columns or protect them with policy tags or column-level security. Put the table in a private dataset.\n2. **The PII columns don't exist in the pipeline.** The source schema is only `ds, updated_at, member_id, amount`. The model and MERGE produce only `ds, member_id, amount`. So `member_name`, `email`, `home_address` and `birth_date` have no source. Either the source schema is incomplete or the Access column list is wrong. Decide which.\n3. **The rollout can break consumers and loses data.**\n   - Between steps 1 and 2 the table doesn't exist, so readers fail.\n   - Step 3 drops the old table with no validation and no backup.\n   - Build the new table under a temporary name and validate it. Then swap it in, for example with `CREATE OR REPLACE` or a view cutover. Keep the old table for a retention window before dropping it.\n\n**Correctness**\n\n4. **The contract contradicts the grain.** `primary_key: member_id` conflicts with \"one row per member per ds\". The key should be `(ds, member_id)`.\n5. **There is no dedup, so re-delivered files double-count.** The source is a CRM export with one file per run, and `updated_at` is never used. A re-run or re-delivered file means `SUM(amount)` inflates the total. Decide whether `amount` is additive or a snapshot. If it's a snapshot, take the latest row per member by `updated_at` instead of summing. Also handle NULL `member_id` values.\n6. **The MERGE target isn't pruned.** The `ON d.ds = n.ds` condition comes from a subquery, so BigQuery can't prune partitions in the target. The plan doesn't say the target is partitioned or clustered. Partition it by `ds` and cluster it by `member_id`. Add a static filter such as `d.ds = @ds` in the `ON` clause. Without these, every load scans the whole target.\n\n**Smaller gaps**\n\n7. **No schedule or data-quality checks.** The 07:00 UTC SLA has no stated delivery time for the CRM export and no schedule or alerting. There are no tests for uniqueness of `(ds, member_id)`, non-null keys or row-count sanity.\n8. **Backfill cost isn't estimated.** The source is about 200 GB. If the rollout backfills history, estimate the scan cost and run it per partition.\n9. **The name is misleading.** A `dim_` table with a per-`ds` grain is really a daily snapshot or fact table. That's a minor point, but it affects how consumers use it.\n\nI'd resolve items 1–3 with the data team before building. I can draft a revised plan if you want one."
+              },
+              {
+                "name": "3-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan and have concerns. The first two need fixing before we build.\n\n**Blocking**\n\n1. **Access exposes PII to everyone.** `partner_open` with `allAuthenticatedUsers` makes the table readable by any signed-in Google account, not just your org. The column list includes `member_name`, `email`, `home_address` and `birth_date`. Restrict readers to specific groups. Either drop the PII columns or protect them with policy tags or column-level security. Put the table in a private dataset.\n2. **The PII columns don't exist in the pipeline.** The source schema is only `ds, updated_at, member_id, amount`. The model and MERGE produce only `ds, member_id, amount`. So `member_name`, `email`, `home_address` and `birth_date` have no source. Either the source schema is incomplete or the Access column list is wrong. Decide which.\n3. **The rollout can break consumers and loses data.**\n   - Between steps 1 and 2 the table doesn't exist, so readers fail.\n   - Step 3 drops the old table with no validation and no backup.\n   - Build the new table under a temporary name and validate it. Then swap it in, for example with `CREATE OR REPLACE` or a view cutover. Keep the old table for a retention window before dropping it.\n\n**Correctness**\n\n4. **The contract contradicts the grain.** `primary_key: member_id` conflicts with \"one row per member per ds\". The key should be `(ds, member_id)`.\n5. **There is no dedup, so re-delivered files double-count.** The source is a CRM export with one file per run, and `updated_at` is never used. A re-run or re-delivered file means `SUM(amount)` inflates the total. Decide whether `amount` is additive or a snapshot. If it's a snapshot, take the latest row per member by `updated_at` instead of summing. Also handle NULL `member_id` values.\n6. **The MERGE target isn't pruned.** The `ON d.ds = n.ds` condition comes from a subquery, so BigQuery can't prune partitions in the target. The plan doesn't say the target is partitioned or clustered. Partition it by `ds` and cluster it by `member_id`. Add a static filter such as `d.ds = @ds` in the `ON` clause. Without these, every load scans the whole target.\n\n**Smaller gaps**\n\n7. **No schedule or data-quality checks.** The 07:00 UTC SLA has no stated delivery time for the CRM export and no schedule or alerting. There are no tests for uniqueness of `(ds, member_id)`, non-null keys or row-count sanity.\n8. **Backfill cost isn't estimated.** The source is about 200 GB. If the rollout backfills history, estimate the scan cost and run it per partition.\n9. **The name is misleading.** A `dim_` table with a per-`ds` grain is really a daily snapshot or fact table. That's a minor point, but it affects how consumers use it.\n\nI'd resolve items 1–3 with the data team before building. I can draft a revised plan if you want one."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0445271,
+            "judgeCostUsd": 0.0018195,
+            "durationSeconds": 30,
+            "startedAt": "2026-11-07T08:37:41.681Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-EJJ50I/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and wouldn't build it as written. The first issue is a blocker, and the rollout needs rework too.\n\n## Blockers\n\n1. **Personal data is open to everyone.** The Access section gives `allAuthenticatedUsers` read access on `partner_open`. That includes any Google account, not just people in your org. The column list includes `member_name`, `email`, `home_address` and `birth_date`.\n   - Move the table to a restricted dataset and grant access to specific groups.\n   - Drop the PII columns, or expose them only through a masked or authorized view or with column-level policy tags.\n   - Confirm that the data's consent terms allow whatever sharing you intend.\n\n2. **The rollout can destroy data and break readers.**\n   - Step 3 drops the old table straight after creating the new one. There's no validation, no backfill and no rollback point.\n   - Between steps 1 and 2, `dim_loyalty_members` doesn't exist, so readers fail.\n   - Safer option: build the new table under a temporary name, compare row counts and sums against the old one, then swap. Keep the old table for a retention window before dropping it.\n\n## Correctness issues\n\n3. **The columns don't match.** The source has `ds, updated_at, member_id, amount`, and the model outputs `ds, member_id, amount`. The Access section lists `member_name`, `email`, `home_address` and `birth_date`, which nothing in the plan produces. The plan also has no DDL for the target table. The `INSERT ROW` in the MERGE would leave those columns empty or fail.\n\n4. **The grain and the primary key disagree.** The grain is one row per member per `ds`, but the contract says `primary_key: member_id`. That key is not unique. It should be `(ds, member_id)`.\n\n5. **Re-delivery isn't handled.** The source is one CRM file per run. If a file is delivered twice or corrected, `SUM(amount)` in the model double-counts. `updated_at` is never used. Decide whether `amount` is a transaction or a snapshot. If it's a snapshot, dedupe to the latest `updated_at` per member, not a sum. If it's a transaction, add a delivery or batch ID to dedupe on.\n\n6. **The MERGE is incomplete.**\n   - It has no `WHEN NOT MATCHED BY SOURCE`, so members dropped from a corrected file stay in the table.\n   - The target's partitioning isn't stated. Declare it so the MERGE prunes on `d.ds`.\n   - `INSERT ROW` is fragile when the schema changes. List the columns explicitly.\n\n## Smaller gaps\n\n- The 07:00 UTC freshness SLA has no matching schedule or expected CRM delivery time. Nothing says what happens if the file is late.\n- `dim_` implies a dimension, but a table with one row per member per day is a snapshot fact table. Consider renaming it, or confirm the intended semantics.\n- There are no data-quality checks. Useful ones would be a non-null `member_id`, a uniqueness test on `(ds, member_id)`, and a row-count comparison against the source.\n\nThe source query is fine for cost. The `ds` filter satisfies `require_partition_filter` and prunes the 200 GB table to one partition.\n\nI'd start with the access change (1) and the column and DDL gap (3). Everything else depends on those.\n\nI can draft a revised plan with these fixes if you'd like."
+              },
+              {
+                "name": "2-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and wouldn't build it as written. The first issue is a blocker, and the rollout needs rework too.\n\n## Blockers\n\n1. **Personal data is open to everyone.** The Access section gives `allAuthenticatedUsers` read access on `partner_open`. That includes any Google account, not just people in your org. The column list includes `member_name`, `email`, `home_address` and `birth_date`.\n   - Move the table to a restricted dataset and grant access to specific groups.\n   - Drop the PII columns, or expose them only through a masked or authorized view or with column-level policy tags.\n   - Confirm that the data's consent terms allow whatever sharing you intend.\n\n2. **The rollout can destroy data and break readers.**\n   - Step 3 drops the old table straight after creating the new one. There's no validation, no backfill and no rollback point.\n   - Between steps 1 and 2, `dim_loyalty_members` doesn't exist, so readers fail.\n   - Safer option: build the new table under a temporary name, compare row counts and sums against the old one, then swap. Keep the old table for a retention window before dropping it.\n\n## Correctness issues\n\n3. **The columns don't match.** The source has `ds, updated_at, member_id, amount`, and the model outputs `ds, member_id, amount`. The Access section lists `member_name`, `email`, `home_address` and `birth_date`, which nothing in the plan produces. The plan also has no DDL for the target table. The `INSERT ROW` in the MERGE would leave those columns empty or fail.\n\n4. **The grain and the primary key disagree.** The grain is one row per member per `ds`, but the contract says `primary_key: member_id`. That key is not unique. It should be `(ds, member_id)`.\n\n5. **Re-delivery isn't handled.** The source is one CRM file per run. If a file is delivered twice or corrected, `SUM(amount)` in the model double-counts. `updated_at` is never used. Decide whether `amount` is a transaction or a snapshot. If it's a snapshot, dedupe to the latest `updated_at` per member, not a sum. If it's a transaction, add a delivery or batch ID to dedupe on.\n\n6. **The MERGE is incomplete.**\n   - It has no `WHEN NOT MATCHED BY SOURCE`, so members dropped from a corrected file stay in the table.\n   - The target's partitioning isn't stated. Declare it so the MERGE prunes on `d.ds`.\n   - `INSERT ROW` is fragile when the schema changes. List the columns explicitly.\n\n## Smaller gaps\n\n- The 07:00 UTC freshness SLA has no matching schedule or expected CRM delivery time. Nothing says what happens if the file is late.\n- `dim_` implies a dimension, but a table with one row per member per day is a snapshot fact table. Consider renaming it, or confirm the intended semantics.\n- There are no data-quality checks. Useful ones would be a non-null `member_id`, a uniqueness test on `(ds, member_id)`, and a row-count comparison against the source.\n\nThe source query is fine for cost. The `ds` filter satisfies `require_partition_filter` and prunes the 200 GB table to one partition.\n\nI'd start with the access change (1) and the column and DDL gap (3). Everything else depends on those.\n\nI can draft a revised plan with these fixes if you'd like."
+              },
+              {
+                "name": "3-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and wouldn't build it as written. The first issue is a blocker, and the rollout needs rework too.\n\n## Blockers\n\n1. **Personal data is open to everyone.** The Access section gives `allAuthenticatedUsers` read access on `partner_open`. That includes any Google account, not just people in your org. The column list includes `member_name`, `email`, `home_address` and `birth_date`.\n   - Move the table to a restricted dataset and grant access to specific groups.\n   - Drop the PII columns, or expose them only through a masked or authorized view or with column-level policy tags.\n   - Confirm that the data's consent terms allow whatever sharing you intend.\n\n2. **The rollout can destroy data and break readers.**\n   - Step 3 drops the old table straight after creating the new one. There's no validation, no backfill and no rollback point.\n   - Between steps 1 and 2, `dim_loyalty_members` doesn't exist, so readers fail.\n   - Safer option: build the new table under a temporary name, compare row counts and sums against the old one, then swap. Keep the old table for a retention window before dropping it.\n\n## Correctness issues\n\n3. **The columns don't match.** The source has `ds, updated_at, member_id, amount`, and the model outputs `ds, member_id, amount`. The Access section lists `member_name`, `email`, `home_address` and `birth_date`, which nothing in the plan produces. The plan also has no DDL for the target table. The `INSERT ROW` in the MERGE would leave those columns empty or fail.\n\n4. **The grain and the primary key disagree.** The grain is one row per member per `ds`, but the contract says `primary_key: member_id`. That key is not unique. It should be `(ds, member_id)`.\n\n5. **Re-delivery isn't handled.** The source is one CRM file per run. If a file is delivered twice or corrected, `SUM(amount)` in the model double-counts. `updated_at` is never used. Decide whether `amount` is a transaction or a snapshot. If it's a snapshot, dedupe to the latest `updated_at` per member, not a sum. If it's a transaction, add a delivery or batch ID to dedupe on.\n\n6. **The MERGE is incomplete.**\n   - It has no `WHEN NOT MATCHED BY SOURCE`, so members dropped from a corrected file stay in the table.\n   - The target's partitioning isn't stated. Declare it so the MERGE prunes on `d.ds`.\n   - `INSERT ROW` is fragile when the schema changes. List the columns explicitly.\n\n## Smaller gaps\n\n- The 07:00 UTC freshness SLA has no matching schedule or expected CRM delivery time. Nothing says what happens if the file is late.\n- `dim_` implies a dimension, but a table with one row per member per day is a snapshot fact table. Consider renaming it, or confirm the intended semantics.\n- There are no data-quality checks. Useful ones would be a non-null `member_id`, a uniqueness test on `(ds, member_id)`, and a row-count comparison against the source.\n\nThe source query is fine for cost. The `ds` filter satisfies `require_partition_filter` and prunes the 200 GB table to one partition.\n\nI'd start with the access change (1) and the column and DDL gap (3). Everything else depends on those.\n\nI can draft a revised plan with these fixes if you'd like."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.043608999999999995,
+            "judgeCostUsd": 0.0015939999999999982,
+            "durationSeconds": 26,
+            "startedAt": "2026-11-07T08:38:11.389Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-d00wya/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan and found two blockers and several smaller problems.\n\n## Blockers\n\n1. **Access exposes PII to everyone.** The plan puts the table in `partner_open` with `allAuthenticatedUsers` as readers. In BigQuery that means any signed-in Google account, not only people in your org. The column list includes `email`, `home_address`, `birth_date` and `member_name`. Restrict readers to specific groups or service accounts and move the table to a restricted dataset. Either drop the PII columns or protect them with policy tags or column-level security.\n2. **The plan's schema and SQL disagree.** The access section lists `member_name`, `email`, `home_address` and `birth_date`. None of them are in `raw_loyalty.members` (`ds, updated_at, member_id, amount`), and the model SQL only outputs `ds, member_id, amount`. Either the source description is incomplete or the column list is wrong. Settle which before building.\n\n## Correctness\n\n3. **The primary key contradicts the grain.** The grain is one row per member per `ds`, but the contract says `primary_key: member_id`. It should be `(ds, member_id)`.\n4. **`SUM(amount)` may double-count.** The source is \"one file per run\" and has an `updated_at` column that the model never uses. If the CRM re-sends or corrects rows, the sum inflates. Decide whether `amount` is additive or a snapshot. If it's a snapshot, keep the latest row per member with `updated_at` instead of summing.\n5. **The MERGE never removes rows.** If a rerun drops a member for a `ds`, the old row stays. Use `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE`, or delete the partition and reinsert it.\n6. **The target table has no DDL.** Partitioning and clustering aren't specified. Without partitioning on `ds` and a `d.ds = @ds` filter, each MERGE scans the whole target table.\n\n## Rollout\n\n7. **Rename, create, drop leaves readers without a table.** Between steps 1 and 2 the table doesn't exist, and the plan has no backfill step. Step 3 drops the old table immediately, so there is no rollback. Instead, build the new table under a new name, validate it against the old one, then swap. Keep the old table for a retention window before dropping it.\n8. **Backfill isn't planned.** The source requires a partition filter and is about 200 GB, so a backfill needs a bounded `ds` range loop. Estimate the cost of that backfill.\n\n## Smaller items\n\n- `freshness_sla: 07:00 UTC` has no matching schedule or expected CRM delivery time, and no freshness alert.\n- There are no data tests, such as uniqueness of `(ds, member_id)`, not-null keys, or reconciling row counts and totals with the source.\n- Table names are unqualified. Use project, dataset and table names so the rename and merge can't hit the wrong dataset.\n\nFix items 1 and 2 before building. Items 3 to 7 are cheap to fix now and costly after launch. Want me to draft a revised plan?"
+              },
+              {
+                "name": "2-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan and found two blockers and several smaller problems.\n\n## Blockers\n\n1. **Access exposes PII to everyone.** The plan puts the table in `partner_open` with `allAuthenticatedUsers` as readers. In BigQuery that means any signed-in Google account, not only people in your org. The column list includes `email`, `home_address`, `birth_date` and `member_name`. Restrict readers to specific groups or service accounts and move the table to a restricted dataset. Either drop the PII columns or protect them with policy tags or column-level security.\n2. **The plan's schema and SQL disagree.** The access section lists `member_name`, `email`, `home_address` and `birth_date`. None of them are in `raw_loyalty.members` (`ds, updated_at, member_id, amount`), and the model SQL only outputs `ds, member_id, amount`. Either the source description is incomplete or the column list is wrong. Settle which before building.\n\n## Correctness\n\n3. **The primary key contradicts the grain.** The grain is one row per member per `ds`, but the contract says `primary_key: member_id`. It should be `(ds, member_id)`.\n4. **`SUM(amount)` may double-count.** The source is \"one file per run\" and has an `updated_at` column that the model never uses. If the CRM re-sends or corrects rows, the sum inflates. Decide whether `amount` is additive or a snapshot. If it's a snapshot, keep the latest row per member with `updated_at` instead of summing.\n5. **The MERGE never removes rows.** If a rerun drops a member for a `ds`, the old row stays. Use `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE`, or delete the partition and reinsert it.\n6. **The target table has no DDL.** Partitioning and clustering aren't specified. Without partitioning on `ds` and a `d.ds = @ds` filter, each MERGE scans the whole target table.\n\n## Rollout\n\n7. **Rename, create, drop leaves readers without a table.** Between steps 1 and 2 the table doesn't exist, and the plan has no backfill step. Step 3 drops the old table immediately, so there is no rollback. Instead, build the new table under a new name, validate it against the old one, then swap. Keep the old table for a retention window before dropping it.\n8. **Backfill isn't planned.** The source requires a partition filter and is about 200 GB, so a backfill needs a bounded `ds` range loop. Estimate the cost of that backfill.\n\n## Smaller items\n\n- `freshness_sla: 07:00 UTC` has no matching schedule or expected CRM delivery time, and no freshness alert.\n- There are no data tests, such as uniqueness of `(ds, member_id)`, not-null keys, or reconciling row counts and totals with the source.\n- Table names are unqualified. Use project, dataset and table names so the rename and merge can't hit the wrong dataset.\n\nFix items 1 and 2 before building. Items 3 to 7 are cheap to fix now and costly after launch. Want me to draft a revised plan?"
+              },
+              {
+                "name": "3-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan and found two blockers and several smaller problems.\n\n## Blockers\n\n1. **Access exposes PII to everyone.** The plan puts the table in `partner_open` with `allAuthenticatedUsers` as readers. In BigQuery that means any signed-in Google account, not only people in your org. The column list includes `email`, `home_address`, `birth_date` and `member_name`. Restrict readers to specific groups or service accounts and move the table to a restricted dataset. Either drop the PII columns or protect them with policy tags or column-level security.\n2. **The plan's schema and SQL disagree.** The access section lists `member_name`, `email`, `home_address` and `birth_date`. None of them are in `raw_loyalty.members` (`ds, updated_at, member_id, amount`), and the model SQL only outputs `ds, member_id, amount`. Either the source description is incomplete or the column list is wrong. Settle which before building.\n\n## Correctness\n\n3. **The primary key contradicts the grain.** The grain is one row per member per `ds`, but the contract says `primary_key: member_id`. It should be `(ds, member_id)`.\n4. **`SUM(amount)` may double-count.** The source is \"one file per run\" and has an `updated_at` column that the model never uses. If the CRM re-sends or corrects rows, the sum inflates. Decide whether `amount` is additive or a snapshot. If it's a snapshot, keep the latest row per member with `updated_at` instead of summing.\n5. **The MERGE never removes rows.** If a rerun drops a member for a `ds`, the old row stays. Use `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE`, or delete the partition and reinsert it.\n6. **The target table has no DDL.** Partitioning and clustering aren't specified. Without partitioning on `ds` and a `d.ds = @ds` filter, each MERGE scans the whole target table.\n\n## Rollout\n\n7. **Rename, create, drop leaves readers without a table.** Between steps 1 and 2 the table doesn't exist, and the plan has no backfill step. Step 3 drops the old table immediately, so there is no rollback. Instead, build the new table under a new name, validate it against the old one, then swap. Keep the old table for a retention window before dropping it.\n8. **Backfill isn't planned.** The source requires a partition filter and is about 200 GB, so a backfill needs a bounded `ds` range loop. Estimate the cost of that backfill.\n\n## Smaller items\n\n- `freshness_sla: 07:00 UTC` has no matching schedule or expected CRM delivery time, and no freshness alert.\n- There are no data tests, such as uniqueness of `(ds, member_id)`, not-null keys, or reconciling row counts and totals with the source.\n- Table names are unqualified. Use project, dataset and table names so the rename and merge can't hit the wrong dataset.\n\nFix items 1 and 2 before building. Items 3 to 7 are cheap to fix now and costly after launch. Want me to draft a revised plan?"
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0441294,
+            "judgeCostUsd": 0.0015618000000000003,
+            "durationSeconds": 26,
+            "startedAt": "2026-11-07T08:38:37.624Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-1TBpwR/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. I'd fix the first two items below before building, and the access one is the most serious.\n\n**Blockers**\n\n1. **Access exposes PII to everyone.** `partner_open` with `allAuthenticatedUsers` makes the table readable by any Google account. The column list includes `member_name`, `email`, `home_address` and `birth_date`. Restrict readers to specific groups. Consider dropping or masking the PII columns, or using policy tags, unless a consumer needs them.\n2. **The columns don't match the pipeline.** The Access section lists `member_name`, `email`, `home_address` and `birth_date`. They aren't in the source DDL, the Model query or the MERGE, so the table as planned can't produce them. Either the source schema is incomplete or the column list is wrong.\n3. **The rollout is destructive and has no rollback.** It renames the table, creates the new one, then drops the old one.\n   - Consumers hit a missing table between steps 1 and 2.\n   - Nothing validates the new table before the drop.\n   - Nothing says the new table is backfilled before the old one goes.\n   - Build the new table under a new name, validate it, then swap. Keep the old table for a retention window before dropping it.\n\n**Correctness**\n\n4. **`SUM(amount)` can double-count.** The source has `updated_at`, which suggests the CRM export can send multiple versions of a member for the same `ds`. A rerun or re-export could also append duplicates, since delivery is one file per run. If so, summing inflates `amount`. Decide whether to dedupe on `updated_at` (latest row per `member_id`, `ds`) or whether summing is intended, and document which.\n5. **The contract conflicts with the grain.** The grain is one row per member per `ds`, but `primary_key` is `member_id` alone. It should be `(ds, member_id)`.\n6. **The MERGE never removes rows.** A member who disappears from a re-delivered `ds` stays in the target with a stale `amount`. Consider replacing the whole partition (delete and insert, or `INSERT OVERWRITE` semantics) instead. The plan also doesn't say whether `dim_loyalty_members` is partitioned or clustered. Without that, the MERGE scans the whole target on every run.\n\n**Gaps**\n\n- **Naming:** A table with one row per member per day is a snapshot or fact table, not a dimension. The name `dim_` is misleading.\n- **SLA:** The 07:00 UTC freshness SLA isn't tied to when the CRM export lands. There's also no plan for late or missing files.\n- **Data quality:** There are no checks for null `member_id`, null `amount`, uniqueness of `(ds, member_id)`, or row-count sanity against the source.\n- **Backfill:** A backfill isn't described. Each `ds` partition is a separate query against about 200 GB of source, so the cost depends on how many days you need.\n- **`amount`:** The plan doesn't say what `amount` means (points, currency, balance or delta). Nor does it say whether negative values are allowed, which affects whether summing is right.\n\nDo you want me to draft a revised plan that covers these points? I'd need your answers on the dedupe semantics (item 4) and which PII columns, if any, consumers need."
+              },
+              {
+                "name": "2-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. I'd fix the first two items below before building, and the access one is the most serious.\n\n**Blockers**\n\n1. **Access exposes PII to everyone.** `partner_open` with `allAuthenticatedUsers` makes the table readable by any Google account. The column list includes `member_name`, `email`, `home_address` and `birth_date`. Restrict readers to specific groups. Consider dropping or masking the PII columns, or using policy tags, unless a consumer needs them.\n2. **The columns don't match the pipeline.** The Access section lists `member_name`, `email`, `home_address` and `birth_date`. They aren't in the source DDL, the Model query or the MERGE, so the table as planned can't produce them. Either the source schema is incomplete or the column list is wrong.\n3. **The rollout is destructive and has no rollback.** It renames the table, creates the new one, then drops the old one.\n   - Consumers hit a missing table between steps 1 and 2.\n   - Nothing validates the new table before the drop.\n   - Nothing says the new table is backfilled before the old one goes.\n   - Build the new table under a new name, validate it, then swap. Keep the old table for a retention window before dropping it.\n\n**Correctness**\n\n4. **`SUM(amount)` can double-count.** The source has `updated_at`, which suggests the CRM export can send multiple versions of a member for the same `ds`. A rerun or re-export could also append duplicates, since delivery is one file per run. If so, summing inflates `amount`. Decide whether to dedupe on `updated_at` (latest row per `member_id`, `ds`) or whether summing is intended, and document which.\n5. **The contract conflicts with the grain.** The grain is one row per member per `ds`, but `primary_key` is `member_id` alone. It should be `(ds, member_id)`.\n6. **The MERGE never removes rows.** A member who disappears from a re-delivered `ds` stays in the target with a stale `amount`. Consider replacing the whole partition (delete and insert, or `INSERT OVERWRITE` semantics) instead. The plan also doesn't say whether `dim_loyalty_members` is partitioned or clustered. Without that, the MERGE scans the whole target on every run.\n\n**Gaps**\n\n- **Naming:** A table with one row per member per day is a snapshot or fact table, not a dimension. The name `dim_` is misleading.\n- **SLA:** The 07:00 UTC freshness SLA isn't tied to when the CRM export lands. There's also no plan for late or missing files.\n- **Data quality:** There are no checks for null `member_id`, null `amount`, uniqueness of `(ds, member_id)`, or row-count sanity against the source.\n- **Backfill:** A backfill isn't described. Each `ds` partition is a separate query against about 200 GB of source, so the cost depends on how many days you need.\n- **`amount`:** The plan doesn't say what `amount` means (points, currency, balance or delta). Nor does it say whether negative values are allowed, which affects whether summing is right.\n\nDo you want me to draft a revised plan that covers these points? I'd need your answers on the dedupe semantics (item 4) and which PII columns, if any, consumers need."
+              },
+              {
+                "name": "3-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan. I'd fix the first two items below before building, and the access one is the most serious.\n\n**Blockers**\n\n1. **Access exposes PII to everyone.** `partner_open` with `allAuthenticatedUsers` makes the table readable by any Google account. The column list includes `member_name`, `email`, `home_address` and `birth_date`. Restrict readers to specific groups. Consider dropping or masking the PII columns, or using policy tags, unless a consumer needs them.\n2. **The columns don't match the pipeline.** The Access section lists `member_name`, `email`, `home_address` and `birth_date`. They aren't in the source DDL, the Model query or the MERGE, so the table as planned can't produce them. Either the source schema is incomplete or the column list is wrong.\n3. **The rollout is destructive and has no rollback.** It renames the table, creates the new one, then drops the old one.\n   - Consumers hit a missing table between steps 1 and 2.\n   - Nothing validates the new table before the drop.\n   - Nothing says the new table is backfilled before the old one goes.\n   - Build the new table under a new name, validate it, then swap. Keep the old table for a retention window before dropping it.\n\n**Correctness**\n\n4. **`SUM(amount)` can double-count.** The source has `updated_at`, which suggests the CRM export can send multiple versions of a member for the same `ds`. A rerun or re-export could also append duplicates, since delivery is one file per run. If so, summing inflates `amount`. Decide whether to dedupe on `updated_at` (latest row per `member_id`, `ds`) or whether summing is intended, and document which.\n5. **The contract conflicts with the grain.** The grain is one row per member per `ds`, but `primary_key` is `member_id` alone. It should be `(ds, member_id)`.\n6. **The MERGE never removes rows.** A member who disappears from a re-delivered `ds` stays in the target with a stale `amount`. Consider replacing the whole partition (delete and insert, or `INSERT OVERWRITE` semantics) instead. The plan also doesn't say whether `dim_loyalty_members` is partitioned or clustered. Without that, the MERGE scans the whole target on every run.\n\n**Gaps**\n\n- **Naming:** A table with one row per member per day is a snapshot or fact table, not a dimension. The name `dim_` is misleading.\n- **SLA:** The 07:00 UTC freshness SLA isn't tied to when the CRM export lands. There's also no plan for late or missing files.\n- **Data quality:** There are no checks for null `member_id`, null `amount`, uniqueness of `(ds, member_id)`, or row-count sanity against the source.\n- **Backfill:** A backfill isn't described. Each `ds` partition is a separate query against about 200 GB of source, so the cost depends on how many days you need.\n- **`amount`:** The plan doesn't say what `amount` means (points, currency, balance or delta). Nor does it say whether negative values are allowed, which affects whether summing is right.\n\nDo you want me to draft a revised plan that covers these points? I'd need your answers on the dedupe semantics (item 4) and which PII columns, if any, consumers need."
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.9333333333333333,
+        "passRate": 0.8,
+        "scoreWithout": 0.6666666666666666,
+        "passRateWithout": 0,
+        "delta": 0.2666666666666667
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 0,
+    "overallScore": 0.9333333333333333,
+    "overallPassRate": 0.8,
+    "meanDelta": 0.2666666666666667
+  }
+}

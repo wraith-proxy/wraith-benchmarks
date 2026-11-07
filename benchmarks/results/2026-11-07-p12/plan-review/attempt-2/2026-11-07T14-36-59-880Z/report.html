@@ -1,0 +1,1256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Eval report — wraith v0.6.0</title>
+</head>
+<body>
+<style>
+:root{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){:root{--plane:#0d0d0d;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#898781;--hairline:rgba(255,255,255,.10);--grid:#2c2c2a;--inset:rgba(255,255,255,.05);--accent:#3987e5;--base-fill:#898781;--delta-good:#0ca30c;--good:#0ca30c;--warning:#fab219;--critical:#e06c6c;color-scheme:dark}}
+:root[data-theme="dark"]{--plane:#0d0d0d;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#898781;--hairline:rgba(255,255,255,.10);--grid:#2c2c2a;--inset:rgba(255,255,255,.05);--accent:#3987e5;--base-fill:#898781;--delta-good:#0ca30c;--good:#0ca30c;--warning:#fab219;--critical:#e06c6c;color-scheme:dark}
+:root[data-theme="light"]{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--plane);color:var(--ink);
+  font:14px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-text-size-adjust:100%}
+.wrap{max-width:880px;margin:0 auto;padding:40px 24px 64px;display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+header h1{margin:2px 0 0;font-size:24px;font-weight:600;line-height:1.25;text-wrap:balance}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;color:var(--ink-2);font-size:13px}
+.meta .num{font-variant-numeric:tabular-nums lining-nums}
+.banner{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;
+  border:1px solid var(--hairline);background:var(--surface);font-size:13px}
+.banner .chip-warn{color:var(--warning);font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--hairline);border-radius:10px;padding:14px 16px;
+  display:flex;flex-direction:column;gap:4px}
+.tile .label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.tile .value{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums lining-nums;line-height:1.1}
+.tile.hero .value{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:48px}
+.tile .sub{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tile .value.delta-pos{color:var(--delta-good)}
+.tile .value.delta-neg{color:var(--critical)}
+.toolbar{display:flex;gap:8px;justify-content:flex-end}
+.toolbar button{font:12px system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink-2);
+  background:var(--surface);border:1px solid var(--hairline);border-radius:6px;padding:4px 10px;cursor:pointer}
+.toolbar button:hover{color:var(--ink)}
+.toolbar button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.case{background:var(--surface);border:1px solid var(--hairline);border-radius:10px;padding:18px 20px;
+  display:flex;flex-direction:column;gap:10px}
+.case-regressed{border-left:3px solid var(--critical)}
+.verdict{margin:6px 0 0;font-size:15px}
+.verdict .delta{font-size:15px}
+.flag{font-size:11px;font-weight:600;color:var(--warning);white-space:nowrap}
+.star{color:var(--warning);font-size:.45em;vertical-align:super;line-height:0;cursor:help}
+.legend summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2)}
+.legend-list{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--ink-2)}
+.case-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.case-head h2{margin:0;font-size:16px;font-weight:600}
+.case-head .spacer{flex:1}
+.case-score{font-size:15px;font-weight:600}
+.mono{font:12px "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.num{font-variant-numeric:tabular-nums lining-nums}
+.muted{color:var(--ink-3);font-size:12px}
+.meter{display:inline-block;position:relative;width:120px;height:6px;border-radius:4px;background:var(--grid);
+  vertical-align:middle}
+.meter>span{display:block;height:100%;border-radius:4px;max-width:100%}
+.meter .tick{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink-3);border-radius:1px}
+.m-accent>span{background:var(--accent)}
+.m-base>span{background:var(--base-fill)}
+.delta{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.delta-pos{color:var(--delta-good)}
+.delta-neg{color:var(--critical)}
+.delta-zero{color:var(--ink-3)}
+details.section{border-top:1px solid var(--grid);padding-top:10px}
+details.section>summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--ink-2);list-style-position:outside;margin-left:2px}
+details.section>summary:hover{color:var(--ink)}
+details.section[open]>summary{margin-bottom:8px}
+.md{display:flex;flex-direction:column;gap:8px;background:var(--inset);border-radius:8px;
+  padding:12px 14px;overflow-wrap:break-word}
+.md>:first-child{margin-top:0}
+.md h1,.md h2,.md h3,.md h4,.md h5,.md h6{margin:4px 0 0;font-size:1em;font-weight:600;line-height:1.3}
+.md p,.md ul,.md ol,.md blockquote,.md table,.md pre,.md hr{margin:0}
+.md ul,.md ol{display:flex;flex-direction:column;gap:4px;padding-left:20px}
+.md blockquote{border-left:2px solid var(--hairline);padding-left:10px;color:var(--ink-2)}
+.md :not(pre)>code{background:var(--inset);padding:1px 4px;border-radius:4px;
+  font:.92em "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.md pre{background:var(--inset);border:1px solid var(--hairline);padding:10px 12px;border-radius:6px;
+  overflow-x:auto;font:12px/1.5 "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.md pre code{background:none;padding:0;font:inherit}
+.md table{width:100%;border-collapse:collapse}
+.md th,.md td{padding:5px 8px;text-align:left;vertical-align:top;border-bottom:1px solid var(--grid)}
+.md th{font-weight:600;color:var(--ink-2)}
+.md a{color:var(--accent);text-decoration:none}
+.md a:hover{text-decoration:underline}
+.grader-def{display:flex;flex-direction:column;gap:6px;padding:8px 0}
+.grader-def+.grader-def{border-top:1px solid var(--grid)}
+.grader-def-head{display:flex;align-items:baseline;gap:8px}
+.grader-name{font:13px "SF Mono",ui-monospace,Menlo,Consolas,monospace;font-weight:600}
+.badge{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2);
+  border:1px solid var(--hairline);border-radius:999px;padding:1px 8px}
+.config{display:flex;flex-direction:column;gap:2px;background:var(--inset);border-radius:8px;padding:10px 14px}
+.config code{font:12px "SF Mono",ui-monospace,Menlo,Consolas,monospace;overflow-wrap:anywhere}
+.arm{display:flex;flex-direction:column;gap:8px;padding:6px 0}
+.arm+.arm{border-top:1px dashed var(--grid);margin-top:4px;padding-top:12px}
+.arm-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.arm-label{font-size:13px;font-weight:600}
+.run{border:1px solid var(--grid);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.run-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.run-title{font-size:12px;font-weight:600;color:var(--ink-2)}
+.run-error .explanation{color:var(--ink-2)}
+.note{font-size:12px;color:var(--ink-2)}
+.graders{display:flex;flex-direction:column;gap:4px}
+details.grader{border-radius:6px}
+details.grader>summary{cursor:pointer;display:flex;align-items:baseline;gap:8px;padding:3px 4px;
+  border-radius:6px;list-style:none}
+details.grader>summary::-webkit-details-marker{display:none}
+details.grader>summary::before{content:'▸';font-size:10px;color:var(--ink-3);flex:none;
+  transition:transform .12s ease}
+details.grader[open]>summary::before{transform:rotate(90deg)}
+details.grader>summary:hover{background:var(--inset)}
+details.grader>summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.grader-body{padding:6px 8px 8px 24px;display:flex;flex-direction:column;gap:6px}
+.chip{font-size:11px;font-weight:600;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.chip-pass{color:var(--good);border:1px solid currentColor}
+.chip-fail{color:var(--critical);border:1px solid currentColor}
+.chip.chip-warn{color:var(--warning);border:1px solid currentColor}
+.explanation{margin:0;font-size:13px;color:var(--ink-2);white-space:pre-wrap;overflow-wrap:break-word}
+.kv{display:flex;gap:8px;font-size:12px;color:var(--ink-3)}
+.votes{font-variant-numeric:tabular-nums;letter-spacing:.1em}
+pre.evidence{margin:0;background:var(--inset);border:1px solid var(--hairline);border-radius:6px;
+  padding:8px 10px;overflow-x:auto;max-height:320px;
+  font:12px/1.5 "SF Mono",ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:break-word}
+footer{color:var(--ink-3);font-size:12px;text-align:center;padding-top:8px}
+@media (prefers-reduced-motion:no-preference){
+  details.grader>summary,.toolbar button{transition:background .12s ease,color .12s ease}
+}
+@media (prefers-reduced-motion:reduce){
+  details.grader>summary::before{transition:none}
+}
+@media print{
+  :root,:root[data-theme="dark"],:root[data-theme="light"]{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;color-scheme:light}
+  body{background:#fff}
+  .toolbar{display:none}
+  .case,.run,.grader-def{break-inside:avoid}
+  pre.evidence{max-height:none}
+}
+</style>
+<div class="wrap">
+<header>
+<div class="eyebrow">Plugin eval report</div>
+<h1>wraith v0.6.0</h1>
+<p class="verdict">Plugin effect: <span class="delta delta-pos">↑ +13.3 pts</span> vs baseline — improved 1 · flat 0 · regressed 0 of 1 case.</p>
+<div class="meta">
+<span class="mono">.</span>
+<span>Claude Code v2.1.316</span>
+<span class="num">2026-11-07 14:36 UTC</span>
+<span class="num">6m 46s</span>
+<span class="num">$0.74</span>
+<span class="num">10 runs</span>
+
+
+<span>model claude-sonnet-5-5</span>
+<span>judge claude-haiku-5-5</span>
+<span class="num">threshold 100%</span>
+<span>filtered: --case plan-review-p12</span>
+</div>
+</header>
+
+<section class="tiles">
+<div class="tile hero"><span class="label">Suite score · with plugin</span><span class="value">60%</span><span class="sub">mean of per-case scores</span></div>
+<div class="tile"><span class="label">Ablation Δ</span><span class="value num delta-pos">↑ +13.3</span><span class="sub">score points vs baseline, 1 of 1 case</span></div>
+<div class="tile"><span class="label">Baseline score</span><span class="value num">46.7%</span><span class="sub">without the plugin</span></div>
+<div class="tile"><span class="label">Cases</span><span class="value num">1</span><span class="sub">0 of 1 ≥ 100% threshold</span></div>
+<div class="tile"><span class="label">Perfect runs</span><span class="value num">0%</span><span class="sub">runs where every grader passed</span></div>
+</section>
+<details class="section legend">
+<summary>How to read this report</summary>
+<ul class="legend-list">
+<li>A run's score is the weighted fraction of its graders that passed; a "perfect" run passed every grader.</li>
+<li>A case's score is the mean of its runs; a case passes when its score is at or above the 100% threshold (the tick on each case bar).</li>
+<li>The suite score is the mean of the per-case scores.</li>
+<li>Judge votes are independent samples of the LLM judge; the majority decides pass or fail.</li>
+<li>"With plugin" and "Baseline" runs are identical except for the plugin being loaded; Δ is the with-plugin score minus the baseline score.</li>
+
+</ul>
+</details>
+<div class="toolbar"><button type="button" data-act="expand">Expand all</button><button type="button" data-act="collapse">Collapse all</button></div>
+<article class="case" id="case-1">
+<div class="case-head">
+<h2>plan-review-p12</h2>
+<span class="muted mono">bench-plan-review/p12</span>
+<span class="spacer"></span>
+
+<span class="delta delta-pos">↑ +13.3 pts</span>
+<span class="muted">with plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:60.0%"></span><i class="tick" style="left:100.0%"></i></span>
+<span class="num case-score">60%</span>
+</div>
+
+<details class="section" open>
+<summary>Results</summary>
+<section class="arm">
+<div class="arm-head">
+<span class="arm-label">With plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:60.0%"></span></span>
+<span class="num">60%</span>
+<span class="muted num">0% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">8 turns · $0.11 · 14:36:59 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**. I didn&apos;t run a dry run, because I couldn&apos;t confirm `raw_shop.refunds` exists in `example-project-dev`, so the cost finding is an estimate. I left the rest of the plan unchanged.
+
+Nothing in the repo already covers refunds, so the plan doesn&apos;t duplicate an existing model. The blockers are:
+
+1. **Model and Load contradict each other.** The Model query uses `order_id`, which isn&apos;t in the source schema. Load groups by `refund_id`. You need one query and one grain.
+2. **Load isn&apos;t idempotent.** A plain `INSERT` duplicates rows when you rerun a `ds`. The nightly 48-hour replay also changes the last 3 `ds`, but the plan only loads `ds = @ds`. Use a `MERGE` (or delete-then-insert), and reload a trailing 3-`ds` window each night.
+3. **`SUM(amount)` could double count.** If the replay delivers the same refund twice in one `ds`, the amount doubles. The plan also doesn&apos;t say whether `ds` means delivery date or `refunded_at` date. Deduplicate on `refund_id` before aggregating.
+4. **The personal-data story is inconsistent.** The plan says identifiers are SHA256-hashed, but the SQL doesn&apos;t hash anything. An unsalted hash isn&apos;t a crypto-shred path. The `fct_private` dataset also conflicts with the `internal` classification.
+
+The review also lists six should-fix items and two nits:
+- No consumer or decision is named.
+- The contract is missing `freshness_sla`, which AGENTS.md requires. Its primary key should probably be `(ds, refund_id)`.
+- The cost of the rebuild isn&apos;t bounded against the 10 GB dev limit.
+- There are no tests.
+- The snapshot step fails on the first build, because `fct_refunds` doesn&apos;t exist yet.
+- No downstream consumers are listed.
+
+Decision for you: the `ds` definition and the dedup rule (blockers 2 and 3) are product questions only you or the data team can settle. Once those are answered, I can draft the plan edits.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**. I didn&apos;t run a dry run, because I couldn&apos;t confirm `raw_shop.refunds` exists in `example-project-dev`, so the cost finding is an estimate. I left the rest of the plan unchanged.
+
+Nothing in the repo already covers refunds, so the plan doesn&apos;t duplicate an existing model. The blockers are:
+
+1. **Model and Load contradict each other.** The Model query uses `order_id`, which isn&apos;t in the source schema. Load groups by `refund_id`. You need one query and one grain.
+2. **Load isn&apos;t idempotent.** A plain `INSERT` duplicates rows when you rerun a `ds`. The nightly 48-hour replay also changes the last 3 `ds`, but the plan only loads `ds = @ds`. Use a `MERGE` (or delete-then-insert), and reload a trailing 3-`ds` window each night.
+3. **`SUM(amount)` could double count.** If the replay delivers the same refund twice in one `ds`, the amount doubles. The plan also doesn&apos;t say whether `ds` means delivery date or `refunded_at` date. Deduplicate on `refund_id` before aggregating.
+4. **The personal-data story is inconsistent.** The plan says identifiers are SHA256-hashed, but the SQL doesn&apos;t hash anything. An unsalted hash isn&apos;t a crypto-shred path. The `fct_private` dataset also conflicts with the `internal` classification.
+
+The review also lists six should-fix items and two nits:
+- No consumer or decision is named.
+- The contract is missing `freshness_sla`, which AGENTS.md requires. Its primary key should probably be `(ds, refund_id)`.
+- The cost of the rebuild isn&apos;t bounded against the 10 GB dev limit.
+- There are no tests.
+- The snapshot step fails on the first build, because `fct_refunds` doesn&apos;t exist yet.
+- No downstream consumers are listed.
+
+Decision for you: the `ds` definition and the dedup rule (blockers 2 and 3) are product questions only you or the data team can settle. Once those are answered, I can draft the plan edits.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**. I didn&apos;t run a dry run, because I couldn&apos;t confirm `raw_shop.refunds` exists in `example-project-dev`, so the cost finding is an estimate. I left the rest of the plan unchanged.
+
+Nothing in the repo already covers refunds, so the plan doesn&apos;t duplicate an existing model. The blockers are:
+
+1. **Model and Load contradict each other.** The Model query uses `order_id`, which isn&apos;t in the source schema. Load groups by `refund_id`. You need one query and one grain.
+2. **Load isn&apos;t idempotent.** A plain `INSERT` duplicates rows when you rerun a `ds`. The nightly 48-hour replay also changes the last 3 `ds`, but the plan only loads `ds = @ds`. Use a `MERGE` (or delete-then-insert), and reload a trailing 3-`ds` window each night.
+3. **`SUM(amount)` could double count.** If the replay delivers the same refund twice in one `ds`, the amount doubles. The plan also doesn&apos;t say whether `ds` means delivery date or `refunded_at` date. Deduplicate on `refund_id` before aggregating.
+4. **The personal-data story is inconsistent.** The plan says identifiers are SHA256-hashed, but the SQL doesn&apos;t hash anything. An unsalted hash isn&apos;t a crypto-shred path. The `fct_private` dataset also conflicts with the `internal` classification.
+
+The review also lists six should-fix items and two nits:
+- No consumer or decision is named.
+- The contract is missing `freshness_sla`, which AGENTS.md requires. Its primary key should probably be `(ds, refund_id)`.
+- The cost of the rebuild isn&apos;t bounded against the 10 GB dev limit.
+- There are no tests.
+- The snapshot step fails on the first build, because `fct_refunds` doesn&apos;t exist yet.
+- No downstream consumers are listed.
+
+Decision for you: the `ds` definition and the dedup rule (blockers 2 and 3) are product questions only you or the data team can settle. Once those are answered, I can draft the plan edits.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">8 turns · $0.11 · 14:37:46 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The review is appended to `docs/wraith/2026-10-12-refunds-model/plan.md` under `## Data review (2026-11-07)`. **Verdict: NOT READY.** I didn&apos;t run any `bq` dry-runs, so the cost finding uses only the plan&apos;s own figures.
+
+Nothing in the repo already answers this: there is no existing refunds model or contract, so the plan&apos;s premise holds.
+
+**Blockers**
+- **Model query fails:** It selects `order_id`, which isn&apos;t in the `raw_shop.refunds` DDL. It also groups differently from the Load, which uses `refund_id`.
+- **Load isn&apos;t idempotent:** It is a plain `INSERT INTO`, so rerunning a `ds` doubles the rows. The nightly 48-hour replay makes duplicates certain.
+- **Late data is missed:** The load reads only `@ds`, so corrections to `ds-1` and `ds-2` are never picked up. The plan also doesn&apos;t say what `ds` means.
+- **Amounts can be inflated:** `SUM(amount)` has no dedupe, so a replayed `refund_id` inflates the amount.
+- **Hashing is claimed but absent:** The plan says identifiers are hashed with SHA256, but no query does it. An unsalted hash isn&apos;t crypto-shredding, and the `internal` classification conflicts with the claim.
+
+**Should fix**
+- The contract lacks the required `freshness_sla`, has no contract file, and `primary_key` doesn&apos;t match the `(ds, refund_id)` grain.
+- No consumer is named.
+- `fct_refunds` has no partitioning, clustering or `require_partition_filter`, and there is no cost estimate.
+- There are no tests or freshness check, and &quot;check row counts&quot; has no expected value.
+- Rollout step 1 clones a table that doesn&apos;t exist on the first build, and the backup never expires.
+- The backfill isn&apos;t written out.
+
+There are also two nits, on downstream consumers and the temporal model. The plan itself is unchanged apart from the appended section. Once you&apos;ve fixed the blockers, I can re-review it.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The review is appended to `docs/wraith/2026-10-12-refunds-model/plan.md` under `## Data review (2026-11-07)`. **Verdict: NOT READY.** I didn&apos;t run any `bq` dry-runs, so the cost finding uses only the plan&apos;s own figures.
+
+Nothing in the repo already answers this: there is no existing refunds model or contract, so the plan&apos;s premise holds.
+
+**Blockers**
+- **Model query fails:** It selects `order_id`, which isn&apos;t in the `raw_shop.refunds` DDL. It also groups differently from the Load, which uses `refund_id`.
+- **Load isn&apos;t idempotent:** It is a plain `INSERT INTO`, so rerunning a `ds` doubles the rows. The nightly 48-hour replay makes duplicates certain.
+- **Late data is missed:** The load reads only `@ds`, so corrections to `ds-1` and `ds-2` are never picked up. The plan also doesn&apos;t say what `ds` means.
+- **Amounts can be inflated:** `SUM(amount)` has no dedupe, so a replayed `refund_id` inflates the amount.
+- **Hashing is claimed but absent:** The plan says identifiers are hashed with SHA256, but no query does it. An unsalted hash isn&apos;t crypto-shredding, and the `internal` classification conflicts with the claim.
+
+**Should fix**
+- The contract lacks the required `freshness_sla`, has no contract file, and `primary_key` doesn&apos;t match the `(ds, refund_id)` grain.
+- No consumer is named.
+- `fct_refunds` has no partitioning, clustering or `require_partition_filter`, and there is no cost estimate.
+- There are no tests or freshness check, and &quot;check row counts&quot; has no expected value.
+- Rollout step 1 clones a table that doesn&apos;t exist on the first build, and the backup never expires.
+- The backfill isn&apos;t written out.
+
+There are also two nits, on downstream consumers and the temporal model. The plan itself is unchanged apart from the appended section. Once you&apos;ve fixed the blockers, I can re-review it.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The review is appended to `docs/wraith/2026-10-12-refunds-model/plan.md` under `## Data review (2026-11-07)`. **Verdict: NOT READY.** I didn&apos;t run any `bq` dry-runs, so the cost finding uses only the plan&apos;s own figures.
+
+Nothing in the repo already answers this: there is no existing refunds model or contract, so the plan&apos;s premise holds.
+
+**Blockers**
+- **Model query fails:** It selects `order_id`, which isn&apos;t in the `raw_shop.refunds` DDL. It also groups differently from the Load, which uses `refund_id`.
+- **Load isn&apos;t idempotent:** It is a plain `INSERT INTO`, so rerunning a `ds` doubles the rows. The nightly 48-hour replay makes duplicates certain.
+- **Late data is missed:** The load reads only `@ds`, so corrections to `ds-1` and `ds-2` are never picked up. The plan also doesn&apos;t say what `ds` means.
+- **Amounts can be inflated:** `SUM(amount)` has no dedupe, so a replayed `refund_id` inflates the amount.
+- **Hashing is claimed but absent:** The plan says identifiers are hashed with SHA256, but no query does it. An unsalted hash isn&apos;t crypto-shredding, and the `internal` classification conflicts with the claim.
+
+**Should fix**
+- The contract lacks the required `freshness_sla`, has no contract file, and `primary_key` doesn&apos;t match the `(ds, refund_id)` grain.
+- No consumer is named.
+- `fct_refunds` has no partitioning, clustering or `require_partition_filter`, and there is no cost estimate.
+- There are no tests or freshness check, and &quot;check row counts&quot; has no expected value.
+- Rollout step 1 clones a table that doesn&apos;t exist on the first build, and the backup never expires.
+- The backfill isn&apos;t written out.
+
+There are also two nits, on downstream consumers and the temporal model. The plan itself is unchanged apart from the appended section. Once you&apos;ve fixed the blockers, I can re-review it.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">8 turns · $0.11 · 14:38:34 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **The verdict is NOT READY**, with five blockers. I didn&apos;t edit the rest of the plan, so you&apos;ll need to resolve the findings yourself.
+
+**Blockers**
+1. **Wrong column in the model query.** The Model query selects `order_id`, but the source table has no such column. The Model and Load queries also disagree (`order_id` vs `refund_id`).
+2. **The load isn&apos;t idempotent.** It&apos;s a plain `INSERT`, and the feed replays the last 48 hours every night. Reruns and the nightly replay will duplicate rows.
+3. **Late data isn&apos;t covered.** The load only handles one `@ds`. Rows that change or arrive late in the previous two days are never reloaded.
+4. **Personal-data handling doesn&apos;t match the SQL.** The plan says identifiers are hashed with SHA256, but no query hashes anything. Unsalted SHA256 of low-entropy IDs is reversible. The contract says `internal` while the dataset is named `fct_private`, and there&apos;s no crypto-shred path.
+5. **The contract is incomplete.** `freshness_sla` is missing, and the contract has no schema or quality rules. It also doesn&apos;t classify the change as additive or breaking.
+
+**Should-fix**
+- The primary key should be `(ds, refund_id)`, not `refund_id` alone. Replayed duplicate rows would also double-count in `SUM(amount)`.
+- The plan names no consumer.
+- The target table has no partitioning or `require_partition_filter`, and there&apos;s no cost estimate.
+- The rollout snapshot step fails on the first build and collides with itself on later runs. It also has no row-count criteria.
+- The plan has no tests or freshness check.
+- The plan lists no downstream models or dashboards.
+
+I didn&apos;t run a BigQuery dry run, so the review contains no bytes figure. The source is 150 GB in total, so the next step is to measure bytes per partition.
+
+One thing to decide before the rewrite: is `refund_id` personal data? That answer settles the hashing, classification and dataset-naming findings together.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **The verdict is NOT READY**, with five blockers. I didn&apos;t edit the rest of the plan, so you&apos;ll need to resolve the findings yourself.
+
+**Blockers**
+1. **Wrong column in the model query.** The Model query selects `order_id`, but the source table has no such column. The Model and Load queries also disagree (`order_id` vs `refund_id`).
+2. **The load isn&apos;t idempotent.** It&apos;s a plain `INSERT`, and the feed replays the last 48 hours every night. Reruns and the nightly replay will duplicate rows.
+3. **Late data isn&apos;t covered.** The load only handles one `@ds`. Rows that change or arrive late in the previous two days are never reloaded.
+4. **Personal-data handling doesn&apos;t match the SQL.** The plan says identifiers are hashed with SHA256, but no query hashes anything. Unsalted SHA256 of low-entropy IDs is reversible. The contract says `internal` while the dataset is named `fct_private`, and there&apos;s no crypto-shred path.
+5. **The contract is incomplete.** `freshness_sla` is missing, and the contract has no schema or quality rules. It also doesn&apos;t classify the change as additive or breaking.
+
+**Should-fix**
+- The primary key should be `(ds, refund_id)`, not `refund_id` alone. Replayed duplicate rows would also double-count in `SUM(amount)`.
+- The plan names no consumer.
+- The target table has no partitioning or `require_partition_filter`, and there&apos;s no cost estimate.
+- The rollout snapshot step fails on the first build and collides with itself on later runs. It also has no row-count criteria.
+- The plan has no tests or freshness check.
+- The plan lists no downstream models or dashboards.
+
+I didn&apos;t run a BigQuery dry run, so the review contains no bytes figure. The source is 150 GB in total, so the next step is to measure bytes per partition.
+
+One thing to decide before the rewrite: is `refund_id` personal data? That answer settles the hashing, classification and dataset-naming findings together.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **The verdict is NOT READY**, with five blockers. I didn&apos;t edit the rest of the plan, so you&apos;ll need to resolve the findings yourself.
+
+**Blockers**
+1. **Wrong column in the model query.** The Model query selects `order_id`, but the source table has no such column. The Model and Load queries also disagree (`order_id` vs `refund_id`).
+2. **The load isn&apos;t idempotent.** It&apos;s a plain `INSERT`, and the feed replays the last 48 hours every night. Reruns and the nightly replay will duplicate rows.
+3. **Late data isn&apos;t covered.** The load only handles one `@ds`. Rows that change or arrive late in the previous two days are never reloaded.
+4. **Personal-data handling doesn&apos;t match the SQL.** The plan says identifiers are hashed with SHA256, but no query hashes anything. Unsalted SHA256 of low-entropy IDs is reversible. The contract says `internal` while the dataset is named `fct_private`, and there&apos;s no crypto-shred path.
+5. **The contract is incomplete.** `freshness_sla` is missing, and the contract has no schema or quality rules. It also doesn&apos;t classify the change as additive or breaking.
+
+**Should-fix**
+- The primary key should be `(ds, refund_id)`, not `refund_id` alone. Replayed duplicate rows would also double-count in `SUM(amount)`.
+- The plan names no consumer.
+- The target table has no partitioning or `require_partition_filter`, and there&apos;s no cost estimate.
+- The rollout snapshot step fails on the first build and collides with itself on later runs. It also has no row-count criteria.
+- The plan has no tests or freshness check.
+- The plan lists no downstream models or dashboards.
+
+I didn&apos;t run a BigQuery dry run, so the review contains no bytes figure. The source is 150 GB in total, so the next step is to measure bytes per partition.
+
+One thing to decide before the rewrite: is `refund_id` personal data? That answer settles the hashing, classification and dataset-naming findings together.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">9 turns · $0.12 · 14:39:20 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **The verdict is NOT READY**, because there are four blockers. I didn&apos;t touch the rest of the plan. I couldn&apos;t dry-run any queries because `fct_refunds` doesn&apos;t exist yet and the plan gives no partition size. The cost finding is based only on the plan&apos;s own numbers.
+
+**Premise check:** nothing else in the repo covers refunds, so the model is worth building.
+
+**Blockers**
+1. **Grain mismatch.** The Model query groups by `order_id`, which isn&apos;t in the source schema. The Load query groups by `refund_id`. The stated grain is one row per refund per ds.
+2. **Replay double-counting.** The provider replays 48 hours every night, so a `refund_id` can arrive several times. `SUM(amount)` would count it more than once. The plan also never says what `ds` means. It needs dedupe on `refund_id`, not a sum.
+3. **Not idempotent.** `INSERT INTO fct_refunds` has no delete or merge, so rerunning a ds appends duplicates. No backfill path is written.
+4. **Hashing claim doesn&apos;t hold.** The Access section says identifiers are SHA256-hashed, but neither query hashes anything. Unsalted SHA256 of a guessable id is reversible and gives no crypto-shred path. The contract also says `internal`.
+
+**Should-fix**
+- **Consumer:** no consumer or decision is named.
+- **Contract:** `freshness_sla` is missing, and AGENTS.md requires it. No contract file is named, and the change isn&apos;t classified as additive or breaking. The `primary_key: refund_id` conflicts with the per-ds grain.
+- **Cost:** `fct_refunds` has no partitioning, clustering or `require_partition_filter`, and no runs per day or cost threshold is given. A range rebuild against the 150 GB source could exceed the 10 GB dev cap.
+- **Quality:** the only check is &quot;check row counts&quot;, with no expected value. There are no uniqueness or freshness tests.
+- **Rollback:** the snapshot step fails on the first build because the table doesn&apos;t exist yet. The restore commands aren&apos;t written.
+- **Late data:** anything arriving after the 48-hour replay window isn&apos;t handled.
+- **Temporal model:** the plan never says it&apos;s a ds snapshot.
+
+There&apos;s also one nit: no downstream consumers are listed.
+
+I&apos;d settle the grain and the meaning of `ds` first, since the dedupe, key and idempotency fixes all depend on them. Do you want me to draft those edits to the plan?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **The verdict is NOT READY**, because there are four blockers. I didn&apos;t touch the rest of the plan. I couldn&apos;t dry-run any queries because `fct_refunds` doesn&apos;t exist yet and the plan gives no partition size. The cost finding is based only on the plan&apos;s own numbers.
+
+**Premise check:** nothing else in the repo covers refunds, so the model is worth building.
+
+**Blockers**
+1. **Grain mismatch.** The Model query groups by `order_id`, which isn&apos;t in the source schema. The Load query groups by `refund_id`. The stated grain is one row per refund per ds.
+2. **Replay double-counting.** The provider replays 48 hours every night, so a `refund_id` can arrive several times. `SUM(amount)` would count it more than once. The plan also never says what `ds` means. It needs dedupe on `refund_id`, not a sum.
+3. **Not idempotent.** `INSERT INTO fct_refunds` has no delete or merge, so rerunning a ds appends duplicates. No backfill path is written.
+4. **Hashing claim doesn&apos;t hold.** The Access section says identifiers are SHA256-hashed, but neither query hashes anything. Unsalted SHA256 of a guessable id is reversible and gives no crypto-shred path. The contract also says `internal`.
+
+**Should-fix**
+- **Consumer:** no consumer or decision is named.
+- **Contract:** `freshness_sla` is missing, and AGENTS.md requires it. No contract file is named, and the change isn&apos;t classified as additive or breaking. The `primary_key: refund_id` conflicts with the per-ds grain.
+- **Cost:** `fct_refunds` has no partitioning, clustering or `require_partition_filter`, and no runs per day or cost threshold is given. A range rebuild against the 150 GB source could exceed the 10 GB dev cap.
+- **Quality:** the only check is &quot;check row counts&quot;, with no expected value. There are no uniqueness or freshness tests.
+- **Rollback:** the snapshot step fails on the first build because the table doesn&apos;t exist yet. The restore commands aren&apos;t written.
+- **Late data:** anything arriving after the 48-hour replay window isn&apos;t handled.
+- **Temporal model:** the plan never says it&apos;s a ds snapshot.
+
+There&apos;s also one nit: no downstream consumers are listed.
+
+I&apos;d settle the grain and the meaning of `ds` first, since the dedupe, key and idempotency fixes all depend on them. Do you want me to draft those edits to the plan?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **The verdict is NOT READY**, because there are four blockers. I didn&apos;t touch the rest of the plan. I couldn&apos;t dry-run any queries because `fct_refunds` doesn&apos;t exist yet and the plan gives no partition size. The cost finding is based only on the plan&apos;s own numbers.
+
+**Premise check:** nothing else in the repo covers refunds, so the model is worth building.
+
+**Blockers**
+1. **Grain mismatch.** The Model query groups by `order_id`, which isn&apos;t in the source schema. The Load query groups by `refund_id`. The stated grain is one row per refund per ds.
+2. **Replay double-counting.** The provider replays 48 hours every night, so a `refund_id` can arrive several times. `SUM(amount)` would count it more than once. The plan also never says what `ds` means. It needs dedupe on `refund_id`, not a sum.
+3. **Not idempotent.** `INSERT INTO fct_refunds` has no delete or merge, so rerunning a ds appends duplicates. No backfill path is written.
+4. **Hashing claim doesn&apos;t hold.** The Access section says identifiers are SHA256-hashed, but neither query hashes anything. Unsalted SHA256 of a guessable id is reversible and gives no crypto-shred path. The contract also says `internal`.
+
+**Should-fix**
+- **Consumer:** no consumer or decision is named.
+- **Contract:** `freshness_sla` is missing, and AGENTS.md requires it. No contract file is named, and the change isn&apos;t classified as additive or breaking. The `primary_key: refund_id` conflicts with the per-ds grain.
+- **Cost:** `fct_refunds` has no partitioning, clustering or `require_partition_filter`, and no runs per day or cost threshold is given. A range rebuild against the 150 GB source could exceed the 10 GB dev cap.
+- **Quality:** the only check is &quot;check row counts&quot;, with no expected value. There are no uniqueness or freshness tests.
+- **Rollback:** the snapshot step fails on the first build because the table doesn&apos;t exist yet. The restore commands aren&apos;t written.
+- **Late data:** anything arriving after the 48-hour replay window isn&apos;t handled.
+- **Temporal model:** the plan never says it&apos;s a ds snapshot.
+
+There&apos;s also one nit: no downstream consumers are listed.
+
+I&apos;d settle the grain and the meaning of `ds` first, since the dedupe, key and idempotency fixes all depend on them. Do you want me to draft those edits to the plan?</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">2 turns · $0.06 · 14:40:19 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. It has three blockers and several smaller gaps.
+
+## Blockers
+
+1. **The model SQL uses a column that doesn&apos;t exist.** `raw_shop.refunds` has `ds, refunded_at, refund_id, amount`, with no `order_id` (plan.md:26). The Load query uses `refund_id` instead, so the two queries disagree. The stated grain, &quot;one row per refund per ds&quot;, matches the Load query, so the Model query looks like the mistake.
+
+2. **The nightly 48-hour replay will double-count, and the load can&apos;t be re-run safely.**
+   - The same `refund_id` can arrive several times, in the same `ds` or in adjacent ones. `SUM(amount)` then inflates the refund. You probably want to dedupe, for example keep the latest row per `refund_id`, rather than sum. The plan also doesn&apos;t say how `ds` relates to `refunded_at`, or whether a replayed refund can land in a different `ds`.
+   - The Load is a plain `INSERT INTO` (plan.md:35). Every re-run and every replay appends duplicates. It needs a partition-level overwrite for the `ds` range, either delete and insert or `MERGE`. It also has to reprocess the two replayed days each night, not only `@ds`.
+
+3. **The rollout fails on first build.** Step 1 clones `fct_refunds` (plan.md:49), but a new model has no table to clone. The undo path is also weak. Restoring the snapshot discards any loads made after it. The plan also has no dev-target run and no dry-run byte estimate, even though the source is 150 GB.
+
+## Should fix
+
+- **Key and grain mismatch.** The contract says `primary_key: refund_id` (plan.md:57), but the grain is per refund per `ds`. Either the key is `(ds, refund_id)`, or the grain is one row per refund, which is cleaner given the dedupe.
+- **Hashing isn&apos;t in the SQL.** The Access section says identifiers are hashed with SHA256 (plan.md:45), but neither query hashes anything. Unsalted SHA256 on a low-entropy ID is also reversible by guessing. Say which columns are hashed, whether they&apos;re salted, and why.
+- **Classification is inconsistent.** The dataset is called `fct_private`, but the contract says `internal`. If `order_id` or other identifiers link to customers, that needs a real classification and possibly policy tags.
+- **The contract is thin.** It has no schema, no freshness SLA, no quality rules (`not_null` and `unique` on the key, `amount` checks) and no partitioning or clustering for the target table. It doesn&apos;t say whether refunds can be negative or whether `amount` needs a currency.
+- **&quot;Check row counts&quot; is vague.** Say what to compare against: distinct `refund_id` per `ds` in the source versus the target, and `SUM(amount)` per `ds` after dedupe.
+- **Snapshot cleanup.** `fct_refunds_bak` has no expiry or owner.
+
+## Fine as is
+
+The source&apos;s partition filter and clustering suit the `WHERE ds = @ds` access pattern. `CREATE SNAPSHOT TABLE … CLONE` is valid syntax. Seven-day time travel is the BigQuery default.
+
+I&apos;d fix the blockers and then run `wraith:plan-data-review`, which records findings and a verdict in the plan. Want me to revise the plan, or should I start with a few questions about dedupe semantics and the `ds` definition?</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. It has three blockers and several smaller gaps.
+
+## Blockers
+
+1. **The model SQL uses a column that doesn&apos;t exist.** `raw_shop.refunds` has `ds, refunded_at, refund_id, amount`, with no `order_id` (plan.md:26). The Load query uses `refund_id` instead, so the two queries disagree. The stated grain, &quot;one row per refund per ds&quot;, matches the Load query, so the Model query looks like the mistake.
+
+2. **The nightly 48-hour replay will double-count, and the load can&apos;t be re-run safely.**
+   - The same `refund_id` can arrive several times, in the same `ds` or in adjacent ones. `SUM(amount)` then inflates the refund. You probably want to dedupe, for example keep the latest row per `refund_id`, rather than sum. The plan also doesn&apos;t say how `ds` relates to `refunded_at`, or whether a replayed refund can land in a different `ds`.
+   - The Load is a plain `INSERT INTO` (plan.md:35). Every re-run and every replay appends duplicates. It needs a partition-level overwrite for the `ds` range, either delete and insert or `MERGE`. It also has to reprocess the two replayed days each night, not only `@ds`.
+
+3. **The rollout fails on first build.** Step 1 clones `fct_refunds` (plan.md:49), but a new model has no table to clone. The undo path is also weak. Restoring the snapshot discards any loads made after it. The plan also has no dev-target run and no dry-run byte estimate, even though the source is 150 GB.
+
+## Should fix
+
+- **Key and grain mismatch.** The contract says `primary_key: refund_id` (plan.md:57), but the grain is per refund per `ds`. Either the key is `(ds, refund_id)`, or the grain is one row per refund, which is cleaner given the dedupe.
+- **Hashing isn&apos;t in the SQL.** The Access section says identifiers are hashed with SHA256 (plan.md:45), but neither query hashes anything. Unsalted SHA256 on a low-entropy ID is also reversible by guessing. Say which columns are hashed, whether they&apos;re salted, and why.
+- **Classification is inconsistent.** The dataset is called `fct_private`, but the contract says `internal`. If `order_id` or other identifiers link to customers, that needs a real classification and possibly policy tags.
+- **The contract is thin.** It has no schema, no freshness SLA, no quality rules (`not_null` and `unique` on the key, `amount` checks) and no partitioning or clustering for the target table. It doesn&apos;t say whether refunds can be negative or whether `amount` needs a currency.
+- **&quot;Check row counts&quot; is vague.** Say what to compare against: distinct `refund_id` per `ds` in the source versus the target, and `SUM(amount)` per `ds` after dedupe.
+- **Snapshot cleanup.** `fct_refunds_bak` has no expiry or owner.
+
+## Fine as is
+
+The source&apos;s partition filter and clustering suit the `WHERE ds = @ds` access pattern. `CREATE SNAPSHOT TABLE … CLONE` is valid syntax. Seven-day time travel is the BigQuery default.
+
+I&apos;d fix the blockers and then run `wraith:plan-data-review`, which records findings and a verdict in the plan. Want me to revise the plan, or should I start with a few questions about dedupe semantics and the `ds` definition?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. It has three blockers and several smaller gaps.
+
+## Blockers
+
+1. **The model SQL uses a column that doesn&apos;t exist.** `raw_shop.refunds` has `ds, refunded_at, refund_id, amount`, with no `order_id` (plan.md:26). The Load query uses `refund_id` instead, so the two queries disagree. The stated grain, &quot;one row per refund per ds&quot;, matches the Load query, so the Model query looks like the mistake.
+
+2. **The nightly 48-hour replay will double-count, and the load can&apos;t be re-run safely.**
+   - The same `refund_id` can arrive several times, in the same `ds` or in adjacent ones. `SUM(amount)` then inflates the refund. You probably want to dedupe, for example keep the latest row per `refund_id`, rather than sum. The plan also doesn&apos;t say how `ds` relates to `refunded_at`, or whether a replayed refund can land in a different `ds`.
+   - The Load is a plain `INSERT INTO` (plan.md:35). Every re-run and every replay appends duplicates. It needs a partition-level overwrite for the `ds` range, either delete and insert or `MERGE`. It also has to reprocess the two replayed days each night, not only `@ds`.
+
+3. **The rollout fails on first build.** Step 1 clones `fct_refunds` (plan.md:49), but a new model has no table to clone. The undo path is also weak. Restoring the snapshot discards any loads made after it. The plan also has no dev-target run and no dry-run byte estimate, even though the source is 150 GB.
+
+## Should fix
+
+- **Key and grain mismatch.** The contract says `primary_key: refund_id` (plan.md:57), but the grain is per refund per `ds`. Either the key is `(ds, refund_id)`, or the grain is one row per refund, which is cleaner given the dedupe.
+- **Hashing isn&apos;t in the SQL.** The Access section says identifiers are hashed with SHA256 (plan.md:45), but neither query hashes anything. Unsalted SHA256 on a low-entropy ID is also reversible by guessing. Say which columns are hashed, whether they&apos;re salted, and why.
+- **Classification is inconsistent.** The dataset is called `fct_private`, but the contract says `internal`. If `order_id` or other identifiers link to customers, that needs a real classification and possibly policy tags.
+- **The contract is thin.** It has no schema, no freshness SLA, no quality rules (`not_null` and `unique` on the key, `amount` checks) and no partitioning or clustering for the target table. It doesn&apos;t say whether refunds can be negative or whether `amount` needs a currency.
+- **&quot;Check row counts&quot; is vague.** Say what to compare against: distinct `refund_id` per `ds` in the source versus the target, and `SUM(amount)` per `ds` after dedupe.
+- **Snapshot cleanup.** `fct_refunds_bak` has no expiry or owner.
+
+## Fine as is
+
+The source&apos;s partition filter and clustering suit the `WHERE ds = @ds` access pattern. `CREATE SNAPSHOT TABLE … CLONE` is valid syntax. Seven-day time travel is the BigQuery default.
+
+I&apos;d fix the blockers and then run `wraith:plan-data-review`, which records findings and a verdict in the plan. Want me to revise the plan, or should I start with a few questions about dedupe semantics and the `ds` definition?</pre>
+</div>
+</details></div>
+</div>
+</section><section class="arm">
+<div class="arm-head">
+<span class="arm-label">Baseline (no plugin)</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:46.7%"></span></span>
+<span class="num">46.7%</span>
+<span class="muted num">0% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">2 turns · $0.05 · 14:40:48 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">**Verdict: don&apos;t build this yet.** The model query can&apos;t run as written, and the load isn&apos;t safe to re-run. Here is what I found, most serious first.
+
+**Blocking**
+1. **`order_id` doesn&apos;t exist.** The `raw_shop.refunds` DDL has `ds, refunded_at, refund_id, amount`. The Model query selects and groups by `order_id`, so it fails. The Load query uses `refund_id` instead, so the two queries disagree. Decide whether `order_id` is missing from the DDL or the Model query is wrong.
+2. **The grain is stated three different ways.**
+   - The text says &quot;one row per refund per ds&quot;.
+   - The Model groups by `order_id`.
+   - The contract says `primary_key: refund_id`, which is unique across all ds, not per ds.
+   - Pick one grain, and make the key and the group-by match it.
+3. **The nightly 48-hour replay will double-count.** The feed replays the last 48 hours, so the same `refund_id` can arrive more than once. `SUM(amount)` over those duplicates inflates refund totals.
+   - Dedupe first, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY refund_id ORDER BY &lt;ingest time&gt;) = 1`. The source has no ingest-time column, so you&apos;d need to add one.
+   - The plan doesn&apos;t say whether `ds` is the event date or the delivery date. If it&apos;s the delivery date, one refund can sit in several partitions.
+   - Late or corrected rows also mean the model should reprocess the last 3 ds values each night, not only `@ds`.
+4. **`INSERT INTO` isn&apos;t idempotent.** A retry or backfill duplicates rows. Use `MERGE` on the key, or delete the ds partition and insert in one step.
+5. **The access section contradicts the SQL.** It says identifiers are hashed with SHA256, but no query hashes anything.
+   - Unsalted SHA256 of guessable IDs is easy to reverse, so use a keyed hash or don&apos;t expose the identifier.
+   - Hashing `refund_id` would also break joins against the source and the stated primary key.
+
+**Should fix**
+6. **Rollout step 1 has problems.**
+   - `CREATE SNAPSHOT TABLE ... CLONE fct_refunds` fails if the table doesn&apos;t exist yet, and this is a new model. It also fails if `fct_refunds_bak` already exists.
+   - It snapshots the whole table, but step 2 rebuilds only a ds range. Restoring the snapshot would also roll back unrelated ds values that were loaded later.
+   - Spell out the restore command. For a snapshot it&apos;s `CREATE OR REPLACE TABLE ... CLONE`.
+   - Make sure the snapshot has the same ACLs as `fct_private`.
+7. **&quot;Check row counts&quot; is too weak.** Compare `COUNT(DISTINCT refund_id)` and `SUM(amount)` per ds against the source. Add uniqueness and not-null tests on the key.
+8. **Classification mismatch.** The dataset is `fct_private` but the contract says `classification: internal`. Reconcile the two.
+9. **There&apos;s no currency column.** `NUMERIC amount` alone is ambiguous if refunds can be in more than one currency.
+
+**Fine as is:** every source query filters on `ds`, which satisfies `require_partition_filter` and keeps scans to one partition of the ~150 GB table.
+
+Once you&apos;ve settled the grain, whether `order_id` exists, and how the replay is deduped, I can rewrite the Model and Load sections. Want me to?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">**Verdict: don&apos;t build this yet.** The model query can&apos;t run as written, and the load isn&apos;t safe to re-run. Here is what I found, most serious first.
+
+**Blocking**
+1. **`order_id` doesn&apos;t exist.** The `raw_shop.refunds` DDL has `ds, refunded_at, refund_id, amount`. The Model query selects and groups by `order_id`, so it fails. The Load query uses `refund_id` instead, so the two queries disagree. Decide whether `order_id` is missing from the DDL or the Model query is wrong.
+2. **The grain is stated three different ways.**
+   - The text says &quot;one row per refund per ds&quot;.
+   - The Model groups by `order_id`.
+   - The contract says `primary_key: refund_id`, which is unique across all ds, not per ds.
+   - Pick one grain, and make the key and the group-by match it.
+3. **The nightly 48-hour replay will double-count.** The feed replays the last 48 hours, so the same `refund_id` can arrive more than once. `SUM(amount)` over those duplicates inflates refund totals.
+   - Dedupe first, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY refund_id ORDER BY &lt;ingest time&gt;) = 1`. The source has no ingest-time column, so you&apos;d need to add one.
+   - The plan doesn&apos;t say whether `ds` is the event date or the delivery date. If it&apos;s the delivery date, one refund can sit in several partitions.
+   - Late or corrected rows also mean the model should reprocess the last 3 ds values each night, not only `@ds`.
+4. **`INSERT INTO` isn&apos;t idempotent.** A retry or backfill duplicates rows. Use `MERGE` on the key, or delete the ds partition and insert in one step.
+5. **The access section contradicts the SQL.** It says identifiers are hashed with SHA256, but no query hashes anything.
+   - Unsalted SHA256 of guessable IDs is easy to reverse, so use a keyed hash or don&apos;t expose the identifier.
+   - Hashing `refund_id` would also break joins against the source and the stated primary key.
+
+**Should fix**
+6. **Rollout step 1 has problems.**
+   - `CREATE SNAPSHOT TABLE ... CLONE fct_refunds` fails if the table doesn&apos;t exist yet, and this is a new model. It also fails if `fct_refunds_bak` already exists.
+   - It snapshots the whole table, but step 2 rebuilds only a ds range. Restoring the snapshot would also roll back unrelated ds values that were loaded later.
+   - Spell out the restore command. For a snapshot it&apos;s `CREATE OR REPLACE TABLE ... CLONE`.
+   - Make sure the snapshot has the same ACLs as `fct_private`.
+7. **&quot;Check row counts&quot; is too weak.** Compare `COUNT(DISTINCT refund_id)` and `SUM(amount)` per ds against the source. Add uniqueness and not-null tests on the key.
+8. **Classification mismatch.** The dataset is `fct_private` but the contract says `classification: internal`. Reconcile the two.
+9. **There&apos;s no currency column.** `NUMERIC amount` alone is ambiguous if refunds can be in more than one currency.
+
+**Fine as is:** every source query filters on `ds`, which satisfies `require_partition_filter` and keeps scans to one partition of the ~150 GB table.
+
+Once you&apos;ve settled the grain, whether `order_id` exists, and how the replay is deduped, I can rewrite the Model and Load sections. Want me to?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">**Verdict: don&apos;t build this yet.** The model query can&apos;t run as written, and the load isn&apos;t safe to re-run. Here is what I found, most serious first.
+
+**Blocking**
+1. **`order_id` doesn&apos;t exist.** The `raw_shop.refunds` DDL has `ds, refunded_at, refund_id, amount`. The Model query selects and groups by `order_id`, so it fails. The Load query uses `refund_id` instead, so the two queries disagree. Decide whether `order_id` is missing from the DDL or the Model query is wrong.
+2. **The grain is stated three different ways.**
+   - The text says &quot;one row per refund per ds&quot;.
+   - The Model groups by `order_id`.
+   - The contract says `primary_key: refund_id`, which is unique across all ds, not per ds.
+   - Pick one grain, and make the key and the group-by match it.
+3. **The nightly 48-hour replay will double-count.** The feed replays the last 48 hours, so the same `refund_id` can arrive more than once. `SUM(amount)` over those duplicates inflates refund totals.
+   - Dedupe first, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY refund_id ORDER BY &lt;ingest time&gt;) = 1`. The source has no ingest-time column, so you&apos;d need to add one.
+   - The plan doesn&apos;t say whether `ds` is the event date or the delivery date. If it&apos;s the delivery date, one refund can sit in several partitions.
+   - Late or corrected rows also mean the model should reprocess the last 3 ds values each night, not only `@ds`.
+4. **`INSERT INTO` isn&apos;t idempotent.** A retry or backfill duplicates rows. Use `MERGE` on the key, or delete the ds partition and insert in one step.
+5. **The access section contradicts the SQL.** It says identifiers are hashed with SHA256, but no query hashes anything.
+   - Unsalted SHA256 of guessable IDs is easy to reverse, so use a keyed hash or don&apos;t expose the identifier.
+   - Hashing `refund_id` would also break joins against the source and the stated primary key.
+
+**Should fix**
+6. **Rollout step 1 has problems.**
+   - `CREATE SNAPSHOT TABLE ... CLONE fct_refunds` fails if the table doesn&apos;t exist yet, and this is a new model. It also fails if `fct_refunds_bak` already exists.
+   - It snapshots the whole table, but step 2 rebuilds only a ds range. Restoring the snapshot would also roll back unrelated ds values that were loaded later.
+   - Spell out the restore command. For a snapshot it&apos;s `CREATE OR REPLACE TABLE ... CLONE`.
+   - Make sure the snapshot has the same ACLs as `fct_private`.
+7. **&quot;Check row counts&quot; is too weak.** Compare `COUNT(DISTINCT refund_id)` and `SUM(amount)` per ds against the source. Add uniqueness and not-null tests on the key.
+8. **Classification mismatch.** The dataset is `fct_private` but the contract says `classification: internal`. Reconcile the two.
+9. **There&apos;s no currency column.** `NUMERIC amount` alone is ambiguous if refunds can be in more than one currency.
+
+**Fine as is:** every source query filters on `ds`, which satisfies `require_partition_filter` and keeps scans to one partition of the ~150 GB table.
+
+Once you&apos;ve settled the grain, whether `order_id` exists, and how the replay is deduped, I can rewrite the Model and Load sections. Want me to?</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">2 turns · $0.05 · 14:41:28 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I found five problems to fix before building. The first two would stop the build from working.
+
+**Blocking**
+
+1. **The Model query uses a column that doesn&apos;t exist.** `raw_shop.refunds` has `ds, refunded_at, refund_id, amount`, with no `order_id` (lines 14 and 26). The Model query will fail. Its grain also contradicts the stated one. It groups by `order_id`, which gives one row per order, while line 23 says one row per refund. The Load query groups by `refund_id`, so the two queries disagree. I&apos;d drop the Model query and treat the Load query as the model, or write the intended grain explicitly.
+
+2. **`SUM(amount)` will probably double-count replayed refunds.** The feed replays the last 48 hours every night (line 11). If a replay delivers a refund again into the same `ds`, `SUM` inflates the amount. Refunds should be deduplicated, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY refund_id ORDER BY refunded_at DESC) = 1`. The plan should also say what happens when a replay lands the same `refund_id` in a different `ds`. As written, that breaks the `primary_key: refund_id` contract (line 57), because the grain is per refund per `ds`.
+
+3. **The Load isn&apos;t idempotent.** A plain `INSERT INTO` (line 35) duplicates rows whenever a `ds` is re-run. That happens every night if the 48-hour window gets reprocessed, and again in any rollout rebuild. Use `MERGE` on `refund_id`, or delete the `ds` and then insert, in one transaction. Rollout step 2 (&quot;Rebuild for the ds range&quot;) has the same problem unless it deletes first.
+
+**Should fix**
+
+4. **Access and classification don&apos;t match the SQL.** Line 45 says identifiers are hashed with SHA256, but the Load selects raw `refund_id` and never hashes it. Either add the hashing or remove the claim. Decide whether `refund_id` should be hashed, because the contract uses it as `primary_key`, and hashing changes the key&apos;s value for joins. The dataset is named `fct_private` but classified `internal` (line 58), so confirm which is right.
+
+5. **The rollout and rollback steps are thin.**
+   - `CREATE SNAPSHOT TABLE fct_refunds_bak` fails if the table already exists on a re-run. Use a dated name or `IF NOT EXISTS`, and set an expiry.
+   - Restoring the whole snapshot would wipe any `ds` loaded after it was taken. Scope the undo to the affected `ds` range.
+   - &quot;Check row counts&quot; has no reference. Compare distinct `refund_id` counts and `SUM(amount)` per `ds` against the deduplicated source.
+
+**Minor**
+- Every query must keep `WHERE ds = ...` because of `require_partition_filter`. The rebuild loop should go one `ds` at a time, or use a `ds BETWEEN` range filter. That&apos;s fine at 150 GB, but say so.
+- The plan doesn&apos;t mention tests such as `unique(refund_id)`, `not_null`, and `amount &gt;= 0`. They would catch items 2 and 3.
+
+I can draft a corrected version of the Model, Load, and Rollout sections if you&apos;d like.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I found five problems to fix before building. The first two would stop the build from working.
+
+**Blocking**
+
+1. **The Model query uses a column that doesn&apos;t exist.** `raw_shop.refunds` has `ds, refunded_at, refund_id, amount`, with no `order_id` (lines 14 and 26). The Model query will fail. Its grain also contradicts the stated one. It groups by `order_id`, which gives one row per order, while line 23 says one row per refund. The Load query groups by `refund_id`, so the two queries disagree. I&apos;d drop the Model query and treat the Load query as the model, or write the intended grain explicitly.
+
+2. **`SUM(amount)` will probably double-count replayed refunds.** The feed replays the last 48 hours every night (line 11). If a replay delivers a refund again into the same `ds`, `SUM` inflates the amount. Refunds should be deduplicated, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY refund_id ORDER BY refunded_at DESC) = 1`. The plan should also say what happens when a replay lands the same `refund_id` in a different `ds`. As written, that breaks the `primary_key: refund_id` contract (line 57), because the grain is per refund per `ds`.
+
+3. **The Load isn&apos;t idempotent.** A plain `INSERT INTO` (line 35) duplicates rows whenever a `ds` is re-run. That happens every night if the 48-hour window gets reprocessed, and again in any rollout rebuild. Use `MERGE` on `refund_id`, or delete the `ds` and then insert, in one transaction. Rollout step 2 (&quot;Rebuild for the ds range&quot;) has the same problem unless it deletes first.
+
+**Should fix**
+
+4. **Access and classification don&apos;t match the SQL.** Line 45 says identifiers are hashed with SHA256, but the Load selects raw `refund_id` and never hashes it. Either add the hashing or remove the claim. Decide whether `refund_id` should be hashed, because the contract uses it as `primary_key`, and hashing changes the key&apos;s value for joins. The dataset is named `fct_private` but classified `internal` (line 58), so confirm which is right.
+
+5. **The rollout and rollback steps are thin.**
+   - `CREATE SNAPSHOT TABLE fct_refunds_bak` fails if the table already exists on a re-run. Use a dated name or `IF NOT EXISTS`, and set an expiry.
+   - Restoring the whole snapshot would wipe any `ds` loaded after it was taken. Scope the undo to the affected `ds` range.
+   - &quot;Check row counts&quot; has no reference. Compare distinct `refund_id` counts and `SUM(amount)` per `ds` against the deduplicated source.
+
+**Minor**
+- Every query must keep `WHERE ds = ...` because of `require_partition_filter`. The rebuild loop should go one `ds` at a time, or use a `ds BETWEEN` range filter. That&apos;s fine at 150 GB, but say so.
+- The plan doesn&apos;t mention tests such as `unique(refund_id)`, `not_null`, and `amount &gt;= 0`. They would catch items 2 and 3.
+
+I can draft a corrected version of the Model, Load, and Rollout sections if you&apos;d like.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I found five problems to fix before building. The first two would stop the build from working.
+
+**Blocking**
+
+1. **The Model query uses a column that doesn&apos;t exist.** `raw_shop.refunds` has `ds, refunded_at, refund_id, amount`, with no `order_id` (lines 14 and 26). The Model query will fail. Its grain also contradicts the stated one. It groups by `order_id`, which gives one row per order, while line 23 says one row per refund. The Load query groups by `refund_id`, so the two queries disagree. I&apos;d drop the Model query and treat the Load query as the model, or write the intended grain explicitly.
+
+2. **`SUM(amount)` will probably double-count replayed refunds.** The feed replays the last 48 hours every night (line 11). If a replay delivers a refund again into the same `ds`, `SUM` inflates the amount. Refunds should be deduplicated, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY refund_id ORDER BY refunded_at DESC) = 1`. The plan should also say what happens when a replay lands the same `refund_id` in a different `ds`. As written, that breaks the `primary_key: refund_id` contract (line 57), because the grain is per refund per `ds`.
+
+3. **The Load isn&apos;t idempotent.** A plain `INSERT INTO` (line 35) duplicates rows whenever a `ds` is re-run. That happens every night if the 48-hour window gets reprocessed, and again in any rollout rebuild. Use `MERGE` on `refund_id`, or delete the `ds` and then insert, in one transaction. Rollout step 2 (&quot;Rebuild for the ds range&quot;) has the same problem unless it deletes first.
+
+**Should fix**
+
+4. **Access and classification don&apos;t match the SQL.** Line 45 says identifiers are hashed with SHA256, but the Load selects raw `refund_id` and never hashes it. Either add the hashing or remove the claim. Decide whether `refund_id` should be hashed, because the contract uses it as `primary_key`, and hashing changes the key&apos;s value for joins. The dataset is named `fct_private` but classified `internal` (line 58), so confirm which is right.
+
+5. **The rollout and rollback steps are thin.**
+   - `CREATE SNAPSHOT TABLE fct_refunds_bak` fails if the table already exists on a re-run. Use a dated name or `IF NOT EXISTS`, and set an expiry.
+   - Restoring the whole snapshot would wipe any `ds` loaded after it was taken. Scope the undo to the affected `ds` range.
+   - &quot;Check row counts&quot; has no reference. Compare distinct `refund_id` counts and `SUM(amount)` per `ds` against the deduplicated source.
+
+**Minor**
+- Every query must keep `WHERE ds = ...` because of `require_partition_filter`. The rebuild loop should go one `ds` at a time, or use a `ds BETWEEN` range filter. That&apos;s fine at 150 GB, but say so.
+- The plan doesn&apos;t mention tests such as `unique(refund_id)`, `not_null`, and `amount &gt;= 0`. They would catch items 2 and 3.
+
+I can draft a corrected version of the Model, Load, and Rollout sections if you&apos;d like.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">2 turns · $0.05 · 14:42:05 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. Two of its queries disagree with the source schema, and the load isn&apos;t safe to re-run.
+
+**Blocking**
+
+1. **The model query uses a column the source doesn&apos;t have.** `raw_shop.refunds` has `ds, refunded_at, refund_id, amount`, but the Model section selects and groups by `order_id`. It will fail. It also disagrees with the Load query, which groups by `refund_id`. Decide whether the grain is per refund or per order, and add `order_id` to the source if you need it.
+2. **Replays will double-count refunds.** The feed replays the last 48 hours every night, so the same `refund_id` arrives repeatedly. `SUM(amount)` over those duplicates inflates the amount. Deduplicate instead, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY refund_id ORDER BY refunded_at DESC) = 1`. Only sum if one refund can legitimately have several rows, and the plan doesn&apos;t say that.
+3. **The load isn&apos;t idempotent.** A plain `INSERT INTO ... WHERE ds = @ds` adds duplicate rows every time it re-runs, including nightly when the replay covers two days. Use `MERGE` on `refund_id`, or delete and reload the partition for that `ds`.
+4. **The grain and the primary key don&apos;t match.** &quot;One row per refund per ds&quot; with `primary_key: refund_id` only holds if each refund appears in one `ds`. The plan doesn&apos;t say whether `ds` comes from `refunded_at` or from delivery date. If it&apos;s delivery date, a replayed refund can land in two partitions and break uniqueness.
+5. **Hashing is promised but not done.** The Access section says identifiers are hashed with SHA256, but neither query hashes anything. Add the hashing, and note that unsalted SHA256 of low-entropy IDs can be reversed. If `refund_id` is hashed, the contract&apos;s primary key is the hashed value.
+
+**Should fix**
+
+- **The rollout&apos;s first step fails on a fresh build.** `CREATE SNAPSHOT TABLE ... CLONE fct_refunds` has nothing to clone before the table exists. It also fails if `fct_refunds_bak` already exists. Make the snapshot conditional, or give it a dated name.
+- **&quot;Check row counts&quot; is too vague.** Say what to compare, such as distinct `refund_id` against the source for the `ds` range, and `SUM(amount)` totals. Also add a uniqueness check on `refund_id`.
+- **The backfill range isn&apos;t bounded.** The source has `require_partition_filter = TRUE` and is about 150 GB. A range rebuild should loop over per-`ds` partitions, and the plan should estimate the scan cost.
+- **Access and classification look inconsistent.** The dataset is `fct_private`, the classification is `internal`, and the only reader is a team group. The contract owner is `data-platform@`, while the author and reader are the data team. Confirm that these are intended.
+
+I can draft a corrected version of the Model and Load sections if you want. I&apos;d need your answers on the grain (refund or order) and on whether `ds` comes from `refunded_at` or from delivery date.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. Two of its queries disagree with the source schema, and the load isn&apos;t safe to re-run.
+
+**Blocking**
+
+1. **The model query uses a column the source doesn&apos;t have.** `raw_shop.refunds` has `ds, refunded_at, refund_id, amount`, but the Model section selects and groups by `order_id`. It will fail. It also disagrees with the Load query, which groups by `refund_id`. Decide whether the grain is per refund or per order, and add `order_id` to the source if you need it.
+2. **Replays will double-count refunds.** The feed replays the last 48 hours every night, so the same `refund_id` arrives repeatedly. `SUM(amount)` over those duplicates inflates the amount. Deduplicate instead, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY refund_id ORDER BY refunded_at DESC) = 1`. Only sum if one refund can legitimately have several rows, and the plan doesn&apos;t say that.
+3. **The load isn&apos;t idempotent.** A plain `INSERT INTO ... WHERE ds = @ds` adds duplicate rows every time it re-runs, including nightly when the replay covers two days. Use `MERGE` on `refund_id`, or delete and reload the partition for that `ds`.
+4. **The grain and the primary key don&apos;t match.** &quot;One row per refund per ds&quot; with `primary_key: refund_id` only holds if each refund appears in one `ds`. The plan doesn&apos;t say whether `ds` comes from `refunded_at` or from delivery date. If it&apos;s delivery date, a replayed refund can land in two partitions and break uniqueness.
+5. **Hashing is promised but not done.** The Access section says identifiers are hashed with SHA256, but neither query hashes anything. Add the hashing, and note that unsalted SHA256 of low-entropy IDs can be reversed. If `refund_id` is hashed, the contract&apos;s primary key is the hashed value.
+
+**Should fix**
+
+- **The rollout&apos;s first step fails on a fresh build.** `CREATE SNAPSHOT TABLE ... CLONE fct_refunds` has nothing to clone before the table exists. It also fails if `fct_refunds_bak` already exists. Make the snapshot conditional, or give it a dated name.
+- **&quot;Check row counts&quot; is too vague.** Say what to compare, such as distinct `refund_id` against the source for the `ds` range, and `SUM(amount)` totals. Also add a uniqueness check on `refund_id`.
+- **The backfill range isn&apos;t bounded.** The source has `require_partition_filter = TRUE` and is about 150 GB. A range rebuild should loop over per-`ds` partitions, and the plan should estimate the scan cost.
+- **Access and classification look inconsistent.** The dataset is `fct_private`, the classification is `internal`, and the only reader is a team group. The contract owner is `data-platform@`, while the author and reader are the data team. Confirm that these are intended.
+
+I can draft a corrected version of the Model and Load sections if you want. I&apos;d need your answers on the grain (refund or order) and on whether `ds` comes from `refunded_at` or from delivery date.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. Two of its queries disagree with the source schema, and the load isn&apos;t safe to re-run.
+
+**Blocking**
+
+1. **The model query uses a column the source doesn&apos;t have.** `raw_shop.refunds` has `ds, refunded_at, refund_id, amount`, but the Model section selects and groups by `order_id`. It will fail. It also disagrees with the Load query, which groups by `refund_id`. Decide whether the grain is per refund or per order, and add `order_id` to the source if you need it.
+2. **Replays will double-count refunds.** The feed replays the last 48 hours every night, so the same `refund_id` arrives repeatedly. `SUM(amount)` over those duplicates inflates the amount. Deduplicate instead, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY refund_id ORDER BY refunded_at DESC) = 1`. Only sum if one refund can legitimately have several rows, and the plan doesn&apos;t say that.
+3. **The load isn&apos;t idempotent.** A plain `INSERT INTO ... WHERE ds = @ds` adds duplicate rows every time it re-runs, including nightly when the replay covers two days. Use `MERGE` on `refund_id`, or delete and reload the partition for that `ds`.
+4. **The grain and the primary key don&apos;t match.** &quot;One row per refund per ds&quot; with `primary_key: refund_id` only holds if each refund appears in one `ds`. The plan doesn&apos;t say whether `ds` comes from `refunded_at` or from delivery date. If it&apos;s delivery date, a replayed refund can land in two partitions and break uniqueness.
+5. **Hashing is promised but not done.** The Access section says identifiers are hashed with SHA256, but neither query hashes anything. Add the hashing, and note that unsalted SHA256 of low-entropy IDs can be reversed. If `refund_id` is hashed, the contract&apos;s primary key is the hashed value.
+
+**Should fix**
+
+- **The rollout&apos;s first step fails on a fresh build.** `CREATE SNAPSHOT TABLE ... CLONE fct_refunds` has nothing to clone before the table exists. It also fails if `fct_refunds_bak` already exists. Make the snapshot conditional, or give it a dated name.
+- **&quot;Check row counts&quot; is too vague.** Say what to compare, such as distinct `refund_id` against the source for the `ds` range, and `SUM(amount)` totals. Also add a uniqueness check on `refund_id`.
+- **The backfill range isn&apos;t bounded.** The source has `require_partition_filter = TRUE` and is about 150 GB. A range rebuild should loop over per-`ds` partitions, and the plan should estimate the scan cost.
+- **Access and classification look inconsistent.** The dataset is `fct_private`, the classification is `internal`, and the only reader is a team group. The contract owner is `data-platform@`, while the author and reader are the data team. Confirm that these are intended.
+
+I can draft a corrected version of the Model and Load sections if you want. I&apos;d need your answers on the grain (refund or order) and on whether `ds` comes from `refunded_at` or from delivery date.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">2 turns · $0.05 · 14:42:39 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and found problems that should be fixed before we build. The first three are blockers.
+
+**Blockers**
+
+1. **The Model query uses a column that doesn&apos;t exist.** `raw_shop.refunds` has `ds, refunded_at, refund_id, amount`. It has no `order_id`, so the Model query (lines 26–29) would fail. The Load query groups by `refund_id` instead, so the two sections disagree. If `fct_refunds` needs an order key, the source has to supply it. Otherwise, remove it.
+
+2. **The nightly replay will double-count refunds.** The feed replays the last 48 hours every night, so the same `refund_id` can arrive several times. `SUM(amount)` over those rows inflates the amount. Dedupe instead, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY refund_id ORDER BY ...) = 1`. The plan should also say what `ds` means. If it&apos;s the delivery date, a replayed refund lands in several partitions. Loading only `@ds` then can&apos;t fix the earlier days, and the same refund can end up in several `ds` partitions. The load should reprocess the full 48-hour window, or key on `refunded_at`.
+
+3. **The load isn&apos;t idempotent.** It uses a plain `INSERT INTO`, so any retry or re-run duplicates rows. Use `MERGE` on the key, or delete the partition and then insert. The plan also has no `CREATE TABLE` for `fct_refunds`. Step 1 of the rollout would fail on a first build, because there&apos;s nothing to clone.
+
+**Inconsistencies**
+
+4. **The grain and the primary key don&apos;t match.** The grain is &quot;one row per refund per ds&quot;, but the contract says the primary key is `refund_id` alone. Pick one. If a refund can appear in more than one `ds`, the key is `(ds, refund_id)`. If it can&apos;t, the grain should say one row per refund.
+
+5. **The hashing claim isn&apos;t implemented.** The Access section says identifiers are hashed with SHA256, but the Load query selects raw `refund_id`. If it should be hashed, the key in the contract is the hashed value. Unsalted SHA256 of guessable IDs is also weak, so consider salting or HMAC.
+
+6. **The access and classification settings look inconsistent.** Refund amounts tied to IDs sit in `fct_private`, but the contract classification is `internal`. Confirm which is right. Also say where `fct_refunds_bak` lives and who can read it, because the snapshot copies the data outside the `fct_private` ACL unless you set it.
+
+**Rollout and testing**
+
+7. **Rollout step 1 can&apos;t be re-run.** `CREATE SNAPSHOT TABLE fct_refunds_bak` fails if the table already exists. Use a dated name or `IF NOT EXISTS`. The 7-day time-travel fallback is fine.
+
+8. **&quot;Check row counts&quot; is too weak to catch the bugs above.** Add checks for these:
+   - no duplicate keys
+   - `SUM(amount)` reconciles with the deduped source per `ds`
+   - no nulls in the key columns
+
+**Minor**
+- `SELECT * ... WHERE ds = @ds` in the Source section is illustrative only. Select named columns, because the table is about 150 GB.
+- The clustering on `refund_id` won&apos;t help the `ds` filter. It only helps lookups or dedup by key.
+- Check the timezone of `refunded_at` against the `ds` boundaries.
+
+I can draft a corrected plan with the dedupe, `MERGE` load and DDL, and updated checks. First I need to know two things: what `ds` represents, and whether an order key exists upstream.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and found problems that should be fixed before we build. The first three are blockers.
+
+**Blockers**
+
+1. **The Model query uses a column that doesn&apos;t exist.** `raw_shop.refunds` has `ds, refunded_at, refund_id, amount`. It has no `order_id`, so the Model query (lines 26–29) would fail. The Load query groups by `refund_id` instead, so the two sections disagree. If `fct_refunds` needs an order key, the source has to supply it. Otherwise, remove it.
+
+2. **The nightly replay will double-count refunds.** The feed replays the last 48 hours every night, so the same `refund_id` can arrive several times. `SUM(amount)` over those rows inflates the amount. Dedupe instead, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY refund_id ORDER BY ...) = 1`. The plan should also say what `ds` means. If it&apos;s the delivery date, a replayed refund lands in several partitions. Loading only `@ds` then can&apos;t fix the earlier days, and the same refund can end up in several `ds` partitions. The load should reprocess the full 48-hour window, or key on `refunded_at`.
+
+3. **The load isn&apos;t idempotent.** It uses a plain `INSERT INTO`, so any retry or re-run duplicates rows. Use `MERGE` on the key, or delete the partition and then insert. The plan also has no `CREATE TABLE` for `fct_refunds`. Step 1 of the rollout would fail on a first build, because there&apos;s nothing to clone.
+
+**Inconsistencies**
+
+4. **The grain and the primary key don&apos;t match.** The grain is &quot;one row per refund per ds&quot;, but the contract says the primary key is `refund_id` alone. Pick one. If a refund can appear in more than one `ds`, the key is `(ds, refund_id)`. If it can&apos;t, the grain should say one row per refund.
+
+5. **The hashing claim isn&apos;t implemented.** The Access section says identifiers are hashed with SHA256, but the Load query selects raw `refund_id`. If it should be hashed, the key in the contract is the hashed value. Unsalted SHA256 of guessable IDs is also weak, so consider salting or HMAC.
+
+6. **The access and classification settings look inconsistent.** Refund amounts tied to IDs sit in `fct_private`, but the contract classification is `internal`. Confirm which is right. Also say where `fct_refunds_bak` lives and who can read it, because the snapshot copies the data outside the `fct_private` ACL unless you set it.
+
+**Rollout and testing**
+
+7. **Rollout step 1 can&apos;t be re-run.** `CREATE SNAPSHOT TABLE fct_refunds_bak` fails if the table already exists. Use a dated name or `IF NOT EXISTS`. The 7-day time-travel fallback is fine.
+
+8. **&quot;Check row counts&quot; is too weak to catch the bugs above.** Add checks for these:
+   - no duplicate keys
+   - `SUM(amount)` reconciles with the deduped source per `ds`
+   - no nulls in the key columns
+
+**Minor**
+- `SELECT * ... WHERE ds = @ds` in the Source section is illustrative only. Select named columns, because the table is about 150 GB.
+- The clustering on `refund_id` won&apos;t help the `ds` filter. It only helps lookups or dedup by key.
+- Check the timezone of `refunded_at` against the `ds` boundaries.
+
+I can draft a corrected plan with the dedupe, `MERGE` load and DDL, and updated checks. First I need to know two things: what `ds` represents, and whether an order key exists upstream.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and found problems that should be fixed before we build. The first three are blockers.
+
+**Blockers**
+
+1. **The Model query uses a column that doesn&apos;t exist.** `raw_shop.refunds` has `ds, refunded_at, refund_id, amount`. It has no `order_id`, so the Model query (lines 26–29) would fail. The Load query groups by `refund_id` instead, so the two sections disagree. If `fct_refunds` needs an order key, the source has to supply it. Otherwise, remove it.
+
+2. **The nightly replay will double-count refunds.** The feed replays the last 48 hours every night, so the same `refund_id` can arrive several times. `SUM(amount)` over those rows inflates the amount. Dedupe instead, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY refund_id ORDER BY ...) = 1`. The plan should also say what `ds` means. If it&apos;s the delivery date, a replayed refund lands in several partitions. Loading only `@ds` then can&apos;t fix the earlier days, and the same refund can end up in several `ds` partitions. The load should reprocess the full 48-hour window, or key on `refunded_at`.
+
+3. **The load isn&apos;t idempotent.** It uses a plain `INSERT INTO`, so any retry or re-run duplicates rows. Use `MERGE` on the key, or delete the partition and then insert. The plan also has no `CREATE TABLE` for `fct_refunds`. Step 1 of the rollout would fail on a first build, because there&apos;s nothing to clone.
+
+**Inconsistencies**
+
+4. **The grain and the primary key don&apos;t match.** The grain is &quot;one row per refund per ds&quot;, but the contract says the primary key is `refund_id` alone. Pick one. If a refund can appear in more than one `ds`, the key is `(ds, refund_id)`. If it can&apos;t, the grain should say one row per refund.
+
+5. **The hashing claim isn&apos;t implemented.** The Access section says identifiers are hashed with SHA256, but the Load query selects raw `refund_id`. If it should be hashed, the key in the contract is the hashed value. Unsalted SHA256 of guessable IDs is also weak, so consider salting or HMAC.
+
+6. **The access and classification settings look inconsistent.** Refund amounts tied to IDs sit in `fct_private`, but the contract classification is `internal`. Confirm which is right. Also say where `fct_refunds_bak` lives and who can read it, because the snapshot copies the data outside the `fct_private` ACL unless you set it.
+
+**Rollout and testing**
+
+7. **Rollout step 1 can&apos;t be re-run.** `CREATE SNAPSHOT TABLE fct_refunds_bak` fails if the table already exists. Use a dated name or `IF NOT EXISTS`. The 7-day time-travel fallback is fine.
+
+8. **&quot;Check row counts&quot; is too weak to catch the bugs above.** Add checks for these:
+   - no duplicate keys
+   - `SUM(amount)` reconciles with the deduped source per `ds`
+   - no nulls in the key columns
+
+**Minor**
+- `SELECT * ... WHERE ds = @ds` in the Source section is illustrative only. Select named columns, because the table is about 150 GB.
+- The clustering on `refund_id` won&apos;t help the `ds` filter. It only helps lookups or dedup by key.
+- Check the timezone of `refunded_at` against the `ds` boundaries.
+
+I can draft a corrected plan with the dedupe, `MERGE` load and DDL, and updated checks. First I need to know two things: what `ds` represents, and whether an order key exists upstream.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">2 turns · $0.05 · 14:43:16 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">1-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. The two SQL blocks disagree with each other and with the source schema, and the load isn&apos;t safe to re-run.
+
+**Blockers**
+
+1. **The model SQL uses a column that doesn&apos;t exist.** The model block (`plan.md:26`) selects `order_id`, but `raw_shop.refunds` only has `ds, refunded_at, refund_id, amount` (line 14). That query would fail. The load block (line 36) uses `refund_id`, so the two blocks contradict each other. Either add `order_id` to the source or drop it.
+2. **The nightly replay will double-count amounts.** The feed replays the last 48 hours every night, so the same `refund_id` can appear several times. `SUM(amount)` would then inflate the amount.
+   - Dedupe instead, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY refund_id ORDER BY &lt;ingest/version col&gt;) = 1`.
+   - The source has no ingestion timestamp or version column to pick the latest row. You&apos;ll need one, or a rule for which duplicate wins.
+   - If refunds can have several legitimate rows, such as partial refunds, the grain needs to say so.
+3. **The load isn&apos;t idempotent.** A plain `INSERT` duplicates rows on every re-run and on every rebuild in the rollout.
+   - Use `MERGE` on the key, or delete the partition and then insert.
+   - The load only handles `@ds`, but the replay touches `ds-2..ds`. Reload all three days each night, or late corrections are lost.
+4. **The grain and primary key disagree.** The grain is &quot;one row per refund per ds&quot; (line 23), but the contract&apos;s `primary_key` is `refund_id` alone (line 57).
+   - If a refund can show up under more than one `ds`, such as `ds` being the delivery date, then `refund_id` isn&apos;t unique.
+   - Decide whether `ds` is `DATE(refunded_at)` or the delivery date, then make the key `(ds, refund_id)` or `refund_id` to match.
+5. **The hashing claim has no SQL behind it.** The access section says identifiers are hashed with SHA256 (line 45), but the load selects `refund_id` raw.
+   - If hashing is intended, add `TO_HEX(SHA256(refund_id))`. The primary key must then be the hashed value, or joins to the source will break.
+   - Unsalted SHA256 of low-entropy IDs is easy to reverse, so decide whether that&apos;s enough.
+
+**Should fix**
+
+- **The rollout&apos;s first step fails on a new table.** `CREATE SNAPSHOT TABLE ... CLONE fct_refunds` fails when `fct_refunds` doesn&apos;t exist yet, and again on a re-run when the snapshot name is already taken. Use a dated snapshot name, and make the snapshot conditional on the table existing.
+- **&quot;Check row counts&quot; is too vague to be a gate.** Compare against `COUNT(DISTINCT refund_id)` in the source for the same `ds` range. Also check that the key is unique and that total `amount` matches the deduped source.
+- **The classification and the dataset don&apos;t match.** The contract says `internal`, but the dataset is `fct_private` with a single group as reader. Pick one. The snapshot table also needs the same access controls.
+- **The contract is thin.** It has no freshness expectation, no tests (unique, not-null, and so on), and no column descriptions. Say whether `amount` can be negative, and in what currency.
+- **Cost is fine.** Every query filters on `ds`, which satisfies `require_partition_filter`, so a nightly 3-day reload scans only a few partitions. A backfill over a range scans proportionally more of the roughly 150 GB, so give it a bounded range.
+
+Once you&apos;ve settled the `order_id` question, the `ds` definition and the dedupe rule, I can revise the plan with corrected SQL.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-grain</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. The two SQL blocks disagree with each other and with the source schema, and the load isn&apos;t safe to re-run.
+
+**Blockers**
+
+1. **The model SQL uses a column that doesn&apos;t exist.** The model block (`plan.md:26`) selects `order_id`, but `raw_shop.refunds` only has `ds, refunded_at, refund_id, amount` (line 14). That query would fail. The load block (line 36) uses `refund_id`, so the two blocks contradict each other. Either add `order_id` to the source or drop it.
+2. **The nightly replay will double-count amounts.** The feed replays the last 48 hours every night, so the same `refund_id` can appear several times. `SUM(amount)` would then inflate the amount.
+   - Dedupe instead, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY refund_id ORDER BY &lt;ingest/version col&gt;) = 1`.
+   - The source has no ingestion timestamp or version column to pick the latest row. You&apos;ll need one, or a rule for which duplicate wins.
+   - If refunds can have several legitimate rows, such as partial refunds, the grain needs to say so.
+3. **The load isn&apos;t idempotent.** A plain `INSERT` duplicates rows on every re-run and on every rebuild in the rollout.
+   - Use `MERGE` on the key, or delete the partition and then insert.
+   - The load only handles `@ds`, but the replay touches `ds-2..ds`. Reload all three days each night, or late corrections are lost.
+4. **The grain and primary key disagree.** The grain is &quot;one row per refund per ds&quot; (line 23), but the contract&apos;s `primary_key` is `refund_id` alone (line 57).
+   - If a refund can show up under more than one `ds`, such as `ds` being the delivery date, then `refund_id` isn&apos;t unique.
+   - Decide whether `ds` is `DATE(refunded_at)` or the delivery date, then make the key `(ds, refund_id)` or `refund_id` to match.
+5. **The hashing claim has no SQL behind it.** The access section says identifiers are hashed with SHA256 (line 45), but the load selects `refund_id` raw.
+   - If hashing is intended, add `TO_HEX(SHA256(refund_id))`. The primary key must then be the hashed value, or joins to the source will break.
+   - Unsalted SHA256 of low-entropy IDs is easy to reverse, so decide whether that&apos;s enough.
+
+**Should fix**
+
+- **The rollout&apos;s first step fails on a new table.** `CREATE SNAPSHOT TABLE ... CLONE fct_refunds` fails when `fct_refunds` doesn&apos;t exist yet, and again on a re-run when the snapshot name is already taken. Use a dated snapshot name, and make the snapshot conditional on the table existing.
+- **&quot;Check row counts&quot; is too vague to be a gate.** Compare against `COUNT(DISTINCT refund_id)` in the source for the same `ds` range. Also check that the key is unique and that total `amount` matches the deduped source.
+- **The classification and the dataset don&apos;t match.** The contract says `internal`, but the dataset is `fct_private` with a single group as reader. Pick one. The snapshot table also needs the same access controls.
+- **The contract is thin.** It has no freshness expectation, no tests (unique, not-null, and so on), and no column descriptions. Say whether `amount` can be negative, and in what currency.
+- **Cost is fine.** Every query filters on `ds`, which satisfies `require_partition_filter`, so a nightly 3-day reload scans only a few partitions. A backfill over a range scans proportionally more of the roughly 150 GB, so give it a bounded range.
+
+Once you&apos;ve settled the `order_id` question, the `ds` definition and the dedupe rule, I can revise the plan with corrected SQL.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-dedup</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. The two SQL blocks disagree with each other and with the source schema, and the load isn&apos;t safe to re-run.
+
+**Blockers**
+
+1. **The model SQL uses a column that doesn&apos;t exist.** The model block (`plan.md:26`) selects `order_id`, but `raw_shop.refunds` only has `ds, refunded_at, refund_id, amount` (line 14). That query would fail. The load block (line 36) uses `refund_id`, so the two blocks contradict each other. Either add `order_id` to the source or drop it.
+2. **The nightly replay will double-count amounts.** The feed replays the last 48 hours every night, so the same `refund_id` can appear several times. `SUM(amount)` would then inflate the amount.
+   - Dedupe instead, for example with `QUALIFY ROW_NUMBER() OVER (PARTITION BY refund_id ORDER BY &lt;ingest/version col&gt;) = 1`.
+   - The source has no ingestion timestamp or version column to pick the latest row. You&apos;ll need one, or a rule for which duplicate wins.
+   - If refunds can have several legitimate rows, such as partial refunds, the grain needs to say so.
+3. **The load isn&apos;t idempotent.** A plain `INSERT` duplicates rows on every re-run and on every rebuild in the rollout.
+   - Use `MERGE` on the key, or delete the partition and then insert.
+   - The load only handles `@ds`, but the replay touches `ds-2..ds`. Reload all three days each night, or late corrections are lost.
+4. **The grain and primary key disagree.** The grain is &quot;one row per refund per ds&quot; (line 23), but the contract&apos;s `primary_key` is `refund_id` alone (line 57).
+   - If a refund can show up under more than one `ds`, such as `ds` being the delivery date, then `refund_id` isn&apos;t unique.
+   - Decide whether `ds` is `DATE(refunded_at)` or the delivery date, then make the key `(ds, refund_id)` or `refund_id` to match.
+5. **The hashing claim has no SQL behind it.** The access section says identifiers are hashed with SHA256 (line 45), but the load selects `refund_id` raw.
+   - If hashing is intended, add `TO_HEX(SHA256(refund_id))`. The primary key must then be the hashed value, or joins to the source will break.
+   - Unsalted SHA256 of low-entropy IDs is easy to reverse, so decide whether that&apos;s enough.
+
+**Should fix**
+
+- **The rollout&apos;s first step fails on a new table.** `CREATE SNAPSHOT TABLE ... CLONE fct_refunds` fails when `fct_refunds` doesn&apos;t exist yet, and again on a re-run when the snapshot name is already taken. Use a dated snapshot name, and make the snapshot conditional on the table existing.
+- **&quot;Check row counts&quot; is too vague to be a gate.** Compare against `COUNT(DISTINCT refund_id)` in the source for the same `ds` range. Also check that the key is unique and that total `amount` matches the deduped source.
+- **The classification and the dataset don&apos;t match.** The contract says `internal`, but the dataset is `fct_private` with a single group as reader. Pick one. The snapshot table also needs the same access controls.
+- **The contract is thin.** It has no freshness expectation, no tests (unique, not-null, and so on), and no column descriptions. Say whether `amount` can be negative, and in what currency.
+- **Cost is fine.** Every query filters on `ds`, which satisfies `require_partition_filter`, so a nightly 3-day reload scans only a few partitions. A backfill over a range scans proportionally more of the roughly 150 GB, so give it a bounded range.
+
+Once you&apos;ve settled the `order_id` question, the `ds` definition and the dedupe rule, I can revise the plan with corrected SQL.</pre>
+</div>
+</details></div>
+</div>
+</section>
+</details>
+<details class="section" open>
+<summary>Prompt</summary>
+<div class="md"><p>The plan for the refunds model is at docs/wraith/2026-10-12-refunds-model/plan.md. Review it before we build it.</p>
+</div>
+</details>
+<details class="section" open>
+<summary>Graders — what "good" means for this case</summary>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">1-contract</span><span class="badge">llm</span></div>
+<div class="md"><p>Answer key, category contract. Planted defect: in the Contract section freshness_sla is missing, although AGENTS.md requires owner, primary_key, classification and freshness_sla. Location: the Contract section of <code>fct_refunds</code>'s plan.</p>
+<p>PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.</p>
+</div>
+</div>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">2-grain</span><span class="badge">llm</span></div>
+<div class="md"><p>Answer key, category grain. Planted defect: the Model SQL declares one row per refund per ds but groups by only ds, order_id, so rows of the same grain are merged. Location: the GROUP BY in the Model section SQL of <code>fct_refunds</code>'s plan.</p>
+<p>PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.</p>
+</div>
+</div>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">3-dedup</span><span class="badge">llm</span></div>
+<div class="md"><p>Answer key, category dedup. Planted defect: the source delivers at least once (payment provider feed, last 48 hours replayed every night) and the Load section uses a plain INSERT with no MERGE or dedup on refund_id, so redelivered rows are duplicated. Location: the Load section, INSERT INTO ... SELECT of <code>fct_refunds</code>'s plan.</p>
+<p>PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.</p>
+</div>
+</div>
+</details>
+</article>
+<footer>Generated by <code>claude plugin eval</code> · schema v1 · scores are not comparable across different suites</footer>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var bar=document.querySelector('.toolbar');
+  if(!bar)return;
+  bar.addEventListener('click',function(e){
+    var b=e.target&&e.target.closest('button');
+    if(!b)return;
+    var open=b.dataset.act==='expand';
+    document.querySelectorAll('details.section, details.grader').forEach(function(d){d.open=open});
+  });
+});
+// Collapsed details vanish from print/PDF; these pages are share artifacts.
+window.addEventListener('beforeprint',function(){
+  document.querySelectorAll('details').forEach(function(d){
+    if(!d.open){d.dataset.printOpened='1';d.open=true}
+  });
+});
+window.addEventListener('afterprint',function(){
+  document.querySelectorAll('details[data-print-opened]').forEach(function(d){
+    d.open=false;delete d.dataset.printOpened;
+  });
+});
+</script>
+</body>
+</html>

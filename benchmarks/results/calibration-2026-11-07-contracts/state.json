@@ -1,0 +1,21 @@
+{
+  "contracts": {
+    "status": "incomplete",
+    "wraith_sha": "575afc1fd658c11d8c48ef65253a852cf414070e",
+    "complete": {},
+    "attempts": [
+      {
+        "n": 1,
+        "dir": "contracts/attempt-1",
+        "complete": [],
+        "failures": [
+          {
+            "case": "contracts-orders",
+            "arm": "with",
+            "error": "exit 1: Failed to authenticate. API Error: 401 Invalid bearer token"
+          }
+        ]
+      }
+    ]
+  }
+}

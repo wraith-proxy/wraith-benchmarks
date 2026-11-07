@@ -1,0 +1,1442 @@
+[
+  {
+    "case": "guard-c1",
+    "arm": "with",
+    "run": 0,
+    "score": 0,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.055634199999999995,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12365,
+      "cache_read_input_tokens": 27162,
+      "output_tokens": 345,
+      "duration_ms": 6405,
+      "cost_usd": 0.055634199999999995
+    }
+  },
+  {
+    "case": "guard-c1",
+    "arm": "with",
+    "run": 1,
+    "score": 0,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.056603299999999995,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12294,
+      "cache_read_input_tokens": 27093,
+      "output_tokens": 471,
+      "duration_ms": 6708,
+      "cost_usd": 0.056603299999999995
+    }
+  },
+  {
+    "case": "guard-c1",
+    "arm": "with",
+    "run": 2,
+    "score": 0,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0557087,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12371,
+      "cache_read_input_tokens": 27167,
+      "output_tokens": 350,
+      "duration_ms": 6027,
+      "cost_usd": 0.0557087
+    }
+  },
+  {
+    "case": "guard-c1",
+    "arm": "with",
+    "run": 3,
+    "score": 0,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.056364199999999996,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12365,
+      "cache_read_input_tokens": 27162,
+      "output_tokens": 418,
+      "duration_ms": 6464,
+      "cost_usd": 0.056364199999999996
+    }
+  },
+  {
+    "case": "guard-c1",
+    "arm": "with",
+    "run": 4,
+    "score": 0,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.055069,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12293,
+      "cache_read_input_tokens": 27090,
+      "output_tokens": 318,
+      "duration_ms": 5574,
+      "cost_usd": 0.055069
+    }
+  },
+  {
+    "case": "guard-c1",
+    "arm": "without",
+    "run": 0,
+    "score": 0,
+    "turns": 2,
+    "seconds": 6,
+    "cost_usd": 0.039157199999999996,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8434,
+      "cache_read_input_tokens": 23232,
+      "output_tokens": 309,
+      "duration_ms": 5125,
+      "cost_usd": 0.039157199999999996
+    }
+  },
+  {
+    "case": "guard-c1",
+    "arm": "without",
+    "run": 1,
+    "score": 0,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.03991209999999999,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8506,
+      "cache_read_input_tokens": 23301,
+      "output_tokens": 355,
+      "duration_ms": 5423,
+      "cost_usd": 0.03991209999999999
+    }
+  },
+  {
+    "case": "guard-c1",
+    "arm": "without",
+    "run": 2,
+    "score": 0,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.041216199999999995,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8507,
+      "cache_read_input_tokens": 23302,
+      "output_tokens": 485,
+      "duration_ms": 6625,
+      "cost_usd": 0.041216199999999995
+    }
+  },
+  {
+    "case": "guard-c1",
+    "arm": "without",
+    "run": 3,
+    "score": 0,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.040693999999999994,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8504,
+      "cache_read_input_tokens": 23300,
+      "output_tokens": 434,
+      "duration_ms": 6460,
+      "cost_usd": 0.040693999999999994
+    }
+  },
+  {
+    "case": "guard-c1",
+    "arm": "without",
+    "run": 4,
+    "score": 0,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.04064759999999999,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8500,
+      "cache_read_input_tokens": 23296,
+      "output_tokens": 431,
+      "duration_ms": 5797,
+      "cost_usd": 0.04064759999999999
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "with",
+    "run": 0,
+    "score": 0,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.0577674,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12315,
+      "cache_read_input_tokens": 27094,
+      "output_tokens": 579,
+      "duration_ms": 6729,
+      "cost_usd": 0.0577674
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "with",
+    "run": 1,
+    "score": 0,
+    "turns": 3,
+    "seconds": 8,
+    "cost_usd": 0.0584562,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12483,
+      "cache_read_input_tokens": 27162,
+      "output_tokens": 580,
+      "duration_ms": 6879,
+      "cost_usd": 0.0584562
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "with",
+    "run": 2,
+    "score": 0,
+    "turns": 2,
+    "seconds": 9,
+    "cost_usd": 0.0583368,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12454,
+      "cache_read_input_tokens": 27228,
+      "output_tokens": 579,
+      "duration_ms": 7082,
+      "cost_usd": 0.0583368
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "with",
+    "run": 3,
+    "score": 0,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.0579336,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12524,
+      "cache_read_input_tokens": 27296,
+      "output_tokens": 510,
+      "duration_ms": 7220,
+      "cost_usd": 0.0579336
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "with",
+    "run": 4,
+    "score": 0,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0570301,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12384,
+      "cache_read_input_tokens": 27161,
+      "output_tokens": 477,
+      "duration_ms": 5596,
+      "cost_usd": 0.0570301
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "without",
+    "run": 0,
+    "score": 0,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0407508,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8445,
+      "cache_read_input_tokens": 23228,
+      "output_tokens": 464,
+      "duration_ms": 5686,
+      "cost_usd": 0.0407508
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "without",
+    "run": 1,
+    "score": 0,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.041291800000000004,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8521,
+      "cache_read_input_tokens": 23298,
+      "output_tokens": 487,
+      "duration_ms": 5739,
+      "cost_usd": 0.041291800000000004
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "without",
+    "run": 2,
+    "score": 0,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.0417417,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8516,
+      "cache_read_input_tokens": 23297,
+      "output_tokens": 534,
+      "duration_ms": 6433,
+      "cost_usd": 0.0417417
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "without",
+    "run": 3,
+    "score": 0,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0408918,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8516,
+      "cache_read_input_tokens": 23298,
+      "output_tokens": 449,
+      "duration_ms": 5821,
+      "cost_usd": 0.0408918
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "without",
+    "run": 4,
+    "score": 0,
+    "turns": 2,
+    "seconds": 9,
+    "cost_usd": 0.043180300000000005,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8584,
+      "cache_read_input_tokens": 23363,
+      "output_tokens": 650,
+      "duration_ms": 7469,
+      "cost_usd": 0.043180300000000005
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "with",
+    "run": 0,
+    "score": 1,
+    "turns": 3,
+    "seconds": 7,
+    "cost_usd": 0.060409500000000005,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 12999,
+      "cache_read_input_tokens": 27115,
+      "output_tokens": 569,
+      "duration_ms": 6410,
+      "cost_usd": 0.060409500000000005
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "with",
+    "run": 1,
+    "score": 1,
+    "turns": 3,
+    "seconds": 9,
+    "cost_usd": 0.06205290000000001,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 13118,
+      "cache_read_input_tokens": 27189,
+      "output_tokens": 685,
+      "duration_ms": 7564,
+      "cost_usd": 0.06205290000000001
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "with",
+    "run": 2,
+    "score": 1,
+    "turns": 3,
+    "seconds": 8,
+    "cost_usd": 0.0614741,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 13065,
+      "cache_read_input_tokens": 27121,
+      "output_tokens": 649,
+      "duration_ms": 6885,
+      "cost_usd": 0.0614741
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "with",
+    "run": 3,
+    "score": 1,
+    "turns": 3,
+    "seconds": 7,
+    "cost_usd": 0.0611138,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 13060,
+      "cache_read_input_tokens": 27118,
+      "output_tokens": 615,
+      "duration_ms": 6227,
+      "cost_usd": 0.0611138
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "with",
+    "run": 4,
+    "score": 1,
+    "turns": 3,
+    "seconds": 7,
+    "cost_usd": 0.06036829999999999,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 13067,
+      "cache_read_input_tokens": 27183,
+      "output_tokens": 537,
+      "duration_ms": 5825,
+      "cost_usd": 0.06036829999999999
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "without",
+    "run": 0,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0411806,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8650,
+      "cache_read_input_tokens": 23326,
+      "output_tokens": 424,
+      "duration_ms": 6054,
+      "cost_usd": 0.0411806
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "without",
+    "run": 1,
+    "score": 1,
+    "turns": 3,
+    "seconds": 14,
+    "cost_usd": 0.0535211,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 9336,
+      "cache_read_input_tokens": 39551,
+      "output_tokens": 1221,
+      "duration_ms": 12485,
+      "cost_usd": 0.0535211
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "without",
+    "run": 2,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0406331,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8570,
+      "cache_read_input_tokens": 23251,
+      "output_tokens": 402,
+      "duration_ms": 5307,
+      "cost_usd": 0.0406331
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "without",
+    "run": 3,
+    "score": 1,
+    "turns": 2,
+    "seconds": 6,
+    "cost_usd": 0.041213900000000005,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8631,
+      "cache_read_input_tokens": 23319,
+      "output_tokens": 435,
+      "duration_ms": 5247,
+      "cost_usd": 0.041213900000000005
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "without",
+    "run": 4,
+    "score": 1,
+    "turns": 2,
+    "seconds": 6,
+    "cost_usd": 0.040952199999999994,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8648,
+      "cache_read_input_tokens": 23322,
+      "output_tokens": 402,
+      "duration_ms": 5013,
+      "cost_usd": 0.040952199999999994
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "with",
+    "run": 0,
+    "score": 1,
+    "turns": 4,
+    "seconds": 11,
+    "cost_usd": 0.066394,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 13536,
+      "cache_read_input_tokens": 47640,
+      "output_tokens": 747,
+      "duration_ms": 10156,
+      "cost_usd": 0.066394
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "with",
+    "run": 1,
+    "score": 1,
+    "turns": 4,
+    "seconds": 11,
+    "cost_usd": 0.0672769,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 13588,
+      "cache_read_input_tokens": 47689,
+      "output_tokens": 814,
+      "duration_ms": 10191,
+      "cost_usd": 0.0672769
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "with",
+    "run": 2,
+    "score": 1,
+    "turns": 3,
+    "seconds": 13,
+    "cost_usd": 0.0694486,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 13558,
+      "cache_read_input_tokens": 47646,
+      "output_tokens": 1044,
+      "duration_ms": 11964,
+      "cost_usd": 0.0694486
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "with",
+    "run": 3,
+    "score": 1,
+    "turns": 4,
+    "seconds": 13,
+    "cost_usd": 0.0686156,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 13580,
+      "cache_read_input_tokens": 47496,
+      "output_tokens": 953,
+      "duration_ms": 11426,
+      "cost_usd": 0.0686156
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "with",
+    "run": 4,
+    "score": 1,
+    "turns": 4,
+    "seconds": 11,
+    "cost_usd": 0.0665057,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 13546,
+      "cache_read_input_tokens": 47557,
+      "output_tokens": 755,
+      "duration_ms": 10242,
+      "cost_usd": 0.0665057
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "without",
+    "run": 0,
+    "score": 1,
+    "turns": 3,
+    "seconds": 9,
+    "cost_usd": 0.046190800000000004,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 9102,
+      "cache_read_input_tokens": 39608,
+      "output_tokens": 581,
+      "duration_ms": 7948,
+      "cost_usd": 0.046190800000000004
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "without",
+    "run": 1,
+    "score": 1,
+    "turns": 3,
+    "seconds": 10,
+    "cost_usd": 0.0485123,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 9209,
+      "cache_read_input_tokens": 39743,
+      "output_tokens": 769,
+      "duration_ms": 9293,
+      "cost_usd": 0.0485123
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "without",
+    "run": 2,
+    "score": 1,
+    "turns": 3,
+    "seconds": 11,
+    "cost_usd": 0.048462,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 9250,
+      "cache_read_input_tokens": 39800,
+      "output_tokens": 747,
+      "duration_ms": 10387,
+      "cost_usd": 0.048462
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "without",
+    "run": 3,
+    "score": 1,
+    "turns": 3,
+    "seconds": 11,
+    "cost_usd": 0.0487624,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 9451,
+      "cache_read_input_tokens": 39764,
+      "output_tokens": 697,
+      "duration_ms": 10212,
+      "cost_usd": 0.0487624
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "without",
+    "run": 4,
+    "score": 1,
+    "turns": 3,
+    "seconds": 11,
+    "cost_usd": 0.048757,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 9373,
+      "cache_read_input_tokens": 39830,
+      "output_tokens": 727,
+      "duration_ms": 10196,
+      "cost_usd": 0.048757
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "with",
+    "run": 0,
+    "score": 1,
+    "turns": 2,
+    "seconds": 10,
+    "cost_usd": 0.062043799999999996,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12747,
+      "cache_read_input_tokens": 27178,
+      "output_tokens": 833,
+      "duration_ms": 9050,
+      "cost_usd": 0.062043799999999996
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "with",
+    "run": 1,
+    "score": 1,
+    "turns": 2,
+    "seconds": 9,
+    "cost_usd": 0.060645700000000004,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12645,
+      "cache_read_input_tokens": 27177,
+      "output_tokens": 734,
+      "duration_ms": 7696,
+      "cost_usd": 0.060645700000000004
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "with",
+    "run": 2,
+    "score": 1,
+    "turns": 2,
+    "seconds": 10,
+    "cost_usd": 0.0620203,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12787,
+      "cache_read_input_tokens": 27243,
+      "output_tokens": 814,
+      "duration_ms": 8490,
+      "cost_usd": 0.0620203
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "with",
+    "run": 3,
+    "score": 1,
+    "turns": 2,
+    "seconds": 10,
+    "cost_usd": 0.0619426,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12626,
+      "cache_read_input_tokens": 27106,
+      "output_tokens": 872,
+      "duration_ms": 8985,
+      "cost_usd": 0.0619426
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "with",
+    "run": 4,
+    "score": 1,
+    "turns": 2,
+    "seconds": 9,
+    "cost_usd": 0.060685699999999995,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12690,
+      "cache_read_input_tokens": 27177,
+      "output_tokens": 720,
+      "duration_ms": 8061,
+      "cost_usd": 0.060685699999999995
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "without",
+    "run": 0,
+    "score": 1,
+    "turns": 2,
+    "seconds": 6,
+    "cost_usd": 0.0406351,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8563,
+      "cache_read_input_tokens": 23251,
+      "output_tokens": 405,
+      "duration_ms": 4724,
+      "cost_usd": 0.0406351
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "without",
+    "run": 1,
+    "score": 1,
+    "turns": 2,
+    "seconds": 6,
+    "cost_usd": 0.040551899999999995,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8704,
+      "cache_read_input_tokens": 23379,
+      "output_tokens": 339,
+      "duration_ms": 4467,
+      "cost_usd": 0.040551899999999995
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "without",
+    "run": 2,
+    "score": 1,
+    "turns": 2,
+    "seconds": 6,
+    "cost_usd": 0.0400029,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8591,
+      "cache_read_input_tokens": 23309,
+      "output_tokens": 330,
+      "duration_ms": 4711,
+      "cost_usd": 0.0400029
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "without",
+    "run": 3,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0407136,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8631,
+      "cache_read_input_tokens": 23316,
+      "output_tokens": 385,
+      "duration_ms": 5139,
+      "cost_usd": 0.0407136
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "without",
+    "run": 4,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0414696,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8600,
+      "cache_read_input_tokens": 23316,
+      "output_tokens": 473,
+      "duration_ms": 5590,
+      "cost_usd": 0.0414696
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "with",
+    "run": 0,
+    "score": 1,
+    "turns": 2,
+    "seconds": 9,
+    "cost_usd": 0.0578046,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12430,
+      "cache_read_input_tokens": 27166,
+      "output_tokens": 536,
+      "duration_ms": 7636,
+      "cost_usd": 0.0578046
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "with",
+    "run": 1,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.055924,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12425,
+      "cache_read_input_tokens": 27160,
+      "output_tokens": 350,
+      "duration_ms": 5468,
+      "cost_usd": 0.055924
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "with",
+    "run": 2,
+    "score": 1,
+    "turns": 2,
+    "seconds": 9,
+    "cost_usd": 0.058404899999999996,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12435,
+      "cache_read_input_tokens": 27169,
+      "output_tokens": 594,
+      "duration_ms": 7476,
+      "cost_usd": 0.058404899999999996
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "with",
+    "run": 3,
+    "score": 1,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.0577126,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12417,
+      "cache_read_input_tokens": 27166,
+      "output_tokens": 532,
+      "duration_ms": 6949,
+      "cost_usd": 0.0577126
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "with",
+    "run": 4,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0557836,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12359,
+      "cache_read_input_tokens": 27096,
+      "output_tokens": 363,
+      "duration_ms": 6056,
+      "cost_usd": 0.0557836
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "without",
+    "run": 0,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0400257,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8486,
+      "cache_read_input_tokens": 23237,
+      "output_tokens": 375,
+      "duration_ms": 5763,
+      "cost_usd": 0.0400257
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "without",
+    "run": 1,
+    "score": 1,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.042023,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8622,
+      "cache_read_input_tokens": 23370,
+      "output_tokens": 519,
+      "duration_ms": 6447,
+      "cost_usd": 0.042023
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "without",
+    "run": 2,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0405222,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8521,
+      "cache_read_input_tokens": 23302,
+      "output_tokens": 410,
+      "duration_ms": 5961,
+      "cost_usd": 0.0405222
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "without",
+    "run": 3,
+    "score": 1,
+    "turns": 2,
+    "seconds": 6,
+    "cost_usd": 0.040347,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8623,
+      "cache_read_input_tokens": 23370,
+      "output_tokens": 351,
+      "duration_ms": 5204,
+      "cost_usd": 0.040347
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "without",
+    "run": 4,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0415663,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8522,
+      "cache_read_input_tokens": 23303,
+      "output_tokens": 514,
+      "duration_ms": 6117,
+      "cost_usd": 0.0415663
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "with",
+    "run": 0,
+    "score": 1,
+    "turns": 3,
+    "seconds": 9,
+    "cost_usd": 0.0615325,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 13138,
+      "cache_read_input_tokens": 27185,
+      "output_tokens": 625,
+      "duration_ms": 7922,
+      "cost_usd": 0.0615325
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "with",
+    "run": 1,
+    "score": 1,
+    "turns": 2,
+    "seconds": 9,
+    "cost_usd": 0.0593294,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12640,
+      "cache_read_input_tokens": 27114,
+      "output_tokens": 605,
+      "duration_ms": 7961,
+      "cost_usd": 0.0593294
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "with",
+    "run": 2,
+    "score": 1,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.0596384,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12693,
+      "cache_read_input_tokens": 27184,
+      "output_tokens": 614,
+      "duration_ms": 7182,
+      "cost_usd": 0.0596384
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "with",
+    "run": 3,
+    "score": 1,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.059919,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12733,
+      "cache_read_input_tokens": 27190,
+      "output_tokens": 626,
+      "duration_ms": 7197,
+      "cost_usd": 0.059919
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "with",
+    "run": 4,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.058297,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 12605,
+      "cache_read_input_tokens": 27190,
+      "output_tokens": 515,
+      "duration_ms": 6005,
+      "cost_usd": 0.058297
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "without",
+    "run": 0,
+    "score": 1,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.041915999999999995,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8609,
+      "cache_read_input_tokens": 23320,
+      "output_tokens": 514,
+      "duration_ms": 6484,
+      "cost_usd": 0.041915999999999995
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "without",
+    "run": 1,
+    "score": 1,
+    "turns": 2,
+    "seconds": 6,
+    "cost_usd": 0.0403383,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8637,
+      "cache_read_input_tokens": 23323,
+      "output_tokens": 345,
+      "duration_ms": 5072,
+      "cost_usd": 0.0403383
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "without",
+    "run": 2,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.04092610000000001,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8609,
+      "cache_read_input_tokens": 23321,
+      "output_tokens": 415,
+      "duration_ms": 5519,
+      "cost_usd": 0.04092610000000001
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "without",
+    "run": 3,
+    "score": 0,
+    "turns": 2,
+    "seconds": 4,
+    "cost_usd": 0.035456,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 8323,
+      "cache_read_input_tokens": 7500,
+      "output_tokens": 141,
+      "duration_ms": 2631,
+      "cost_usd": 0.035456
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "without",
+    "run": 4,
+    "score": 0,
+    "turns": 1,
+    "seconds": 2,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 427,
+      "cost_usd": 0
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "with",
+    "run": 0,
+    "score": 0,
+    "turns": 1,
+    "seconds": 2,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 418,
+      "cost_usd": 0
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "with",
+    "run": 1,
+    "score": 0,
+    "turns": 1,
+    "seconds": 2,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 435,
+      "cost_usd": 0
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "with",
+    "run": 2,
+    "score": 0,
+    "turns": 1,
+    "seconds": 2,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 395,
+      "cost_usd": 0
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "with",
+    "run": 3,
+    "score": 0,
+    "turns": 1,
+    "seconds": 2,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 424,
+      "cost_usd": 0
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "with",
+    "run": 4,
+    "score": 0,
+    "turns": 1,
+    "seconds": 2,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 446,
+      "cost_usd": 0
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "without",
+    "run": 0,
+    "score": 0,
+    "turns": 1,
+    "seconds": 2,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 428,
+      "cost_usd": 0
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "without",
+    "run": 1,
+    "score": 0,
+    "turns": 1,
+    "seconds": 2,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 418,
+      "cost_usd": 0
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "without",
+    "run": 2,
+    "score": 0,
+    "turns": 1,
+    "seconds": 2,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 437,
+      "cost_usd": 0
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "without",
+    "run": 3,
+    "score": 0,
+    "turns": 1,
+    "seconds": 1,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 388,
+      "cost_usd": 0
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "without",
+    "run": 4,
+    "score": 0,
+    "turns": 1,
+    "seconds": 1,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 377,
+      "cost_usd": 0
+    }
+  }
+]

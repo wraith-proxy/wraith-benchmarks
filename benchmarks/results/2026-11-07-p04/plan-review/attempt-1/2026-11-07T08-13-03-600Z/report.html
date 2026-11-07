@@ -1,0 +1,1247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Eval report — wraith v0.6.0</title>
+</head>
+<body>
+<style>
+:root{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){:root{--plane:#0d0d0d;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#898781;--hairline:rgba(255,255,255,.10);--grid:#2c2c2a;--inset:rgba(255,255,255,.05);--accent:#3987e5;--base-fill:#898781;--delta-good:#0ca30c;--good:#0ca30c;--warning:#fab219;--critical:#e06c6c;color-scheme:dark}}
+:root[data-theme="dark"]{--plane:#0d0d0d;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#898781;--hairline:rgba(255,255,255,.10);--grid:#2c2c2a;--inset:rgba(255,255,255,.05);--accent:#3987e5;--base-fill:#898781;--delta-good:#0ca30c;--good:#0ca30c;--warning:#fab219;--critical:#e06c6c;color-scheme:dark}
+:root[data-theme="light"]{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--plane);color:var(--ink);
+  font:14px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-text-size-adjust:100%}
+.wrap{max-width:880px;margin:0 auto;padding:40px 24px 64px;display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+header h1{margin:2px 0 0;font-size:24px;font-weight:600;line-height:1.25;text-wrap:balance}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;color:var(--ink-2);font-size:13px}
+.meta .num{font-variant-numeric:tabular-nums lining-nums}
+.banner{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;
+  border:1px solid var(--hairline);background:var(--surface);font-size:13px}
+.banner .chip-warn{color:var(--warning);font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--hairline);border-radius:10px;padding:14px 16px;
+  display:flex;flex-direction:column;gap:4px}
+.tile .label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.tile .value{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums lining-nums;line-height:1.1}
+.tile.hero .value{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:48px}
+.tile .sub{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tile .value.delta-pos{color:var(--delta-good)}
+.tile .value.delta-neg{color:var(--critical)}
+.toolbar{display:flex;gap:8px;justify-content:flex-end}
+.toolbar button{font:12px system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink-2);
+  background:var(--surface);border:1px solid var(--hairline);border-radius:6px;padding:4px 10px;cursor:pointer}
+.toolbar button:hover{color:var(--ink)}
+.toolbar button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.case{background:var(--surface);border:1px solid var(--hairline);border-radius:10px;padding:18px 20px;
+  display:flex;flex-direction:column;gap:10px}
+.case-regressed{border-left:3px solid var(--critical)}
+.verdict{margin:6px 0 0;font-size:15px}
+.verdict .delta{font-size:15px}
+.flag{font-size:11px;font-weight:600;color:var(--warning);white-space:nowrap}
+.star{color:var(--warning);font-size:.45em;vertical-align:super;line-height:0;cursor:help}
+.legend summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2)}
+.legend-list{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--ink-2)}
+.case-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.case-head h2{margin:0;font-size:16px;font-weight:600}
+.case-head .spacer{flex:1}
+.case-score{font-size:15px;font-weight:600}
+.mono{font:12px "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.num{font-variant-numeric:tabular-nums lining-nums}
+.muted{color:var(--ink-3);font-size:12px}
+.meter{display:inline-block;position:relative;width:120px;height:6px;border-radius:4px;background:var(--grid);
+  vertical-align:middle}
+.meter>span{display:block;height:100%;border-radius:4px;max-width:100%}
+.meter .tick{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink-3);border-radius:1px}
+.m-accent>span{background:var(--accent)}
+.m-base>span{background:var(--base-fill)}
+.delta{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.delta-pos{color:var(--delta-good)}
+.delta-neg{color:var(--critical)}
+.delta-zero{color:var(--ink-3)}
+details.section{border-top:1px solid var(--grid);padding-top:10px}
+details.section>summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--ink-2);list-style-position:outside;margin-left:2px}
+details.section>summary:hover{color:var(--ink)}
+details.section[open]>summary{margin-bottom:8px}
+.md{display:flex;flex-direction:column;gap:8px;background:var(--inset);border-radius:8px;
+  padding:12px 14px;overflow-wrap:break-word}
+.md>:first-child{margin-top:0}
+.md h1,.md h2,.md h3,.md h4,.md h5,.md h6{margin:4px 0 0;font-size:1em;font-weight:600;line-height:1.3}
+.md p,.md ul,.md ol,.md blockquote,.md table,.md pre,.md hr{margin:0}
+.md ul,.md ol{display:flex;flex-direction:column;gap:4px;padding-left:20px}
+.md blockquote{border-left:2px solid var(--hairline);padding-left:10px;color:var(--ink-2)}
+.md :not(pre)>code{background:var(--inset);padding:1px 4px;border-radius:4px;
+  font:.92em "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.md pre{background:var(--inset);border:1px solid var(--hairline);padding:10px 12px;border-radius:6px;
+  overflow-x:auto;font:12px/1.5 "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.md pre code{background:none;padding:0;font:inherit}
+.md table{width:100%;border-collapse:collapse}
+.md th,.md td{padding:5px 8px;text-align:left;vertical-align:top;border-bottom:1px solid var(--grid)}
+.md th{font-weight:600;color:var(--ink-2)}
+.md a{color:var(--accent);text-decoration:none}
+.md a:hover{text-decoration:underline}
+.grader-def{display:flex;flex-direction:column;gap:6px;padding:8px 0}
+.grader-def+.grader-def{border-top:1px solid var(--grid)}
+.grader-def-head{display:flex;align-items:baseline;gap:8px}
+.grader-name{font:13px "SF Mono",ui-monospace,Menlo,Consolas,monospace;font-weight:600}
+.badge{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2);
+  border:1px solid var(--hairline);border-radius:999px;padding:1px 8px}
+.config{display:flex;flex-direction:column;gap:2px;background:var(--inset);border-radius:8px;padding:10px 14px}
+.config code{font:12px "SF Mono",ui-monospace,Menlo,Consolas,monospace;overflow-wrap:anywhere}
+.arm{display:flex;flex-direction:column;gap:8px;padding:6px 0}
+.arm+.arm{border-top:1px dashed var(--grid);margin-top:4px;padding-top:12px}
+.arm-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.arm-label{font-size:13px;font-weight:600}
+.run{border:1px solid var(--grid);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.run-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.run-title{font-size:12px;font-weight:600;color:var(--ink-2)}
+.run-error .explanation{color:var(--ink-2)}
+.note{font-size:12px;color:var(--ink-2)}
+.graders{display:flex;flex-direction:column;gap:4px}
+details.grader{border-radius:6px}
+details.grader>summary{cursor:pointer;display:flex;align-items:baseline;gap:8px;padding:3px 4px;
+  border-radius:6px;list-style:none}
+details.grader>summary::-webkit-details-marker{display:none}
+details.grader>summary::before{content:'▸';font-size:10px;color:var(--ink-3);flex:none;
+  transition:transform .12s ease}
+details.grader[open]>summary::before{transform:rotate(90deg)}
+details.grader>summary:hover{background:var(--inset)}
+details.grader>summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.grader-body{padding:6px 8px 8px 24px;display:flex;flex-direction:column;gap:6px}
+.chip{font-size:11px;font-weight:600;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.chip-pass{color:var(--good);border:1px solid currentColor}
+.chip-fail{color:var(--critical);border:1px solid currentColor}
+.chip.chip-warn{color:var(--warning);border:1px solid currentColor}
+.explanation{margin:0;font-size:13px;color:var(--ink-2);white-space:pre-wrap;overflow-wrap:break-word}
+.kv{display:flex;gap:8px;font-size:12px;color:var(--ink-3)}
+.votes{font-variant-numeric:tabular-nums;letter-spacing:.1em}
+pre.evidence{margin:0;background:var(--inset);border:1px solid var(--hairline);border-radius:6px;
+  padding:8px 10px;overflow-x:auto;max-height:320px;
+  font:12px/1.5 "SF Mono",ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:break-word}
+footer{color:var(--ink-3);font-size:12px;text-align:center;padding-top:8px}
+@media (prefers-reduced-motion:no-preference){
+  details.grader>summary,.toolbar button{transition:background .12s ease,color .12s ease}
+}
+@media (prefers-reduced-motion:reduce){
+  details.grader>summary::before{transition:none}
+}
+@media print{
+  :root,:root[data-theme="dark"],:root[data-theme="light"]{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;color-scheme:light}
+  body{background:#fff}
+  .toolbar{display:none}
+  .case,.run,.grader-def{break-inside:avoid}
+  pre.evidence{max-height:none}
+}
+</style>
+<div class="wrap">
+<header>
+<div class="eyebrow">Plugin eval report</div>
+<h1>wraith v0.6.0</h1>
+<p class="verdict">Plugin effect: <span class="delta delta-pos">↑ +26.7 pts</span> vs baseline — improved 1 · flat 0 · regressed 0 of 1 case.</p>
+<div class="meta">
+<span class="mono">.</span>
+<span>Claude Code v2.1.316</span>
+<span class="num">2026-11-07 08:13 UTC</span>
+<span class="num">5m 49s</span>
+<span class="num">$0.75</span>
+<span class="num">10 runs</span>
+
+
+<span>model claude-sonnet-5-5</span>
+<span>judge claude-haiku-5-5</span>
+<span class="num">threshold 100%</span>
+<span>filtered: --case plan-review-p04</span>
+</div>
+</header>
+
+<section class="tiles">
+<div class="tile hero"><span class="label">Suite score · with plugin</span><span class="value">93.3%</span><span class="sub">mean of per-case scores</span></div>
+<div class="tile"><span class="label">Ablation Δ</span><span class="value num delta-pos">↑ +26.7</span><span class="sub">score points vs baseline, 1 of 1 case</span></div>
+<div class="tile"><span class="label">Baseline score</span><span class="value num">66.7%</span><span class="sub">without the plugin</span></div>
+<div class="tile"><span class="label">Cases</span><span class="value num">1</span><span class="sub">0 of 1 ≥ 100% threshold</span></div>
+<div class="tile"><span class="label">Perfect runs</span><span class="value num">80%</span><span class="sub">runs where every grader passed</span></div>
+</section>
+<details class="section legend">
+<summary>How to read this report</summary>
+<ul class="legend-list">
+<li>A run's score is the weighted fraction of its graders that passed; a "perfect" run passed every grader.</li>
+<li>A case's score is the mean of its runs; a case passes when its score is at or above the 100% threshold (the tick on each case bar).</li>
+<li>The suite score is the mean of the per-case scores.</li>
+<li>Judge votes are independent samples of the LLM judge; the majority decides pass or fail.</li>
+<li>"With plugin" and "Baseline" runs are identical except for the plugin being loaded; Δ is the with-plugin score minus the baseline score.</li>
+
+</ul>
+</details>
+<div class="toolbar"><button type="button" data-act="expand">Expand all</button><button type="button" data-act="collapse">Collapse all</button></div>
+<article class="case" id="case-1">
+<div class="case-head">
+<h2>plan-review-p04</h2>
+<span class="muted mono">bench-plan-review/p04</span>
+<span class="spacer"></span>
+
+<span class="delta delta-pos">↑ +26.7 pts</span>
+<span class="muted">with plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:93.3%"></span><i class="tick" style="left:100.0%"></i></span>
+<span class="num case-score">93.3%</span>
+</div>
+
+<details class="section" open>
+<summary>Results</summary>
+<section class="arm">
+<div class="arm-head">
+<span class="arm-label">With plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:93.3%"></span></span>
+<span class="num">93.3%</span>
+<span class="muted num">80% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">8 turns · $0.11 · 08:13:03 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, because there are four blockers.
+
+I found no existing model, table or contract that already covers this, so the plan&apos;s premise stands. I did not dry-run the queries, so cost is unestimated. The plan doesn&apos;t give a target schema, and I couldn&apos;t reach the source from here.
+
+**Blockers**
+1. **World-readable personal data.** Access grants `allUsers`, and the columns include `email`, `full_name` and `date_of_birth`.
+2. **Wrong classification.** The contract says `internal` for a table that holds personal data. There&apos;s also no crypto-shred path.
+3. **Undefined columns.** The three personal columns aren&apos;t in the source schema or the model SQL. The table is called &quot;segments&quot; but has no segment column or rule.
+4. **Unsafe rollout.** Step 1 drops the table before the replacement exists or is checked, and no rollback is written.
+
+**Should-fix**
+- **Reruns and double-counting.** The MERGE leaves stale rows when a subscriber is missing from a rerun. `SUM(amount)` would double-count if a CRM file arrives twice, and `updated_at` is unused.
+- **Backfill and late data.** There&apos;s no backfill path, and late-arriving rows aren&apos;t handled.
+- **Target table.** It has no partitioning, clustering or `require_partition_filter`. The MERGE has no `d.ds` predicate, so it scans the whole target.
+- **Contract and tests.** `primary_key` is missing, and it&apos;s a required field in your AGENTS.md. The owner is a mailbox, and the change isn&apos;t marked additive or breaking. There are no tests.
+- **Freshness and consumers.** The 07:00 UTC SLA has no source arrival time behind it. No consumer is named and no downstream models are listed.
+
+**Nit:** the plan should say it&apos;s a `ds` snapshot, not SCD2.
+
+I didn&apos;t change any other part of the plan, as the review process asks. Two decisions will shape the rewrite:
+- **Personal columns:** do they belong in this table at all?
+- **Duplicate CRM deliveries:** should the model take the latest `updated_at` per subscriber, or sum every row?</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">2-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, because there are four blockers.
+
+I found no existing model, table or contract that already covers this, so the plan&apos;s premise stands. I did not dry-run the queries, so cost is unestimated. The plan doesn&apos;t give a target schema, and I couldn&apos;t reach the source from here.
+
+**Blockers**
+1. **World-readable personal data.** Access grants `allUsers`, and the columns include `email`, `full_name` and `date_of_birth`.
+2. **Wrong classification.** The contract says `internal` for a table that holds personal data. There&apos;s also no crypto-shred path.
+3. **Undefined columns.** The three personal columns aren&apos;t in the source schema or the model SQL. The table is called &quot;segments&quot; but has no segment column or rule.
+4. **Unsafe rollout.** Step 1 drops the table before the replacement exists or is checked, and no rollback is written.
+
+**Should-fix**
+- **Reruns and double-counting.** The MERGE leaves stale rows when a subscriber is missing from a rerun. `SUM(amount)` would double-count if a CRM file arrives twice, and `updated_at` is unused.
+- **Backfill and late data.** There&apos;s no backfill path, and late-arriving rows aren&apos;t handled.
+- **Target table.** It has no partitioning, clustering or `require_partition_filter`. The MERGE has no `d.ds` predicate, so it scans the whole target.
+- **Contract and tests.** `primary_key` is missing, and it&apos;s a required field in your AGENTS.md. The owner is a mailbox, and the change isn&apos;t marked additive or breaking. There are no tests.
+- **Freshness and consumers.** The 07:00 UTC SLA has no source arrival time behind it. No consumer is named and no downstream models are listed.
+
+**Nit:** the plan should say it&apos;s a `ds` snapshot, not SCD2.
+
+I didn&apos;t change any other part of the plan, as the review process asks. Two decisions will shape the rewrite:
+- **Personal columns:** do they belong in this table at all?
+- **Duplicate CRM deliveries:** should the model take the latest `updated_at` per subscriber, or sum every row?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, because there are four blockers.
+
+I found no existing model, table or contract that already covers this, so the plan&apos;s premise stands. I did not dry-run the queries, so cost is unestimated. The plan doesn&apos;t give a target schema, and I couldn&apos;t reach the source from here.
+
+**Blockers**
+1. **World-readable personal data.** Access grants `allUsers`, and the columns include `email`, `full_name` and `date_of_birth`.
+2. **Wrong classification.** The contract says `internal` for a table that holds personal data. There&apos;s also no crypto-shred path.
+3. **Undefined columns.** The three personal columns aren&apos;t in the source schema or the model SQL. The table is called &quot;segments&quot; but has no segment column or rule.
+4. **Unsafe rollout.** Step 1 drops the table before the replacement exists or is checked, and no rollback is written.
+
+**Should-fix**
+- **Reruns and double-counting.** The MERGE leaves stale rows when a subscriber is missing from a rerun. `SUM(amount)` would double-count if a CRM file arrives twice, and `updated_at` is unused.
+- **Backfill and late data.** There&apos;s no backfill path, and late-arriving rows aren&apos;t handled.
+- **Target table.** It has no partitioning, clustering or `require_partition_filter`. The MERGE has no `d.ds` predicate, so it scans the whole target.
+- **Contract and tests.** `primary_key` is missing, and it&apos;s a required field in your AGENTS.md. The owner is a mailbox, and the change isn&apos;t marked additive or breaking. There are no tests.
+- **Freshness and consumers.** The 07:00 UTC SLA has no source arrival time behind it. No consumer is named and no downstream models are listed.
+
+**Nit:** the plan should say it&apos;s a `ds` snapshot, not SCD2.
+
+I didn&apos;t change any other part of the plan, as the review process asks. Two decisions will shape the rewrite:
+- **Personal columns:** do they belong in this table at all?
+- **Duplicate CRM deliveries:** should the model take the latest `updated_at` per subscriber, or sum every row?</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">8 turns · $0.11 · 08:13:52 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **Verdict: NOT READY.** I didn&apos;t edit the rest of the plan.
+
+I couldn&apos;t dry-run the queries because this session had no shell access, so the cost findings are unmeasured. No existing model or contract covers this, so the premise holds.
+
+**Blockers**
+- **Public access to personal data:** `allUsers` can read `public_marketing`, which exposes `email`, `full_name` and `date_of_birth` to anyone on the internet.
+- **Wrong classification:** The contract says `internal` even though the columns are direct identifiers. The Access column list also doesn&apos;t match the model SQL, which only selects `ds`, `subscriber_id` and `amount`.
+- **Destructive rollout:** The plan runs `DROP TABLE` then `CREATE TABLE AS`, with no rollback and no consumer notice. The DROP also implies the table already exists, which the plan doesn&apos;t say.
+- **Double-counting risk:** The source has `updated_at` and arrives as one file per run, so a `ds` can hold several versions of a subscriber. `SUM(amount)` would double-count on a re-delivery.
+
+**Should-fix**
+- The consumer and decision aren&apos;t named.
+- The contract isn&apos;t in `contracts/` and has no `primary_key`.
+- The MERGE leaves removed subscribers in the target, and no backfill path is written.
+- The target table has no partitioning or clustering, and no `require_partition_filter`.
+- There are no tests and no downstream list.
+- Late-arriving rows aren&apos;t handled.
+
+The `dim_` name for a per-`ds` snapshot is a smaller naming issue, covered in the review table.
+
+The access, classification and rollout fixes need your decisions on who the readers are and whether the table already exists. The Optional vendor second pass wasn&apos;t run.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **Verdict: NOT READY.** I didn&apos;t edit the rest of the plan.
+
+I couldn&apos;t dry-run the queries because this session had no shell access, so the cost findings are unmeasured. No existing model or contract covers this, so the premise holds.
+
+**Blockers**
+- **Public access to personal data:** `allUsers` can read `public_marketing`, which exposes `email`, `full_name` and `date_of_birth` to anyone on the internet.
+- **Wrong classification:** The contract says `internal` even though the columns are direct identifiers. The Access column list also doesn&apos;t match the model SQL, which only selects `ds`, `subscriber_id` and `amount`.
+- **Destructive rollout:** The plan runs `DROP TABLE` then `CREATE TABLE AS`, with no rollback and no consumer notice. The DROP also implies the table already exists, which the plan doesn&apos;t say.
+- **Double-counting risk:** The source has `updated_at` and arrives as one file per run, so a `ds` can hold several versions of a subscriber. `SUM(amount)` would double-count on a re-delivery.
+
+**Should-fix**
+- The consumer and decision aren&apos;t named.
+- The contract isn&apos;t in `contracts/` and has no `primary_key`.
+- The MERGE leaves removed subscribers in the target, and no backfill path is written.
+- The target table has no partitioning or clustering, and no `require_partition_filter`.
+- There are no tests and no downstream list.
+- Late-arriving rows aren&apos;t handled.
+
+The `dim_` name for a per-`ds` snapshot is a smaller naming issue, covered in the review table.
+
+The access, classification and rollout fixes need your decisions on who the readers are and whether the table already exists. The Optional vendor second pass wasn&apos;t run.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS FAIL PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✗ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **Verdict: NOT READY.** I didn&apos;t edit the rest of the plan.
+
+I couldn&apos;t dry-run the queries because this session had no shell access, so the cost findings are unmeasured. No existing model or contract covers this, so the premise holds.
+
+**Blockers**
+- **Public access to personal data:** `allUsers` can read `public_marketing`, which exposes `email`, `full_name` and `date_of_birth` to anyone on the internet.
+- **Wrong classification:** The contract says `internal` even though the columns are direct identifiers. The Access column list also doesn&apos;t match the model SQL, which only selects `ds`, `subscriber_id` and `amount`.
+- **Destructive rollout:** The plan runs `DROP TABLE` then `CREATE TABLE AS`, with no rollback and no consumer notice. The DROP also implies the table already exists, which the plan doesn&apos;t say.
+- **Double-counting risk:** The source has `updated_at` and arrives as one file per run, so a `ds` can hold several versions of a subscriber. `SUM(amount)` would double-count on a re-delivery.
+
+**Should-fix**
+- The consumer and decision aren&apos;t named.
+- The contract isn&apos;t in `contracts/` and has no `primary_key`.
+- The MERGE leaves removed subscribers in the target, and no backfill path is written.
+- The target table has no partitioning or clustering, and no `require_partition_filter`.
+- There are no tests and no downstream list.
+- Late-arriving rows aren&apos;t handled.
+
+The `dim_` name for a per-`ds` snapshot is a smaller naming issue, covered in the review table.
+
+The access, classification and rollout fixes need your decisions on who the readers are and whether the table already exists. The Optional vendor second pass wasn&apos;t run.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">9 turns · $0.11 · 08:14:35 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **Verdict: NOT READY**, with 5 blockers.
+
+**Blockers**
+1. **Public personal data.** `allUsers` can read a table with `email`, `full_name` and `date_of_birth`. Remove public access, name the real readers, and drop or hash the PII columns.
+2. **Contract.** Classification is `internal`, but the columns are personal data. The contract is inline, has no `primary_key` (your AGENTS.md requires one), and has no file under `contracts/`.
+3. **Column mismatch.** The table is called &quot;segments&quot; but has no segment column. The Access list names `email`, `full_name` and `date_of_birth`, which appear in neither the source DDL nor the model.
+4. **Double-counting risk.** The source has `updated_at`, so a subscriber may have several versions per ds. `SUM(amount)` would count them all. Either dedupe to the latest row or justify the sum.
+5. **Rollout and rollback.** Step 1 is `DROP TABLE` with no backup and no rollback path.
+
+**Should-fix items**
+- The plan doesn&apos;t name the consumer or decision.
+- A MERGE doesn&apos;t remove rows that vanish from a re-delivered file, so reruns aren&apos;t exact. Use a partition overwrite instead. There&apos;s no backfill path either.
+- The target table has no partitioning, clustering or `require_partition_filter`, and the MERGE probably won&apos;t prune the target.
+- There are no tests and no source freshness check.
+- Downstream consumers aren&apos;t listed.
+- Late-arriving rows aren&apos;t handled.
+- The `dim_` name doesn&apos;t fit a daily snapshot.
+
+**What I didn&apos;t do**
+- **Cost estimate.** I couldn&apos;t run `bq query --dry_run` because this session has no shell tool. The cost is unestimated, and the review says so. Run the dry run against `example-project-dev` and compare it to the 10 GB cap.
+- **Existing models.** I found no existing segment or subscriber model in the repo, so the premise holds. The repo has no dbt models or contracts yet.
+- **Vendor second pass.** I didn&apos;t run it. Those skills ask for an attribution tag that reports usage to Google, so I&apos;d want your choice first.
+
+The rest of the plan is untouched. Do you want me to draft the fixes for the author to review?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS FAIL PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✗ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **Verdict: NOT READY**, with 5 blockers.
+
+**Blockers**
+1. **Public personal data.** `allUsers` can read a table with `email`, `full_name` and `date_of_birth`. Remove public access, name the real readers, and drop or hash the PII columns.
+2. **Contract.** Classification is `internal`, but the columns are personal data. The contract is inline, has no `primary_key` (your AGENTS.md requires one), and has no file under `contracts/`.
+3. **Column mismatch.** The table is called &quot;segments&quot; but has no segment column. The Access list names `email`, `full_name` and `date_of_birth`, which appear in neither the source DDL nor the model.
+4. **Double-counting risk.** The source has `updated_at`, so a subscriber may have several versions per ds. `SUM(amount)` would count them all. Either dedupe to the latest row or justify the sum.
+5. **Rollout and rollback.** Step 1 is `DROP TABLE` with no backup and no rollback path.
+
+**Should-fix items**
+- The plan doesn&apos;t name the consumer or decision.
+- A MERGE doesn&apos;t remove rows that vanish from a re-delivered file, so reruns aren&apos;t exact. Use a partition overwrite instead. There&apos;s no backfill path either.
+- The target table has no partitioning, clustering or `require_partition_filter`, and the MERGE probably won&apos;t prune the target.
+- There are no tests and no source freshness check.
+- Downstream consumers aren&apos;t listed.
+- Late-arriving rows aren&apos;t handled.
+- The `dim_` name doesn&apos;t fit a daily snapshot.
+
+**What I didn&apos;t do**
+- **Cost estimate.** I couldn&apos;t run `bq query --dry_run` because this session has no shell tool. The cost is unestimated, and the review says so. Run the dry run against `example-project-dev` and compare it to the 10 GB cap.
+- **Existing models.** I found no existing segment or subscriber model in the repo, so the premise holds. The repo has no dbt models or contracts yet.
+- **Vendor second pass.** I didn&apos;t run it. Those skills ask for an attribution tag that reports usage to Google, so I&apos;d want your choice first.
+
+The rest of the plan is untouched. Do you want me to draft the fixes for the author to review?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. **Verdict: NOT READY**, with 5 blockers.
+
+**Blockers**
+1. **Public personal data.** `allUsers` can read a table with `email`, `full_name` and `date_of_birth`. Remove public access, name the real readers, and drop or hash the PII columns.
+2. **Contract.** Classification is `internal`, but the columns are personal data. The contract is inline, has no `primary_key` (your AGENTS.md requires one), and has no file under `contracts/`.
+3. **Column mismatch.** The table is called &quot;segments&quot; but has no segment column. The Access list names `email`, `full_name` and `date_of_birth`, which appear in neither the source DDL nor the model.
+4. **Double-counting risk.** The source has `updated_at`, so a subscriber may have several versions per ds. `SUM(amount)` would count them all. Either dedupe to the latest row or justify the sum.
+5. **Rollout and rollback.** Step 1 is `DROP TABLE` with no backup and no rollback path.
+
+**Should-fix items**
+- The plan doesn&apos;t name the consumer or decision.
+- A MERGE doesn&apos;t remove rows that vanish from a re-delivered file, so reruns aren&apos;t exact. Use a partition overwrite instead. There&apos;s no backfill path either.
+- The target table has no partitioning, clustering or `require_partition_filter`, and the MERGE probably won&apos;t prune the target.
+- There are no tests and no source freshness check.
+- Downstream consumers aren&apos;t listed.
+- Late-arriving rows aren&apos;t handled.
+- The `dim_` name doesn&apos;t fit a daily snapshot.
+
+**What I didn&apos;t do**
+- **Cost estimate.** I couldn&apos;t run `bq query --dry_run` because this session has no shell tool. The cost is unestimated, and the review says so. Run the dry run against `example-project-dev` and compare it to the 10 GB cap.
+- **Existing models.** I found no existing segment or subscriber model in the repo, so the premise holds. The repo has no dbt models or contracts yet.
+- **Vendor second pass.** I didn&apos;t run it. Those skills ask for an attribution tag that reports usage to Google, so I&apos;d want your choice first.
+
+The rest of the plan is untouched. Do you want me to draft the fixes for the author to review?</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">8 turns · $0.10 · 08:15:18 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**. I haven&apos;t touched the rest of the plan.
+
+Nothing in the repo already covers newsletter segments, so the premise holds. I didn&apos;t run a BigQuery dry-run, because the source table isn&apos;t in the dev project and the plan gives no run count. I also didn&apos;t run the vendor second pass.
+
+**Blockers**
+1. **Personal data is public.** `allUsers` can read `email`, `full_name` and `date_of_birth`, and the contract classifies the table as `internal`. The plan needs a private dataset, an explicit reader group, PII classification with policy tags, and a crypto-shred path.
+2. **The columns don&apos;t match.** The model produces `ds, subscriber_id, amount`. The Access section lists three more columns, and the source has none of them. The table is called &quot;segments&quot; but has no segment column.
+3. **Amounts can be double-counted.** The source has `updated_at` and is exported once per run, so a subscriber can appear more than once per `ds`. `SUM(amount)` would then double-count. The plan needs a dedupe on the latest `updated_at`, or a statement that `amount` is additive.
+4. **The contract is incomplete.** It is inline, has no `primary_key` (your AGENTS.md requires one), and doesn&apos;t say whether the change is additive or breaking.
+
+**Should-fix**
+- The MERGE never removes rows that leave the source for a `ds`, and no backfill path is written. A partition overwrite fixes both.
+- The target table has no partitioning, clustering or `require_partition_filter`. The MERGE has no `d.ds = @ds` predicate, so it scans the whole target. There is no cost estimate against your 10 GB dev limit.
+- Rollout starts with `DROP TABLE`, with no rollback plan, an unqualified dataset and no expected row count.
+- There are no tests or source freshness check behind the 07:00 UTC SLA.
+- No consumer, no cost of wrong, late or down, and no downstream list.
+
+Do you want me to hand the blockers back to the plan author, or revise the plan myself?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**. I haven&apos;t touched the rest of the plan.
+
+Nothing in the repo already covers newsletter segments, so the premise holds. I didn&apos;t run a BigQuery dry-run, because the source table isn&apos;t in the dev project and the plan gives no run count. I also didn&apos;t run the vendor second pass.
+
+**Blockers**
+1. **Personal data is public.** `allUsers` can read `email`, `full_name` and `date_of_birth`, and the contract classifies the table as `internal`. The plan needs a private dataset, an explicit reader group, PII classification with policy tags, and a crypto-shred path.
+2. **The columns don&apos;t match.** The model produces `ds, subscriber_id, amount`. The Access section lists three more columns, and the source has none of them. The table is called &quot;segments&quot; but has no segment column.
+3. **Amounts can be double-counted.** The source has `updated_at` and is exported once per run, so a subscriber can appear more than once per `ds`. `SUM(amount)` would then double-count. The plan needs a dedupe on the latest `updated_at`, or a statement that `amount` is additive.
+4. **The contract is incomplete.** It is inline, has no `primary_key` (your AGENTS.md requires one), and doesn&apos;t say whether the change is additive or breaking.
+
+**Should-fix**
+- The MERGE never removes rows that leave the source for a `ds`, and no backfill path is written. A partition overwrite fixes both.
+- The target table has no partitioning, clustering or `require_partition_filter`. The MERGE has no `d.ds = @ds` predicate, so it scans the whole target. There is no cost estimate against your 10 GB dev limit.
+- Rollout starts with `DROP TABLE`, with no rollback plan, an unqualified dataset and no expected row count.
+- There are no tests or source freshness check behind the 07:00 UTC SLA.
+- No consumer, no cost of wrong, late or down, and no downstream list.
+
+Do you want me to hand the blockers back to the plan author, or revise the plan myself?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to `plan.md`. The verdict is **NOT READY**. I haven&apos;t touched the rest of the plan.
+
+Nothing in the repo already covers newsletter segments, so the premise holds. I didn&apos;t run a BigQuery dry-run, because the source table isn&apos;t in the dev project and the plan gives no run count. I also didn&apos;t run the vendor second pass.
+
+**Blockers**
+1. **Personal data is public.** `allUsers` can read `email`, `full_name` and `date_of_birth`, and the contract classifies the table as `internal`. The plan needs a private dataset, an explicit reader group, PII classification with policy tags, and a crypto-shred path.
+2. **The columns don&apos;t match.** The model produces `ds, subscriber_id, amount`. The Access section lists three more columns, and the source has none of them. The table is called &quot;segments&quot; but has no segment column.
+3. **Amounts can be double-counted.** The source has `updated_at` and is exported once per run, so a subscriber can appear more than once per `ds`. `SUM(amount)` would then double-count. The plan needs a dedupe on the latest `updated_at`, or a statement that `amount` is additive.
+4. **The contract is incomplete.** It is inline, has no `primary_key` (your AGENTS.md requires one), and doesn&apos;t say whether the change is additive or breaking.
+
+**Should-fix**
+- The MERGE never removes rows that leave the source for a `ds`, and no backfill path is written. A partition overwrite fixes both.
+- The target table has no partitioning, clustering or `require_partition_filter`. The MERGE has no `d.ds = @ds` predicate, so it scans the whole target. There is no cost estimate against your 10 GB dev limit.
+- Rollout starts with `DROP TABLE`, with no rollback plan, an unqualified dataset and no expected row count.
+- There are no tests or source freshness check behind the 07:00 UTC SLA.
+- No consumer, no cost of wrong, late or down, and no downstream list.
+
+Do you want me to hand the blockers back to the plan author, or revise the plan myself?</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">9 turns · $0.11 · 08:16:02 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with four blockers. I didn&apos;t edit the rest of the plan. I also didn&apos;t run any dry-runs, so the query cost (item 6) is unmeasured.
+
+**Blockers**
+1. **Personal data is public.** `public_marketing` grants `allUsers` read on `email`, `full_name` and `date_of_birth`. The plan needs real readers, no raw personal columns, policy tags and a crypto-shred path.
+2. **The contract is missing or wrong.** No contract file exists, and `primary_key` (required in `contract_required_fields`) is absent. Classification says `internal` for a table holding PII, and the change isn&apos;t marked additive or breaking.
+3. **The rollout is destructive.** Step 1 is `DROP TABLE` with no undo, and the goal says &quot;build&quot;, so the table may not exist yet. The plan needs a rollback, such as a rebuild per `ds` or time travel.
+4. **The columns don&apos;t match.** The model SQL returns `ds, subscriber_id, amount`, but the Access section lists `email`, `full_name` and `date_of_birth`. Nothing defines what a &quot;segment&quot; is.
+
+**Should-fix**
+- The plan doesn&apos;t name the consumer, the decision it feeds, or the cost of being wrong, late or down.
+- `SUM(amount)` double counts if a file is re-sent. Dedupe on `updated_at` first.
+- `MERGE` never deletes rows that left the source, and the plan has no backfill path. Use a partition overwrite instead.
+- The target table has no partitioning, clustering or `require_partition_filter`. The `MERGE` also scans the whole target because `ON` has no `d.ds` filter.
+- There are no tests, and nothing to check the 07:00 UTC freshness SLA against.
+- Late-arriving rows aren&apos;t handled.
+- Downstream models and dashboards aren&apos;t listed.
+
+**Nit:** a `dim_` name on a `ds` snapshot table is misleading.
+
+No existing model or contract already covers this, so there was no premise blocker. I found no dbt project or `contracts/` files in the repo. Resolve the blockers in the plan, then I can re-review. I&apos;d start with the access and PII decision, since it changes the column list and the contract.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS FAIL PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✗ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with four blockers. I didn&apos;t edit the rest of the plan. I also didn&apos;t run any dry-runs, so the query cost (item 6) is unmeasured.
+
+**Blockers**
+1. **Personal data is public.** `public_marketing` grants `allUsers` read on `email`, `full_name` and `date_of_birth`. The plan needs real readers, no raw personal columns, policy tags and a crypto-shred path.
+2. **The contract is missing or wrong.** No contract file exists, and `primary_key` (required in `contract_required_fields`) is absent. Classification says `internal` for a table holding PII, and the change isn&apos;t marked additive or breaking.
+3. **The rollout is destructive.** Step 1 is `DROP TABLE` with no undo, and the goal says &quot;build&quot;, so the table may not exist yet. The plan needs a rollback, such as a rebuild per `ds` or time travel.
+4. **The columns don&apos;t match.** The model SQL returns `ds, subscriber_id, amount`, but the Access section lists `email`, `full_name` and `date_of_birth`. Nothing defines what a &quot;segment&quot; is.
+
+**Should-fix**
+- The plan doesn&apos;t name the consumer, the decision it feeds, or the cost of being wrong, late or down.
+- `SUM(amount)` double counts if a file is re-sent. Dedupe on `updated_at` first.
+- `MERGE` never deletes rows that left the source, and the plan has no backfill path. Use a partition overwrite instead.
+- The target table has no partitioning, clustering or `require_partition_filter`. The `MERGE` also scans the whole target because `ON` has no `d.ds` filter.
+- There are no tests, and nothing to check the 07:00 UTC freshness SLA against.
+- Late-arriving rows aren&apos;t handled.
+- Downstream models and dashboards aren&apos;t listed.
+
+**Nit:** a `dim_` name on a `ds` snapshot table is misleading.
+
+No existing model or contract already covers this, so there was no premise blocker. I found no dbt project or `contracts/` files in the repo. Resolve the blockers in the plan, then I can re-review. I&apos;d start with the access and PII decision, since it changes the column list and the contract.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">3-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and appended a `## Data review (2026-11-07)` section to it. The verdict is **NOT READY**, with four blockers. I didn&apos;t edit the rest of the plan. I also didn&apos;t run any dry-runs, so the query cost (item 6) is unmeasured.
+
+**Blockers**
+1. **Personal data is public.** `public_marketing` grants `allUsers` read on `email`, `full_name` and `date_of_birth`. The plan needs real readers, no raw personal columns, policy tags and a crypto-shred path.
+2. **The contract is missing or wrong.** No contract file exists, and `primary_key` (required in `contract_required_fields`) is absent. Classification says `internal` for a table holding PII, and the change isn&apos;t marked additive or breaking.
+3. **The rollout is destructive.** Step 1 is `DROP TABLE` with no undo, and the goal says &quot;build&quot;, so the table may not exist yet. The plan needs a rollback, such as a rebuild per `ds` or time travel.
+4. **The columns don&apos;t match.** The model SQL returns `ds, subscriber_id, amount`, but the Access section lists `email`, `full_name` and `date_of_birth`. Nothing defines what a &quot;segment&quot; is.
+
+**Should-fix**
+- The plan doesn&apos;t name the consumer, the decision it feeds, or the cost of being wrong, late or down.
+- `SUM(amount)` double counts if a file is re-sent. Dedupe on `updated_at` first.
+- `MERGE` never deletes rows that left the source, and the plan has no backfill path. Use a partition overwrite instead.
+- The target table has no partitioning, clustering or `require_partition_filter`. The `MERGE` also scans the whole target because `ON` has no `d.ds` filter.
+- There are no tests, and nothing to check the 07:00 UTC freshness SLA against.
+- Late-arriving rows aren&apos;t handled.
+- Downstream models and dashboards aren&apos;t listed.
+
+**Nit:** a `dim_` name on a `ds` snapshot table is misleading.
+
+No existing model or contract already covers this, so there was no premise blocker. I found no dbt project or `contracts/` files in the repo. Resolve the blockers in the plan, then I can re-review. I&apos;d start with the access and PII decision, since it changes the column list and the contract.</pre>
+</div>
+</details></div>
+</div>
+</section><section class="arm">
+<div class="arm-head">
+<span class="arm-label">Baseline (no plugin)</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">0% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">2 turns · $0.04 · 08:16:43 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and wouldn&apos;t build it yet. The first two issues are blockers.
+
+**Blockers**
+
+1. **Access exposes PII publicly.** `plan.md:44-45` gives `allUsers` read access in `public_marketing`. The column list includes `email`, `full_name` and `date_of_birth`. `allUsers` means anyone on the internet, not everyone in the company. It also contradicts `classification: internal` (line 56). Restrict readers to a specific group, move the table to a non-public dataset, and drop or hash the PII columns unless there&apos;s a stated need for them.
+2. **The columns don&apos;t match the source or the model.** `raw_crm.subscribers` has no `email`, `full_name` or `date_of_birth` columns (line 14). The model SQL (lines 26-29) only produces `ds`, `subscriber_id` and `amount`. Either the source DDL is incomplete or the access section is wrong. The plan also doesn&apos;t say where the PII would come from.
+3. **The rollout is destructive and fragile (lines 49-51).**
+   - `DROP TABLE` runs before the replacement exists, so readers see an outage if the `CREATE` fails.
+   - On a first build, the drop fails because the table doesn&apos;t exist.
+   - The `CREATE ... AS SELECT ...` is elided, so partitioning and clustering are unspecified.
+   - &quot;Check row counts&quot; has no baseline or threshold.
+   - Use `CREATE OR REPLACE`, or build the table, validate it, then swap. Define the target DDL explicitly.
+
+**Correctness and cost**
+
+4. **Re-delivered exports will double-count.** The source is &quot;one file per run&quot; and has `updated_at`, but the model ignores it and just does `SUM(amount)`. A re-delivered or corrected file for the same `ds` would inflate amounts. Dedupe to the latest row per record using `updated_at` before aggregating. Also state what &quot;amount&quot; means and how NULLs should be handled.
+5. **The MERGE target is unpartitioned and unfiltered (lines 35-37).** The join doesn&apos;t prune `d` by `ds`, so each run scans the whole target. Partition `dim_newsletter_segments` by `ds` and add a `d.ds = @ds` predicate. The source side is fine: it filters on `ds`, which satisfies `require_partition_filter`.
+6. **Nothing is said about late data or backfills.** Delivery time isn&apos;t tied to the 07:00 UTC SLA. There are no tests for uniqueness on (`ds`, `subscriber_id`), non-null keys, or row-count drift.
+
+**Minor**
+
+- The table is named &quot;segments&quot;, but nothing in the model defines a segment.
+- The owner is a group alias. Name an on-call or team for questions.
+
+Once you&apos;ve settled the access and column questions (1-2), I can draft a revised plan. It would cover the DDL, a deduped model, a partition-pruned MERGE, and a safe rollout.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and wouldn&apos;t build it yet. The first two issues are blockers.
+
+**Blockers**
+
+1. **Access exposes PII publicly.** `plan.md:44-45` gives `allUsers` read access in `public_marketing`. The column list includes `email`, `full_name` and `date_of_birth`. `allUsers` means anyone on the internet, not everyone in the company. It also contradicts `classification: internal` (line 56). Restrict readers to a specific group, move the table to a non-public dataset, and drop or hash the PII columns unless there&apos;s a stated need for them.
+2. **The columns don&apos;t match the source or the model.** `raw_crm.subscribers` has no `email`, `full_name` or `date_of_birth` columns (line 14). The model SQL (lines 26-29) only produces `ds`, `subscriber_id` and `amount`. Either the source DDL is incomplete or the access section is wrong. The plan also doesn&apos;t say where the PII would come from.
+3. **The rollout is destructive and fragile (lines 49-51).**
+   - `DROP TABLE` runs before the replacement exists, so readers see an outage if the `CREATE` fails.
+   - On a first build, the drop fails because the table doesn&apos;t exist.
+   - The `CREATE ... AS SELECT ...` is elided, so partitioning and clustering are unspecified.
+   - &quot;Check row counts&quot; has no baseline or threshold.
+   - Use `CREATE OR REPLACE`, or build the table, validate it, then swap. Define the target DDL explicitly.
+
+**Correctness and cost**
+
+4. **Re-delivered exports will double-count.** The source is &quot;one file per run&quot; and has `updated_at`, but the model ignores it and just does `SUM(amount)`. A re-delivered or corrected file for the same `ds` would inflate amounts. Dedupe to the latest row per record using `updated_at` before aggregating. Also state what &quot;amount&quot; means and how NULLs should be handled.
+5. **The MERGE target is unpartitioned and unfiltered (lines 35-37).** The join doesn&apos;t prune `d` by `ds`, so each run scans the whole target. Partition `dim_newsletter_segments` by `ds` and add a `d.ds = @ds` predicate. The source side is fine: it filters on `ds`, which satisfies `require_partition_filter`.
+6. **Nothing is said about late data or backfills.** Delivery time isn&apos;t tied to the 07:00 UTC SLA. There are no tests for uniqueness on (`ds`, `subscriber_id`), non-null keys, or row-count drift.
+
+**Minor**
+
+- The table is named &quot;segments&quot;, but nothing in the model defines a segment.
+- The owner is a group alias. Name an on-call or team for questions.
+
+Once you&apos;ve settled the access and column questions (1-2), I can draft a revised plan. It would cover the DDL, a deduped model, a partition-pruned MERGE, and a safe rollout.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">3-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I reviewed the plan and wouldn&apos;t build it yet. The first two issues are blockers.
+
+**Blockers**
+
+1. **Access exposes PII publicly.** `plan.md:44-45` gives `allUsers` read access in `public_marketing`. The column list includes `email`, `full_name` and `date_of_birth`. `allUsers` means anyone on the internet, not everyone in the company. It also contradicts `classification: internal` (line 56). Restrict readers to a specific group, move the table to a non-public dataset, and drop or hash the PII columns unless there&apos;s a stated need for them.
+2. **The columns don&apos;t match the source or the model.** `raw_crm.subscribers` has no `email`, `full_name` or `date_of_birth` columns (line 14). The model SQL (lines 26-29) only produces `ds`, `subscriber_id` and `amount`. Either the source DDL is incomplete or the access section is wrong. The plan also doesn&apos;t say where the PII would come from.
+3. **The rollout is destructive and fragile (lines 49-51).**
+   - `DROP TABLE` runs before the replacement exists, so readers see an outage if the `CREATE` fails.
+   - On a first build, the drop fails because the table doesn&apos;t exist.
+   - The `CREATE ... AS SELECT ...` is elided, so partitioning and clustering are unspecified.
+   - &quot;Check row counts&quot; has no baseline or threshold.
+   - Use `CREATE OR REPLACE`, or build the table, validate it, then swap. Define the target DDL explicitly.
+
+**Correctness and cost**
+
+4. **Re-delivered exports will double-count.** The source is &quot;one file per run&quot; and has `updated_at`, but the model ignores it and just does `SUM(amount)`. A re-delivered or corrected file for the same `ds` would inflate amounts. Dedupe to the latest row per record using `updated_at` before aggregating. Also state what &quot;amount&quot; means and how NULLs should be handled.
+5. **The MERGE target is unpartitioned and unfiltered (lines 35-37).** The join doesn&apos;t prune `d` by `ds`, so each run scans the whole target. Partition `dim_newsletter_segments` by `ds` and add a `d.ds = @ds` predicate. The source side is fine: it filters on `ds`, which satisfies `require_partition_filter`.
+6. **Nothing is said about late data or backfills.** Delivery time isn&apos;t tied to the 07:00 UTC SLA. There are no tests for uniqueness on (`ds`, `subscriber_id`), non-null keys, or row-count drift.
+
+**Minor**
+
+- The table is named &quot;segments&quot;, but nothing in the model defines a segment.
+- The owner is a group alias. Name an on-call or team for questions.
+
+Once you&apos;ve settled the access and column questions (1-2), I can draft a revised plan. It would cover the DDL, a deduped model, a partition-pruned MERGE, and a safe rollout.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">2 turns · $0.04 · 08:17:13 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan. It shouldn&apos;t be built as written, mainly because of the first two items below.
+
+**Blockers**
+
+1. **Public exposure of PII.** The Access section grants `allUsers` read on `public_marketing`. The columns include `email`, `full_name` and `date_of_birth`. That makes the PII readable by anyone, and it contradicts `classification: internal` in the Contract. Restrict readers to a named group. Consider dropping `date_of_birth`, or moving the PII columns into a restricted table or view.
+2. **Rollout runs `DROP TABLE` first.** `DROP TABLE` followed by `CREATE TABLE ... AS SELECT ...` leaves no table if the create fails. Existing readers break in between, and there is no backup or rollback. The `SELECT ...` is also left unspecified. Build into a new table, validate it, then swap. Alternatively use `CREATE OR REPLACE TABLE`. Step 3, &quot;check row counts&quot;, has nothing to compare against. Name the check, for example the count against distinct `subscriber_id` for the `ds`.
+
+**Correctness**
+
+3. **The columns don&apos;t match.** The source schema has no `email`, `full_name` or `date_of_birth`. The Model query doesn&apos;t select them either. The plan never says where those columns come from or how they&apos;re joined.
+4. **Possible double counting.** The source is &quot;one file per run&quot;, and the source table carries `updated_at`. If a re-delivered export or a corrected row is loaded again, `SUM(amount)` counts it twice. Either deduplicate to the latest `updated_at` per key, or state that the export is guaranteed to be unique.
+5. **The MERGE never removes rows.** A subscriber who disappears from a re-run `ds` keeps their stale row, because the MERGE has no `WHEN NOT MATCHED BY SOURCE`. The destination table also has no DDL. It needs `PARTITION BY ds` (and probably clustering on `subscriber_id`), or each MERGE scans the whole target.
+
+**Gaps**
+
+6. **No schedule or dependency.** The `freshness_sla` is 07:00 UTC, but nothing says when the CRM export lands or what triggers the job. The plan also doesn&apos;t cover backfill or late data.
+7. **Naming.** The table is called &quot;segments&quot;, but it has no segment column. It&apos;s just a per-subscriber amount. The table name is also unqualified, while Access names the `public_marketing` dataset.
+
+**Source query:** the `ds` filter satisfies `require_partition_filter`, so the 300 GB scan is limited to one partition.
+
+I can revise the plan to address these. Items 1 and 3 need your decision first: who should have access, and where the PII columns come from.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan. It shouldn&apos;t be built as written, mainly because of the first two items below.
+
+**Blockers**
+
+1. **Public exposure of PII.** The Access section grants `allUsers` read on `public_marketing`. The columns include `email`, `full_name` and `date_of_birth`. That makes the PII readable by anyone, and it contradicts `classification: internal` in the Contract. Restrict readers to a named group. Consider dropping `date_of_birth`, or moving the PII columns into a restricted table or view.
+2. **Rollout runs `DROP TABLE` first.** `DROP TABLE` followed by `CREATE TABLE ... AS SELECT ...` leaves no table if the create fails. Existing readers break in between, and there is no backup or rollback. The `SELECT ...` is also left unspecified. Build into a new table, validate it, then swap. Alternatively use `CREATE OR REPLACE TABLE`. Step 3, &quot;check row counts&quot;, has nothing to compare against. Name the check, for example the count against distinct `subscriber_id` for the `ds`.
+
+**Correctness**
+
+3. **The columns don&apos;t match.** The source schema has no `email`, `full_name` or `date_of_birth`. The Model query doesn&apos;t select them either. The plan never says where those columns come from or how they&apos;re joined.
+4. **Possible double counting.** The source is &quot;one file per run&quot;, and the source table carries `updated_at`. If a re-delivered export or a corrected row is loaded again, `SUM(amount)` counts it twice. Either deduplicate to the latest `updated_at` per key, or state that the export is guaranteed to be unique.
+5. **The MERGE never removes rows.** A subscriber who disappears from a re-run `ds` keeps their stale row, because the MERGE has no `WHEN NOT MATCHED BY SOURCE`. The destination table also has no DDL. It needs `PARTITION BY ds` (and probably clustering on `subscriber_id`), or each MERGE scans the whole target.
+
+**Gaps**
+
+6. **No schedule or dependency.** The `freshness_sla` is 07:00 UTC, but nothing says when the CRM export lands or what triggers the job. The plan also doesn&apos;t cover backfill or late data.
+7. **Naming.** The table is called &quot;segments&quot;, but it has no segment column. It&apos;s just a per-subscriber amount. The table name is also unqualified, while Access names the `public_marketing` dataset.
+
+**Source query:** the `ds` filter satisfies `require_partition_filter`, so the 300 GB scan is limited to one partition.
+
+I can revise the plan to address these. Items 1 and 3 need your decision first: who should have access, and where the PII columns come from.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">3-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan. It shouldn&apos;t be built as written, mainly because of the first two items below.
+
+**Blockers**
+
+1. **Public exposure of PII.** The Access section grants `allUsers` read on `public_marketing`. The columns include `email`, `full_name` and `date_of_birth`. That makes the PII readable by anyone, and it contradicts `classification: internal` in the Contract. Restrict readers to a named group. Consider dropping `date_of_birth`, or moving the PII columns into a restricted table or view.
+2. **Rollout runs `DROP TABLE` first.** `DROP TABLE` followed by `CREATE TABLE ... AS SELECT ...` leaves no table if the create fails. Existing readers break in between, and there is no backup or rollback. The `SELECT ...` is also left unspecified. Build into a new table, validate it, then swap. Alternatively use `CREATE OR REPLACE TABLE`. Step 3, &quot;check row counts&quot;, has nothing to compare against. Name the check, for example the count against distinct `subscriber_id` for the `ds`.
+
+**Correctness**
+
+3. **The columns don&apos;t match.** The source schema has no `email`, `full_name` or `date_of_birth`. The Model query doesn&apos;t select them either. The plan never says where those columns come from or how they&apos;re joined.
+4. **Possible double counting.** The source is &quot;one file per run&quot;, and the source table carries `updated_at`. If a re-delivered export or a corrected row is loaded again, `SUM(amount)` counts it twice. Either deduplicate to the latest `updated_at` per key, or state that the export is guaranteed to be unique.
+5. **The MERGE never removes rows.** A subscriber who disappears from a re-run `ds` keeps their stale row, because the MERGE has no `WHEN NOT MATCHED BY SOURCE`. The destination table also has no DDL. It needs `PARTITION BY ds` (and probably clustering on `subscriber_id`), or each MERGE scans the whole target.
+
+**Gaps**
+
+6. **No schedule or dependency.** The `freshness_sla` is 07:00 UTC, but nothing says when the CRM export lands or what triggers the job. The plan also doesn&apos;t cover backfill or late data.
+7. **Naming.** The table is called &quot;segments&quot;, but it has no segment column. It&apos;s just a per-subscriber amount. The table name is also unqualified, while Access names the `public_marketing` dataset.
+
+**Source query:** the `ds` filter satisfies `require_partition_filter`, so the 300 GB scan is limited to one partition.
+
+I can revise the plan to address these. Items 1 and 3 need your decision first: who should have access, and where the PII columns come from.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">2 turns · $0.04 · 08:17:38 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan and wouldn&apos;t build it yet. The first three problems are blockers.
+
+**Blockers**
+
+1. **PII is exposed to everyone.** The Access section (`plan.md:44-45`) gives `allUsers` read access on `public_marketing` to `email`, `full_name` and `date_of_birth`. The contract at `plan.md:56` says `classification: internal`, so the two contradict each other. I&apos;d drop the three PII columns, or put them in a restricted dataset with column-level policy tags. Readers should be a named group, not `allUsers`.
+2. **The table has no segment.** Nothing in the model assigns a segment, so the output is just per-subscriber `amount` by day. The plan needs a segment definition, or the table needs a different name.
+3. **The columns don&apos;t match.** The Access section lists `email`, `full_name` and `date_of_birth`. These aren&apos;t in `raw_crm.subscribers` (`plan.md:14`), and the model SQL doesn&apos;t select them. The plan doesn&apos;t say where they come from.
+4. **The rollout destroys data.** Step 1 is `DROP TABLE` (`plan.md:49`) with no backup, snapshot or rollback. Step 2 is an elided `SELECT ...`. Step 3 checks row counts with nothing to compare them to. Use `CREATE OR REPLACE` or build a new table and swap it in. Take a snapshot first if the table already exists.
+
+**Correctness**
+
+- **Re-delivered files double-count.** The source is &quot;one file per run&quot;, and `updated_at` is never used. If a file is re-delivered for the same `ds`, `SUM(amount)` doubles. Dedupe first, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY subscriber_id ORDER BY updated_at DESC) = 1`. Then decide whether `amount` should be a sum or the latest value.
+- **The MERGE isn&apos;t pruned.** `ON d.ds = n.ds` doesn&apos;t tell BigQuery it can prune the target partitions. The plan also never says `dim_newsletter_segments` is partitioned by `ds`. Declare `PARTITION BY ds CLUSTER BY subscriber_id` on the target. Add a literal or parameter filter on the target partition, such as `d.ds = @ds`, in the `ON` clause.
+- **Subscribers who disappear never get removed.** The MERGE has no `WHEN NOT MATCHED BY SOURCE` branch. That is fine if each `ds` is append-only, but the plan should say so.
+- **The `dim_` name doesn&apos;t fit the grain.** One row per subscriber per `ds` is a snapshot or fact table, not a dimension.
+
+**Gaps**
+
+- The 07:00 UTC freshness SLA has no schedule, alerting or upstream dependency on the CRM export arriving.
+- There are no tests, such as uniqueness on `(ds, subscriber_id)`, not-null on keys, or a check that `amount` isn&apos;t negative.
+- There&apos;s no backfill plan. `require_partition_filter` means a backfill has to go partition by partition.
+- `SELECT *` in the Source section (`plan.md:18`) reads all columns. Select only what&apos;s needed.
+- The plan has no `Date` or `Status` update. It has been in draft since 2026-10-12.
+
+Fix the PII access, the segment definition and the column mismatch before anything else. I can draft a revised plan with those changes if you want.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan and wouldn&apos;t build it yet. The first three problems are blockers.
+
+**Blockers**
+
+1. **PII is exposed to everyone.** The Access section (`plan.md:44-45`) gives `allUsers` read access on `public_marketing` to `email`, `full_name` and `date_of_birth`. The contract at `plan.md:56` says `classification: internal`, so the two contradict each other. I&apos;d drop the three PII columns, or put them in a restricted dataset with column-level policy tags. Readers should be a named group, not `allUsers`.
+2. **The table has no segment.** Nothing in the model assigns a segment, so the output is just per-subscriber `amount` by day. The plan needs a segment definition, or the table needs a different name.
+3. **The columns don&apos;t match.** The Access section lists `email`, `full_name` and `date_of_birth`. These aren&apos;t in `raw_crm.subscribers` (`plan.md:14`), and the model SQL doesn&apos;t select them. The plan doesn&apos;t say where they come from.
+4. **The rollout destroys data.** Step 1 is `DROP TABLE` (`plan.md:49`) with no backup, snapshot or rollback. Step 2 is an elided `SELECT ...`. Step 3 checks row counts with nothing to compare them to. Use `CREATE OR REPLACE` or build a new table and swap it in. Take a snapshot first if the table already exists.
+
+**Correctness**
+
+- **Re-delivered files double-count.** The source is &quot;one file per run&quot;, and `updated_at` is never used. If a file is re-delivered for the same `ds`, `SUM(amount)` doubles. Dedupe first, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY subscriber_id ORDER BY updated_at DESC) = 1`. Then decide whether `amount` should be a sum or the latest value.
+- **The MERGE isn&apos;t pruned.** `ON d.ds = n.ds` doesn&apos;t tell BigQuery it can prune the target partitions. The plan also never says `dim_newsletter_segments` is partitioned by `ds`. Declare `PARTITION BY ds CLUSTER BY subscriber_id` on the target. Add a literal or parameter filter on the target partition, such as `d.ds = @ds`, in the `ON` clause.
+- **Subscribers who disappear never get removed.** The MERGE has no `WHEN NOT MATCHED BY SOURCE` branch. That is fine if each `ds` is append-only, but the plan should say so.
+- **The `dim_` name doesn&apos;t fit the grain.** One row per subscriber per `ds` is a snapshot or fact table, not a dimension.
+
+**Gaps**
+
+- The 07:00 UTC freshness SLA has no schedule, alerting or upstream dependency on the CRM export arriving.
+- There are no tests, such as uniqueness on `(ds, subscriber_id)`, not-null on keys, or a check that `amount` isn&apos;t negative.
+- There&apos;s no backfill plan. `require_partition_filter` means a backfill has to go partition by partition.
+- `SELECT *` in the Source section (`plan.md:18`) reads all columns. Select only what&apos;s needed.
+- The plan has no `Date` or `Status` update. It has been in draft since 2026-10-12.
+
+Fix the PII access, the segment definition and the column mismatch before anything else. I can draft a revised plan with those changes if you want.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">3-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I read the plan and wouldn&apos;t build it yet. The first three problems are blockers.
+
+**Blockers**
+
+1. **PII is exposed to everyone.** The Access section (`plan.md:44-45`) gives `allUsers` read access on `public_marketing` to `email`, `full_name` and `date_of_birth`. The contract at `plan.md:56` says `classification: internal`, so the two contradict each other. I&apos;d drop the three PII columns, or put them in a restricted dataset with column-level policy tags. Readers should be a named group, not `allUsers`.
+2. **The table has no segment.** Nothing in the model assigns a segment, so the output is just per-subscriber `amount` by day. The plan needs a segment definition, or the table needs a different name.
+3. **The columns don&apos;t match.** The Access section lists `email`, `full_name` and `date_of_birth`. These aren&apos;t in `raw_crm.subscribers` (`plan.md:14`), and the model SQL doesn&apos;t select them. The plan doesn&apos;t say where they come from.
+4. **The rollout destroys data.** Step 1 is `DROP TABLE` (`plan.md:49`) with no backup, snapshot or rollback. Step 2 is an elided `SELECT ...`. Step 3 checks row counts with nothing to compare them to. Use `CREATE OR REPLACE` or build a new table and swap it in. Take a snapshot first if the table already exists.
+
+**Correctness**
+
+- **Re-delivered files double-count.** The source is &quot;one file per run&quot;, and `updated_at` is never used. If a file is re-delivered for the same `ds`, `SUM(amount)` doubles. Dedupe first, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY subscriber_id ORDER BY updated_at DESC) = 1`. Then decide whether `amount` should be a sum or the latest value.
+- **The MERGE isn&apos;t pruned.** `ON d.ds = n.ds` doesn&apos;t tell BigQuery it can prune the target partitions. The plan also never says `dim_newsletter_segments` is partitioned by `ds`. Declare `PARTITION BY ds CLUSTER BY subscriber_id` on the target. Add a literal or parameter filter on the target partition, such as `d.ds = @ds`, in the `ON` clause.
+- **Subscribers who disappear never get removed.** The MERGE has no `WHEN NOT MATCHED BY SOURCE` branch. That is fine if each `ds` is append-only, but the plan should say so.
+- **The `dim_` name doesn&apos;t fit the grain.** One row per subscriber per `ds` is a snapshot or fact table, not a dimension.
+
+**Gaps**
+
+- The 07:00 UTC freshness SLA has no schedule, alerting or upstream dependency on the CRM export arriving.
+- There are no tests, such as uniqueness on `(ds, subscriber_id)`, not-null on keys, or a check that `amount` isn&apos;t negative.
+- There&apos;s no backfill plan. `require_partition_filter` means a backfill has to go partition by partition.
+- `SELECT *` in the Source section (`plan.md:18`) reads all columns. Select only what&apos;s needed.
+- The plan has no `Date` or `Status` update. It has been in draft since 2026-10-12.
+
+Fix the PII access, the segment definition and the column mismatch before anything else. I can draft a revised plan with those changes if you want.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 4</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">2 turns · $0.04 · 08:18:03 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. Two problems block it: the access settings expose PII publicly, and the rollout drops the table before replacing it.
+
+**Blockers**
+
+1. **Public access to PII (Access section).**
+   - `Readers: allUsers` on `public_marketing` makes the table readable by anyone on the internet.
+   - The column list includes `email`, `full_name` and `date_of_birth`.
+   - This also contradicts the contract&apos;s `classification: internal`.
+   - Restrict readers to a specific group, drop or hash the PII columns, and set the classification to match what the table holds.
+2. **The column list doesn&apos;t match the model.**
+   - Access lists `email`, `full_name` and `date_of_birth`.
+   - The source schema has none of them, and the model query only produces `ds`, `subscriber_id` and `amount`.
+   - Either the source or the model is incomplete, or the access list is wrong.
+3. **Destructive rollout.**
+   - Step 1 runs `DROP TABLE` before the replacement exists. If the `CREATE` fails, the table is gone, and nothing is backed up.
+   - Build into a new table and swap it in, or use `CREATE OR REPLACE`.
+   - Step 2 is `SELECT ...`, which isn&apos;t a real query.
+   - The source has `require_partition_filter = TRUE`, so a backfill needs an explicit `ds` range. The plan doesn&apos;t give one or estimate the cost on roughly 300 GB.
+
+**Correctness**
+
+4. **`SUM(amount)` may double-count.**
+   - The source has `updated_at`, and the export delivers one file per run.
+   - A re-delivered file or a corrected row would be summed twice.
+   - Decide whether amounts are additive. If they aren&apos;t, dedupe on the latest `updated_at` per key.
+5. **No segment in the table.** The goal is a &quot;segments&quot; table, but nothing in the model assigns a segment. The grain is just subscriber per day with an amount.
+6. **MERGE target isn&apos;t pruned.**
+   - The `ON` clause joins `d.ds = n.ds` against a parameter-derived value, so BigQuery may scan the whole target.
+   - Partition `dim_newsletter_segments` by `ds` and add an explicit `d.ds = @ds` predicate.
+   - Alternatively, overwrite the partition instead of merging.
+   - Also decide what happens to subscribers who disappear from a day&apos;s file. There&apos;s no `WHEN NOT MATCHED BY SOURCE`.
+7. **Weak validation.** &quot;Check row counts&quot; would pass on duplicated or wrong data. Also compare distinct `subscriber_id` and `SUM(amount)` against the source for a sample of days.
+
+**Contract gaps**
+
+- The 07:00 UTC freshness SLA has no stated source delivery time, so it can&apos;t be checked.
+- There&apos;s no schema, no PII flag, and no retention period.
+- The plan is a month old (dated 2026-10-12) and still marked &quot;draft&quot;.
+
+I&apos;d fix items 1–3 first. Items 4 and 5 need an answer from you or the data team. Do you want me to revise the plan with these changes?</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. Two problems block it: the access settings expose PII publicly, and the rollout drops the table before replacing it.
+
+**Blockers**
+
+1. **Public access to PII (Access section).**
+   - `Readers: allUsers` on `public_marketing` makes the table readable by anyone on the internet.
+   - The column list includes `email`, `full_name` and `date_of_birth`.
+   - This also contradicts the contract&apos;s `classification: internal`.
+   - Restrict readers to a specific group, drop or hash the PII columns, and set the classification to match what the table holds.
+2. **The column list doesn&apos;t match the model.**
+   - Access lists `email`, `full_name` and `date_of_birth`.
+   - The source schema has none of them, and the model query only produces `ds`, `subscriber_id` and `amount`.
+   - Either the source or the model is incomplete, or the access list is wrong.
+3. **Destructive rollout.**
+   - Step 1 runs `DROP TABLE` before the replacement exists. If the `CREATE` fails, the table is gone, and nothing is backed up.
+   - Build into a new table and swap it in, or use `CREATE OR REPLACE`.
+   - Step 2 is `SELECT ...`, which isn&apos;t a real query.
+   - The source has `require_partition_filter = TRUE`, so a backfill needs an explicit `ds` range. The plan doesn&apos;t give one or estimate the cost on roughly 300 GB.
+
+**Correctness**
+
+4. **`SUM(amount)` may double-count.**
+   - The source has `updated_at`, and the export delivers one file per run.
+   - A re-delivered file or a corrected row would be summed twice.
+   - Decide whether amounts are additive. If they aren&apos;t, dedupe on the latest `updated_at` per key.
+5. **No segment in the table.** The goal is a &quot;segments&quot; table, but nothing in the model assigns a segment. The grain is just subscriber per day with an amount.
+6. **MERGE target isn&apos;t pruned.**
+   - The `ON` clause joins `d.ds = n.ds` against a parameter-derived value, so BigQuery may scan the whole target.
+   - Partition `dim_newsletter_segments` by `ds` and add an explicit `d.ds = @ds` predicate.
+   - Alternatively, overwrite the partition instead of merging.
+   - Also decide what happens to subscribers who disappear from a day&apos;s file. There&apos;s no `WHEN NOT MATCHED BY SOURCE`.
+7. **Weak validation.** &quot;Check row counts&quot; would pass on duplicated or wrong data. Also compare distinct `subscriber_id` and `SUM(amount)` against the source for a sample of days.
+
+**Contract gaps**
+
+- The 07:00 UTC freshness SLA has no stated source delivery time, so it can&apos;t be checked.
+- There&apos;s no schema, no PII flag, and no retention period.
+- The plan is a month old (dated 2026-10-12) and still marked &quot;draft&quot;.
+
+I&apos;d fix items 1–3 first. Items 4 and 5 need an answer from you or the data team. Do you want me to revise the plan with these changes?</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">3-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The plan isn&apos;t ready to build. Two problems block it: the access settings expose PII publicly, and the rollout drops the table before replacing it.
+
+**Blockers**
+
+1. **Public access to PII (Access section).**
+   - `Readers: allUsers` on `public_marketing` makes the table readable by anyone on the internet.
+   - The column list includes `email`, `full_name` and `date_of_birth`.
+   - This also contradicts the contract&apos;s `classification: internal`.
+   - Restrict readers to a specific group, drop or hash the PII columns, and set the classification to match what the table holds.
+2. **The column list doesn&apos;t match the model.**
+   - Access lists `email`, `full_name` and `date_of_birth`.
+   - The source schema has none of them, and the model query only produces `ds`, `subscriber_id` and `amount`.
+   - Either the source or the model is incomplete, or the access list is wrong.
+3. **Destructive rollout.**
+   - Step 1 runs `DROP TABLE` before the replacement exists. If the `CREATE` fails, the table is gone, and nothing is backed up.
+   - Build into a new table and swap it in, or use `CREATE OR REPLACE`.
+   - Step 2 is `SELECT ...`, which isn&apos;t a real query.
+   - The source has `require_partition_filter = TRUE`, so a backfill needs an explicit `ds` range. The plan doesn&apos;t give one or estimate the cost on roughly 300 GB.
+
+**Correctness**
+
+4. **`SUM(amount)` may double-count.**
+   - The source has `updated_at`, and the export delivers one file per run.
+   - A re-delivered file or a corrected row would be summed twice.
+   - Decide whether amounts are additive. If they aren&apos;t, dedupe on the latest `updated_at` per key.
+5. **No segment in the table.** The goal is a &quot;segments&quot; table, but nothing in the model assigns a segment. The grain is just subscriber per day with an amount.
+6. **MERGE target isn&apos;t pruned.**
+   - The `ON` clause joins `d.ds = n.ds` against a parameter-derived value, so BigQuery may scan the whole target.
+   - Partition `dim_newsletter_segments` by `ds` and add an explicit `d.ds = @ds` predicate.
+   - Alternatively, overwrite the partition instead of merging.
+   - Also decide what happens to subscribers who disappear from a day&apos;s file. There&apos;s no `WHEN NOT MATCHED BY SOURCE`.
+7. **Weak validation.** &quot;Check row counts&quot; would pass on duplicated or wrong data. Also compare distinct `subscriber_id` and `SUM(amount)` against the source for a sample of days.
+
+**Contract gaps**
+
+- The 07:00 UTC freshness SLA has no stated source delivery time, so it can&apos;t be checked.
+- There&apos;s no schema, no PII flag, and no retention period.
+- The plan is a month old (dated 2026-10-12) and still marked &quot;draft&quot;.
+
+I&apos;d fix items 1–3 first. Items 4 and 5 need an answer from you or the data team. Do you want me to revise the plan with these changes?</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 5</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">2 turns · $0.04 · 08:18:27 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">1-pii</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I&apos;ve reviewed the plan. I&apos;d fix the first two items below before building, and the rest are worth resolving first.
+
+**Blockers**
+
+1. **Public exposure of PII (Access).** `allUsers` makes the dataset readable by anyone on the internet. The column list includes `email`, `full_name` and `date_of_birth`. The contract also says `classification: internal`, so the access, columns and classification contradict each other. I&apos;d restrict readers to a specific group, drop or hash the PII columns, and reclassify the table as confidential or restricted if PII stays.
+2. **Destructive rollout.** `DROP TABLE` followed by `CREATE TABLE ... AS SELECT ...` has no backup and no rollback, and the table is unavailable between the two steps. The `SELECT` is also elided. The model is `WHERE ds = @ds`, so a rebuild would keep only one day and lose all history. I&apos;d create the table first, backfill by partition (or swap in a new table), and validate before cutover. &quot;Check row counts&quot; also needs a baseline to compare against.
+
+**Correctness**
+
+3. **The model can&apos;t produce the documented columns.** The source has only `ds, updated_at, subscriber_id, amount`. `email`, `full_name` and `date_of_birth` don&apos;t exist upstream, and the model doesn&apos;t select them. Either the source is missing a join (for example a profile table) or the Access column list is wrong.
+4. **Double-counting risk.** The source is &quot;one file per run&quot;, and `updated_at` is never used. If reruns, late files or corrections land more rows for the same `(ds, subscriber_id)`, `SUM(amount)` inflates the result. Decide whether rows are additive or versioned. If they&apos;re versioned, dedupe on the latest `updated_at` before aggregating.
+5. **No segment in a segments table.** Nothing in the model defines or assigns a segment. As written, this is a per-subscriber daily amount table, so either the logic is missing or the name is wrong.
+
+**Performance and operations**
+
+6. **Target table DDL is missing.** I&apos;d partition it by `ds` and cluster it by `subscriber_id`. The `MERGE` also needs a `d.ds = @ds` predicate in the `ON` clause. Without it, every run scans the whole target.
+7. **Source cost.** The source is about 300 GB. Partition pruning on `ds = @ds` keeps scans small, which is good. The plan&apos;s `SELECT *` sample query is wasteful, though, so select only the columns you need.
+8. **SLA has no mechanism.** There&apos;s a 07:00 UTC freshness SLA but no schedule, upstream-arrival dependency, alerting, or tests (uniqueness on `(ds, subscriber_id)`, non-null keys).
+9. **Contract gaps.** I&apos;d add the schema, retention and a PII-handling note.
+
+If you want, I can draft a revised plan with these fixed. I&apos;d need your answers on items 3–5, since those depend on the business intent.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">2-rollback</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I&apos;ve reviewed the plan. I&apos;d fix the first two items below before building, and the rest are worth resolving first.
+
+**Blockers**
+
+1. **Public exposure of PII (Access).** `allUsers` makes the dataset readable by anyone on the internet. The column list includes `email`, `full_name` and `date_of_birth`. The contract also says `classification: internal`, so the access, columns and classification contradict each other. I&apos;d restrict readers to a specific group, drop or hash the PII columns, and reclassify the table as confidential or restricted if PII stays.
+2. **Destructive rollout.** `DROP TABLE` followed by `CREATE TABLE ... AS SELECT ...` has no backup and no rollback, and the table is unavailable between the two steps. The `SELECT` is also elided. The model is `WHERE ds = @ds`, so a rebuild would keep only one day and lose all history. I&apos;d create the table first, backfill by partition (or swap in a new table), and validate before cutover. &quot;Check row counts&quot; also needs a baseline to compare against.
+
+**Correctness**
+
+3. **The model can&apos;t produce the documented columns.** The source has only `ds, updated_at, subscriber_id, amount`. `email`, `full_name` and `date_of_birth` don&apos;t exist upstream, and the model doesn&apos;t select them. Either the source is missing a join (for example a profile table) or the Access column list is wrong.
+4. **Double-counting risk.** The source is &quot;one file per run&quot;, and `updated_at` is never used. If reruns, late files or corrections land more rows for the same `(ds, subscriber_id)`, `SUM(amount)` inflates the result. Decide whether rows are additive or versioned. If they&apos;re versioned, dedupe on the latest `updated_at` before aggregating.
+5. **No segment in a segments table.** Nothing in the model defines or assigns a segment. As written, this is a per-subscriber daily amount table, so either the logic is missing or the name is wrong.
+
+**Performance and operations**
+
+6. **Target table DDL is missing.** I&apos;d partition it by `ds` and cluster it by `subscriber_id`. The `MERGE` also needs a `d.ds = @ds` predicate in the `ON` clause. Without it, every run scans the whole target.
+7. **Source cost.** The source is about 300 GB. Partition pruning on `ds = @ds` keeps scans small, which is good. The plan&apos;s `SELECT *` sample query is wasteful, though, so select only the columns you need.
+8. **SLA has no mechanism.** There&apos;s a 07:00 UTC freshness SLA but no schedule, upstream-arrival dependency, alerting, or tests (uniqueness on `(ds, subscriber_id)`, non-null keys).
+9. **Contract gaps.** I&apos;d add the schema, retention and a PII-handling note.
+
+If you want, I can draft a revised plan with these fixed. I&apos;d need your answers on items 3–5, since those depend on the business intent.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">3-contract</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I&apos;ve reviewed the plan. I&apos;d fix the first two items below before building, and the rest are worth resolving first.
+
+**Blockers**
+
+1. **Public exposure of PII (Access).** `allUsers` makes the dataset readable by anyone on the internet. The column list includes `email`, `full_name` and `date_of_birth`. The contract also says `classification: internal`, so the access, columns and classification contradict each other. I&apos;d restrict readers to a specific group, drop or hash the PII columns, and reclassify the table as confidential or restricted if PII stays.
+2. **Destructive rollout.** `DROP TABLE` followed by `CREATE TABLE ... AS SELECT ...` has no backup and no rollback, and the table is unavailable between the two steps. The `SELECT` is also elided. The model is `WHERE ds = @ds`, so a rebuild would keep only one day and lose all history. I&apos;d create the table first, backfill by partition (or swap in a new table), and validate before cutover. &quot;Check row counts&quot; also needs a baseline to compare against.
+
+**Correctness**
+
+3. **The model can&apos;t produce the documented columns.** The source has only `ds, updated_at, subscriber_id, amount`. `email`, `full_name` and `date_of_birth` don&apos;t exist upstream, and the model doesn&apos;t select them. Either the source is missing a join (for example a profile table) or the Access column list is wrong.
+4. **Double-counting risk.** The source is &quot;one file per run&quot;, and `updated_at` is never used. If reruns, late files or corrections land more rows for the same `(ds, subscriber_id)`, `SUM(amount)` inflates the result. Decide whether rows are additive or versioned. If they&apos;re versioned, dedupe on the latest `updated_at` before aggregating.
+5. **No segment in a segments table.** Nothing in the model defines or assigns a segment. As written, this is a per-subscriber daily amount table, so either the logic is missing or the name is wrong.
+
+**Performance and operations**
+
+6. **Target table DDL is missing.** I&apos;d partition it by `ds` and cluster it by `subscriber_id`. The `MERGE` also needs a `d.ds = @ds` predicate in the `ON` clause. Without it, every run scans the whole target.
+7. **Source cost.** The source is about 300 GB. Partition pruning on `ds = @ds` keeps scans small, which is good. The plan&apos;s `SELECT *` sample query is wasteful, though, so select only the columns you need.
+8. **SLA has no mechanism.** There&apos;s a 07:00 UTC freshness SLA but no schedule, upstream-arrival dependency, alerting, or tests (uniqueness on `(ds, subscriber_id)`, non-null keys).
+9. **Contract gaps.** I&apos;d add the schema, retention and a PII-handling note.
+
+If you want, I can draft a revised plan with these fixed. I&apos;d need your answers on items 3–5, since those depend on the business intent.</pre>
+</div>
+</details></div>
+</div>
+</section>
+</details>
+<details class="section" open>
+<summary>Prompt</summary>
+<div class="md"><p>The plan for the newsletter segments table is at docs/wraith/2026-10-12-newsletter-segments/plan.md. Review it before we build it.</p>
+</div>
+</details>
+<details class="section" open>
+<summary>Graders — what "good" means for this case</summary>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">1-pii</span><span class="badge">llm</span></div>
+<div class="md"><p>Answer key, category pii. Planted defect: columns email, full_name, date_of_birth are personal data and the dataset public_marketing is readable by allUsers. Location: the Access section of <code>dim_newsletter_segments</code>'s plan.</p>
+<p>PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.</p>
+</div>
+</div>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">2-rollback</span><span class="badge">llm</span></div>
+<div class="md"><p>Answer key, category rollback. Planted defect: the Rollout changes the live table (DROP TABLE before CREATE) with no snapshot, clone or restore step, so there is no way back. Location: the Rollout section (DROP TABLE before CREATE) of <code>dim_newsletter_segments</code>'s plan.</p>
+<p>PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.</p>
+</div>
+</div>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">3-contract</span><span class="badge">llm</span></div>
+<div class="md"><p>Answer key, category contract. Planted defect: in the Contract section primary_key is missing, although AGENTS.md requires owner, primary_key, classification and freshness_sla. Location: the Contract section of <code>dim_newsletter_segments</code>'s plan.</p>
+<p>PASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.</p>
+</div>
+</div>
+</details>
+</article>
+<footer>Generated by <code>claude plugin eval</code> · schema v1 · scores are not comparable across different suites</footer>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var bar=document.querySelector('.toolbar');
+  if(!bar)return;
+  bar.addEventListener('click',function(e){
+    var b=e.target&&e.target.closest('button');
+    if(!b)return;
+    var open=b.dataset.act==='expand';
+    document.querySelectorAll('details.section, details.grader').forEach(function(d){d.open=open});
+  });
+});
+// Collapsed details vanish from print/PDF; these pages are share artifacts.
+window.addEventListener('beforeprint',function(){
+  document.querySelectorAll('details').forEach(function(d){
+    if(!d.open){d.dataset.printOpened='1';d.open=true}
+  });
+});
+window.addEventListener('afterprint',function(){
+  document.querySelectorAll('details[data-print-opened]').forEach(function(d){
+    d.open=false;delete d.dataset.printOpened;
+  });
+});
+</script>
+</body>
+</html>
