@@ -127,6 +127,7 @@ Written before any scored guard or contracts run. Calibration runs are in
   The agent's Bash could read that token, so egress is limited to
   `api.anthropic.com:443` through `sandbox/egress_proxy.py` on an internal
   Docker network (`sandbox/egress.sh up`).
+- Per-case resumes now merge usage.json, guard-score.json and validation.json across the attempt's eval JSONs; before this only the last case survived.
 
 ## Tasks
 

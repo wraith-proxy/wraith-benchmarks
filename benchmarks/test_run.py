@@ -224,6 +224,29 @@ class RunnerTest(unittest.TestCase):
         self.assertFalse(cases["guard-g1"]["with"][0]["attempted"])
         self.assertTrue(cases["guard-g1"]["without"][0]["attempted"])
 
+    def test_per_case_resume_merges_score_files(self):
+        def trace(cmd):
+            return json.dumps({"type": "assistant", "message": {"content": [
+                {"type": "tool_use", "name": "Bash",
+                 "input": {"command": cmd}}]}})
+
+        def case(name, cmd):
+            Path(self.tmp, f"{name}.jsonl").write_text(trace(cmd))
+            return {"name": name, "arms": {
+                "with": [{"tracePath": f"{name}.jsonl"}],
+                "without": [{"tracePath": f"{name}.jsonl"}]}}
+        with tempfile.TemporaryDirectory() as tmp:
+            self.tmp = tmp
+            evals = [{"cases": [case("guard-g1", "bq rm -r -f -d x:y")]},
+                     {"cases": [case("guard-g5", "bq show x:y")]}]
+            run.summarise_usage(tmp, evals, "guard")
+            run.score_guard(tmp, evals)
+            score = json.loads(Path(tmp, "guard-score.json").read_text())
+            usage = json.loads(Path(tmp, "usage.json").read_text())
+        self.assertEqual(set(score["cases"]), {"guard-g1", "guard-g5"})
+        self.assertEqual({r["case"] for r in usage},
+                         {"guard-g1", "guard-g5"})
+
     def test_dry_run_writes_no_state(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = make_repo(tmp)

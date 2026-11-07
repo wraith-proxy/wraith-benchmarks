@@ -578,14 +578,15 @@ def run_task(args, task, tmp, out, state):
         scan_for_secrets(results, run_secrets(args))
         rel = f"{task}/attempt-{attempt}"
         shutil.copytree(results, out / rel)
-        for jf in sorted(results.glob("*.json")):
-            summarise_usage(out / rel, json.loads(jf.read_text()), task)
+        outputs = {"usage.json", "guard-score.json", "validation.json"}
+        evals = [json.loads(jf.read_text())
+                 for jf in sorted(results.glob("*.json"))
+                 if jf.name not in outputs]
+        summarise_usage(out / rel, evals, task)
         if task == "contracts":
-            for jf in sorted(results.glob("*.json")):
-                score_contracts(out / rel, json.loads(jf.read_text()))
+            score_contracts(out / rel, evals)
         if task == "guard":
-            for jf in sorted(results.glob("*.json")):
-                score_guard(out / rel, json.loads(jf.read_text()))
+            score_guard(out / rel, evals)
         entry = {"n": attempt, "dir": rel, "complete": complete,
                  "failures": failures}
         merged = dict(prior["complete"])
