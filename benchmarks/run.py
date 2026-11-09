@@ -629,8 +629,10 @@ def main(argv=None, env=None):
                     help="claude setup-token token; required for Bash tasks")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--resume", action="store_true")
-    ap.add_argument("--keep-temp", action="store_true",
-                    help="eval keeps its temp dirs so traces can be collected")
+    # Scoring reads the traces, which eval deletes unless told to keep
+    # them, so this is always on; the flag stays for old command lines.
+    ap.add_argument("--keep-temp", action="store_true", default=True,
+                    help="always on: eval keeps traces for scoring")
     args = ap.parse_args(argv)
     try:
         tasks = list(TASKS) if args.task == "all" else [args.task]
