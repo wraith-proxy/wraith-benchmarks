@@ -396,7 +396,7 @@ class HardeningTest(unittest.TestCase):
                     argv, 0, json.dumps({"result": "PASS"}), "")
             with mock.patch("subprocess.run", fake_run):
                 cr.score_plan_review(tmp, data)
-            self.assertIn("--- /work/review.md ---\nEDITED FINAL BODY",
+            self.assertIn("--- /work/ws/review.md ---\nEDITED FINAL BODY",
                           prompts[0])
 
 
