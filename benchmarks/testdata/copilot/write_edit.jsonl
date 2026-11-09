@@ -1,0 +1,3 @@
+{"type": "tool.execution_start", "data": {"toolName": "create", "arguments": {"path": "/work/contracts/accounts.yaml", "file_text": "a: 1\n"}}}
+{"type": "tool.execution_start", "data": {"toolName": "edit", "arguments": {"path": "/work/contracts/accounts.yaml", "old_str": "a: 1", "new_str": "a: 2"}}}
+{"type": "assistant.message", "data": {"content": "saved"}}
