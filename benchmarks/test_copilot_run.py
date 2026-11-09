@@ -137,6 +137,49 @@ class RunnerTest(unittest.TestCase):
             self.assertIn("COPILOT_GITHUB_TOKEN", fake.dockers()[0])
             self.assertNotIn(TOKEN, " ".join(fake.dockers()[0]))
 
+    def test_tmpfs_home_allows_exec(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = Fake(stdout=fixture("shell_ls.jsonl"))
+            run_main(tmp, fake, runs="1")
+            for cmd in fake.dockers():
+                opt = next(c for c in cmd if c.startswith("/home/bench:"))
+                self.assertIn(",exec,", opt)
+                self.assertIn("nosuid", opt)
+
+    def test_scaffold_runs_in_container_before_copilot(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = Fake(stdout=fixture("shell_ls.jsonl"))
+            run_main(tmp, fake, runs="1")
+            self.assertTrue(fake.dockers())
+            for cmd in fake.dockers():
+                i = cmd.index("bash")
+                self.assertEqual(cmd[i + 1], "-c")
+                script = cmd[i + 2]
+                self.assertLess(script.index("scaffold_script"),
+                                script.index("exec copilot"))
+                self.assertEqual(cmd[i + 3], "copilot-bench")
+                self.assertIn("-p", cmd[i + 4:])
+                self.assertIn("TASK=guard", cmd)
+                self.assertIn("CASE=g1", cmd)
+                self.assertIn(f"{cr.HERE / 'fixtures'}:/fixtures:ro", cmd)
+            hosts = [a for a, _ in fake.calls
+                     if a[0] == "bash" or "scaffold_script" in " ".join(a)
+                     and a[0] != "docker"]
+            self.assertEqual(hosts, [])
+
+    def test_scaffold_failure_is_run_error_and_task_continues(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = Fake(stderr="boom\nharness: scaffold failed (exit 1)\n",
+                        code=cr.SCAFFOLD_FAILED)
+            code, _ = run_main(tmp, fake)
+            self.assertEqual(code, 0)
+            self.assertEqual(len(fake.dockers()), 4)
+            data = out_json(tmp, "guard/attempt-1/guard.json")
+            for runs in data["cases"][0]["arms"].values():
+                for entry in runs:
+                    self.assertIn("scaffold failed", entry["error"])
+                    self.assertIn("exit 1", entry["error"])
+
     def test_unknown_event_shape_raises(self):
         with self.assertRaises(run.BenchError):
             cr.normalise(cr.parse_events(fixture("unknown.jsonl")))
@@ -207,9 +250,9 @@ class LoggingFake(Fake):
 
     def __call__(self, argv, **kwargs):
         if argv[0] == "docker":
-            mount = next(a for a in argv if a.endswith(":/work"))
+            mount = next(a for a in argv if a.endswith(":/work/ws"))
             for name, text in self.files.items():
-                Path(mount[:-len(":/work")], name).write_text(text)
+                Path(mount[:-len(":/work/ws")], name).write_text(text)
         return super().__call__(argv, **kwargs)
 
 

@@ -224,22 +224,35 @@ def copilot_command(task, prompt, model, credits, arm, out_share="/out/share.md"
     return cmd
 
 
-def docker_command(image, ws, out_dir, plugin, arm, cmd, uid, gid):
+SCAFFOLD_FAILED = 97
+CONTAINER_SCRIPT = (
+    'set -e; cd /work/ws; '
+    'bash "/fixtures/$TASK/$CASE/scaffold_script" || '
+    '{ echo "harness: scaffold failed (exit $?)" >&2; '
+    f'exit {SCAFFOLD_FAILED}; }}; '
+    'exec copilot "$@"')
+
+
+def docker_command(image, ws, out_dir, plugin, arm, cmd, uid, gid,
+                   task, case):
     proxy = run.PROXY
+    short = case.removeprefix(f"{task}-")
     return [
         "docker", "run", "--rm", "--cap-drop", "ALL",
         "--security-opt", "no-new-privileges",
         "--network", "wraith-bench-egress",
         "--user", f"{uid}:{gid}",
-        "--tmpfs", f"/home/bench:rw,uid={uid},gid={gid},mode=0700,size=256m",
+        "--tmpfs",
+        f"/home/bench:rw,exec,nosuid,size=1g,uid={uid},gid={gid}",
         "--tmpfs", "/tmp",
         "-e", TOKEN_ENV,
         "-e", f"HTTPS_PROXY={proxy}", "-e", f"HTTP_PROXY={proxy}",
-        "-v", f"{ws}:/work",
+        "-e", f"TASK={task}", "-e", f"CASE={short}",
+        "-v", f"{ws}:/work/ws",
         "-v", f"{HERE / 'fixtures'}:/fixtures:ro",
         *(["-v", f"{plugin}:/plugin:ro"] if arm == "with" else []),
         "-v", f"{out_dir}:/out",
-        image, *cmd,
+        image, "bash", "-c", CONTAINER_SCRIPT, "copilot-bench", *cmd[1:],
     ]
 
 
@@ -254,17 +267,13 @@ def run_one(args, task, case, i, arm, prompt, plugin, stage, token, tmp,
     """Run one arm of one case. Returns the eval-shaped run entry plus the
     raw facts the caller needs. Raises BenchError on an unknown event shape
     after saving the raw trace."""
-    short = case.removeprefix(f"{task}-")
     run_dir = Path(stage) / case / f"{label or arm}-{i}"
     run_dir.mkdir(parents=True)
     ws = Path(tempfile.mkdtemp(prefix="ws-", dir=tmp))
-    scaffold = HERE / "fixtures" / task / short / "scaffold_script"
-    subprocess.run(["bash", str(scaffold)], cwd=ws, check=True,
-                   capture_output=True, text=True)
     cmd = docker_command(
         args.image, ws, run_dir, plugin, arm,
         copilot_command(task, prompt, args.model, args.max_ai_credits, arm),
-        os.getuid(), os.getgid())
+        os.getuid(), os.getgid(), task, case)
     env = {**os.environ, TOKEN_ENV: token}
     started = time.monotonic()
     error = None
@@ -292,6 +301,10 @@ def run_one(args, task, case, i, arm, prompt, plugin, stage, token, tmp,
              "tracePath": f"traces/{case}/{label or arm}-{i}/trace.norm.jsonl"}
     info = {"limit": limit.group(0) if limit else None,
             "models": models_seen(events)}
+    if code == SCAFFOLD_FAILED and not error:
+        tail = " | ".join(stderr.strip().splitlines()[-3:])
+        entry["error"] = f"scaffold failed: {tail}"
+        return entry, {"limit": None, "models": []}
     if limit:
         entry["error"] = f"usage limit: {limit.group(0)}"
         return entry, info
@@ -555,14 +568,14 @@ def dry_run_task(args, task):
                     plugin, arm,
                     copilot_command(task, prompt, args.model,
                                     args.max_ai_credits, arm),
-                    os.getuid(), os.getgid())
+                    os.getuid(), os.getgid(), task, case)
                 print(f"[{task}] {case} {arm}-{i}: {' '.join(cmd)}")
     if args.calibrate:
         cmd = docker_command(
             args.image, "<workspace>", "<out>/probe", plugin, "with",
             copilot_command(task, PROBE_PROMPT, args.model,
                             args.max_ai_credits, "with"),
-            os.getuid(), os.getgid())
+            os.getuid(), os.getgid(), task, names[0])
         print(f"[{task}] probe: {' '.join(cmd)}")
     if task == "plan-review":
         argv, _ = judge_invocation("<prompt on stdin>", "<empty dir>", {})
