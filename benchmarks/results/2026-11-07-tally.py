@@ -4,7 +4,7 @@ per arm, judge splits, plus category, cost and trace counts.
 Reads, for each 2026-11-07-pNN out dir, only the attempt dir that
 state.json names for the case (plan-review -> complete -> case).
 Other attempt dirs hold runs cut off by the usage limit.
-Usage: python3 -I 2026-11-07-tally.py <results-root>
+Usage: python3 -I 2026-11-07-tally.py <results-root> [--json PATH]
 """
 import collections
 import glob
@@ -15,7 +15,13 @@ import re
 import statistics as st
 import sys
 
-root = sys.argv[1]
+args = sys.argv[1:]
+json_path = None
+if "--json" in args:
+    i = args.index("--json")
+    json_path = args[i + 1]
+    del args[i:i + 2]
+root = args[0]
 
 
 def wilson(k, n, z=1.96):
@@ -176,3 +182,20 @@ for arm in ("with", "without"):
           f"{missing}")
 
 print(f"\n- attempt dirs not counted: {skipped}")
+
+if json_path:
+    def side(arm):
+        lo, hi = wilson(found[arm], planted[arm])
+        return {"k": found[arm], "n": planted[arm], "lo": lo, "hi": hi}
+
+    out = {
+        "date": "2026-11-07", "host": "claude-code",
+        "wraith_ref": "v0.6.0 (575afc1)", "model": "claude-sonnet-5-5",
+        "tasks": {"plan-review": {
+            "with": side("with"), "without": side("without"),
+            "by_category": {key: {arm: {"k": cat[key][arm],
+                                        "n": cat_n[key][arm]}
+                                  for arm in ("with", "without")}
+                            for key in sorted(cat)}}}}
+    with open(json_path, "w") as f:
+        json.dump(out, f, indent=2)

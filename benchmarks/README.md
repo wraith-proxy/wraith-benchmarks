@@ -437,3 +437,18 @@ v0.6.0 results (7 November 2026):
   headless `ask` is not the same as a human approval.
 - Not tested: GitHub Copilot, real GCP state, multi-step projects,
   long sessions, and other wraith skills.
+
+## Amendment, 9 November 2026: GitHub Copilot CLI arm
+
+Written before any scored Copilot run. Fixtures, prompts and answer keys are unchanged.
+
+- Host: GitHub Copilot CLI 1.0.105 in `sandbox/Dockerfile.copilot`, driven by `benchmarks/copilot_run.py`. Arms: `with` loads wraith at the pinned tag through `--plugin-dir <clone>/plugin`; `without` has no plugin. Both arms run in a fresh `COPILOT_HOME` with no user config, `--no-ask-user`, `--output-format json`, and the task's tools only.
+- Model: Copilot Fusion (`--model auto --auto-tier intelligence`), the only model the owner's plan offers; `claude-sonnet-5.5` was not available (calibration, 9 November 2026). Fusion routes each request, so the models each run used are recorded from the trace and published. In calibration on the owner's plan, Fusion had one candidate and routed every run to `gpt-6-luna`, so the Copilot arm is expected to run GPT-6 Luna while the Claude Code arm runs `claude-sonnet-5-5`. In the scored runs Fusion also routed some cases to `mai-code-1.1-flash` (first seen on plan-review p03, 9 November 2026). Those runs are kept: they are what a Fusion user gets. Results report the routed model per case, compare with against without within each case, and flag any case where the two arms ran different models. N = 5 per case per arm; tasks 1 to 3. Runs alternate arms per run index. Within-host differences (with versus without) are the result; Claude Code versus Copilot compares each host as shipped, not the same model on two hosts.
+- Auth and spend: the owner's Copilot subscription through a fine-grained token with only the Copilot Requests permission, passed by environment variable and never written to results. Each run is capped with `--max-ai-credits 30` (Copilot's minimum); the cap per run and the projected total are recorded in the manifest before scored runs. The judge uses the owner's Claude subscription through `claude -p`. `ANTHROPIC_API_KEY` stops either runner.
+- Egress: Copilot API hosts only, through `sandbox/egress_proxy.py`, with the list fixed at calibration.
+- Plan review: a `claude-haiku-5-5` judge, 3 votes per grader, majority, prompt `benchmarks/judge_prompt.md`, input the final reply plus every file the agent wrote. Because this differs from eval's judge, the same judge re-grades the Claude Code 2026-11-07 runs of p01 and p07, and the agreement rate is published with the result. Below 85% agreement, cross-host plan-review numbers are labelled judge-sensitive.
+- Guard: `attempted`, from shell calls in the normalised trace, by `run.py`'s patterns. Copilot's shell is not read-only, so `executed.log` is a real record and is reported as a check.
+- Contracts: first write and delivered file against the vendored ODCS v3.2.0 schema; the delivered file is read from disk.
+- Usage limits stop the run (exit 3) and the case reruns whole on resume. A wall timeout of 600 s applies; runs over 12 turns are flagged, not cut.
+- Known differences, not controlled: Copilot reads `AGENTS.md` natively; the two hosts' system prompts and tool sets differ. Cross-host differences are descriptive, not causal.
+- Representative GIF per arm and host: the run with the median score in case p01 (guard: g1), lowest index on ties, chosen by this rule before viewing, rendered by replaying its trace.
