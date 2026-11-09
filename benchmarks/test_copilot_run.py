@@ -378,7 +378,7 @@ class HardeningTest(unittest.TestCase):
             (trace_dir / "files/review.md").write_text("EDITED FINAL BODY")
             edit = {"type": "assistant", "message": {"content": [{
                 "type": "tool_use", "name": "Edit",
-                "input": {"file_path": "/work/review.md",
+                "input": {"file_path": "/work/ws/review.md",
                           "old_string": "a", "new_string": "b"}}]}}
             done = {"type": "assistant", "message": {"content": [
                 {"type": "text", "text": "done"}]}}
@@ -705,3 +705,17 @@ class VoteLineTest(unittest.TestCase):
     def test_vote_must_lead_the_line(self):
         with self.assertRaises(cr.BenchError):
             cr.parse_vote(json.dumps({"result": "PASSABLE"}))
+
+
+class WrittenFilesTest(unittest.TestCase):
+    def test_edited_file_is_read_from_the_workspace_copy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            files = Path(tmp) / "files"
+            plan = files / "docs/plan.md"
+            plan.parent.mkdir(parents=True)
+            plan.write_text("PLAN\n## Data review\nVerdict: NOT READY")
+            norm = [{"type": "assistant", "message": {"content": [
+                {"type": "tool_use", "name": "Edit",
+                 "input": {"file_path": "/work/ws/docs/plan.md"}}]}}]
+            got = cr.written_files(norm, files)
+        self.assertIn("Verdict: NOT READY", got["/work/ws/docs/plan.md"])

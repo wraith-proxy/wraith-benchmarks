@@ -884,7 +884,8 @@ def written_files(norm, files_dir):
         if block.get("name") not in ("Write", "Edit"):
             continue
         path = block["input"]["file_path"]
-        final = (files_dir / path.removeprefix("/work/").lstrip("/")
+        # files/ mirrors /work/ws, the agent's workspace.
+        final = (files_dir / path.removeprefix("/work/ws/").lstrip("/")
                  ).resolve()
         if final.is_relative_to(files_dir) and final.is_file():
             files[path] = final.read_text(errors="ignore")
