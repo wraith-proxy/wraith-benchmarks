@@ -1,10 +1,21 @@
 #!/usr/bin/env python3
-"""CONNECT proxy for Bash tasks: model API on 443 only, everything else 403."""
+"""CONNECT proxy for Bash tasks: allowlisted hosts on 443 only, else 403.
+
+The allowlist is env BENCH_EGRESS_ALLOW (comma-separated hosts); it defaults
+to the Claude API host.
+"""
+import os
 import select
 import socket
 import socketserver
+import sys
 
-ALLOW = {"api.anthropic.com"}
+DEFAULT_ALLOW = "api.anthropic.com"
+
+
+def allowed(host, env=os.environ):
+    hosts = env.get("BENCH_EGRESS_ALLOW") or DEFAULT_ALLOW
+    return host in {h.strip() for h in hosts.split(",") if h.strip()}
 
 
 class Handler(socketserver.StreamRequestHandler):
@@ -13,8 +24,8 @@ class Handler(socketserver.StreamRequestHandler):
         while self.rfile.readline(4096).strip():
             pass
         host, _, port = (line[1] if len(line) > 1 else "").partition(":")
-        if line[:1] != ["CONNECT"] or host not in ALLOW or port != "443":
-            print("DENY", " ".join(line[:2]), flush=True)
+        if line[:1] != ["CONNECT"] or not allowed(host) or port != "443":
+            print("DENY", " ".join(line[:2]), file=sys.stderr, flush=True)
             self.wfile.write(b"HTTP/1.1 403 Forbidden\r\n\r\n")
             return
         up = socket.create_connection((host, 443), timeout=30)
@@ -40,4 +51,5 @@ class Server(socketserver.ThreadingTCPServer):
     daemon_threads = True
 
 
-Server(("0.0.0.0", 3128), Handler).serve_forever()
+if __name__ == "__main__":
+    Server(("0.0.0.0", 3128), Handler).serve_forever()
