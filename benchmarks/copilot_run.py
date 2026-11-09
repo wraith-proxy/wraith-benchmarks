@@ -33,20 +33,29 @@ WALL_TIMEOUT = 600
 PROBE_PROMPT = "List the skills and agents you can use."
 # Claude-named tools per task, as in run.TASKS (same tool set in both arms).
 TOOLS = run.TASKS
-# Claude tool name -> Copilot 1.0.105 tool name (used to build the command).
-# skill, view and glob are observed; the rest are TODO(verify: not yet
-# observed).
+# Claude tool name -> Copilot tool names offering it. Source: the Copilot
+# 1.0.105 bundle and calibration-5 traces. Names passed to --available-tools
+# that Copilot lacks are ignored. TODO(verify: argument keys of bash, create,
+# edit and apply_patch not yet observed).
 TOOL_MAP = {
-    "Bash": "shell", "Read": "view", "Write": "create", "Edit": "edit",
-    "Glob": "glob", "Grep": "grep", "Skill": "skill",
+    "Bash": ["bash", "read_bash", "write_bash", "stop_bash", "list_bash"],
+    "Read": ["view"],
+    "Write": ["create", "apply_patch"],
+    "Edit": ["edit", "str_replace_editor", "apply_patch"],
+    "Glob": ["glob"],
+    "Grep": ["grep", "rg"],
+    "Skill": ["skill"],
 }
-# Copilot tool name seen in traces -> Claude name.
+# Copilot tool name seen in traces -> Claude name. None: known, but produces
+# no normalised call, or is resolved per call in expand_call.
 TOOL_NAMES = {
     "skill": "Skill", "view": "Read", "glob": "Glob",
-    "shell": "Bash", "bash": "Bash",  # TODO(verify: not yet observed)
-    "create": "Write",  # TODO(verify: not yet observed)
-    "edit": "Edit", "str_replace": "Edit",  # TODO(verify: not yet observed)
-    "grep": "Grep",  # TODO(verify: not yet observed)
+    "bash": "Bash", "shell": "Bash",
+    "create": "Write", "edit": "Edit",
+    "grep": "Grep", "rg": "Grep",
+    "str_replace_editor": None, "apply_patch": None,
+    "read_bash": None, "write_bash": None, "stop_bash": None,
+    "list_bash": None,
 }
 # Claude input key -> Copilot argument key. Write content is file_text or
 # content, see tool_input. Shell/Write/Edit are TODO(verify: not yet
@@ -55,6 +64,7 @@ ARG_MAP = {
     "Bash": {"command": "command"},
     "Read": {"file_path": "path"},
     "Glob": {"pattern": "pattern"},
+    "Grep": {"pattern": "pattern"},
     "Write": {"file_path": "path"},
     "Edit": {"file_path": "path", "old_string": "old_str",
              "new_string": "new_str"},
@@ -156,6 +166,52 @@ def tool_input(claude_name, args):
     return out
 
 
+PATCH_FILE = re.compile(r"^\*\*\* (Add|Update|Delete) File: (.+?)\s*$")
+
+
+def patch_calls(text):
+    """Normalised (name, input) pairs for each file block of a patch."""
+    calls, add, lines = [], None, []
+
+    def close():
+        if add is not None:
+            calls.append(("Write", {"file_path": add,
+                                    "content": "\n".join(lines)}))
+
+    for line in text.splitlines():
+        match = PATCH_FILE.match(line)
+        if match or line.startswith("*** End Patch"):
+            close()
+            add, lines = None, []
+        if match:
+            kind, path = match.groups()
+            if kind == "Add":
+                add = path
+            elif kind == "Update":
+                calls.append(("Edit", {"file_path": path}))
+            else:
+                calls.append(("Edit", {"file_path": path, "deleted": True}))
+        elif add is not None and line.startswith("+"):
+            lines.append(line[1:])
+    close()
+    return calls
+
+
+def expand_call(tool, args):
+    """Normalised (name, input) pairs for one Copilot tool call."""
+    if tool == "apply_patch":
+        raw = args.get("input", args.get("patch"))
+        if not isinstance(raw, str):
+            raise BenchError(f"apply_patch lacks patch text: {str(args)[:120]}")
+        return patch_calls(raw)
+    if tool == "str_replace_editor":
+        name = {"create": "Write", "str_replace": "Edit",
+                "view": "Read"}.get(args.get("command"))
+        return [(name, tool_input(name, args))] if name else []
+    name = TOOL_NAMES.get(tool)
+    return [(name, tool_input(name, args))] if name else []
+
+
 def unmapped_tools(events):
     """Copilot tool names with no TOOL_NAMES entry, in first-seen order."""
     seen = []
@@ -189,15 +245,17 @@ def normalise(events):
                 block["phase"] = data["phase"]
         elif kind == "tool.execution_start":
             data = _data(event)
-            name = TOOL_NAMES.get(data.get("toolName"))
             args = data.get("arguments")
+            if isinstance(args, str):
+                args = {"input": args}
             if not isinstance(args, dict):
                 raise BenchError(
                     f"unrecognised tool call: {str(event)[:120]}")
-            if name is None:
-                continue
-            block = {"type": "tool_use", "name": name,
-                     "input": tool_input(name, args)}
+            for name, tool_args in expand_call(data.get("toolName"), args):
+                out.append({"type": "assistant", "message": {"content": [
+                    {"type": "tool_use", "name": name,
+                     "input": tool_args}]}})
+            continue
         elif kind in IGNORED_EVENTS or kind.startswith("session."):
             continue
         else:
@@ -285,7 +343,8 @@ def arm_order(i):
 
 def copilot_command(task, prompt, model, credits, arm,
                     out_share="/out/share.md", tier=None):
-    tools = [TOOL_MAP[t] for t in TOOLS[task]]
+    tools = list(dict.fromkeys(
+        n for t in TOOLS[task] for n in TOOL_MAP[t]))
     cmd = [
         "copilot", "-p", prompt, "--model", model,
         "--output-format", "json", "--no-ask-user", "--no-auto-update",

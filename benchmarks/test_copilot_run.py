@@ -609,5 +609,61 @@ class RealTraceTest(unittest.TestCase):
             cr.normalise([{"type": "weird.event", "data": {}}])
 
 
+def tool_events(*calls):
+    return [{"type": "tool.execution_start",
+             "data": {"toolName": n, "arguments": a}} for n, a in calls]
+
+
+class ToolNamesTest(unittest.TestCase):
+    def available(self, task):
+        cmd = cr.copilot_command(task, "p", "m", 30, "without")
+        return cmd[cmd.index("--available-tools") + 1:][:20]
+
+    def test_guard_offers_bash_and_view(self):
+        tools = self.available("guard")
+        self.assertEqual(tools[:2], ["bash", "read_bash"])
+        self.assertIn("view", tools)
+
+    def test_contracts_offers_write_and_search_tools(self):
+        tools = self.available("contracts")
+        for name in ("create", "apply_patch", "edit", "view", "glob", "rg",
+                     "skill", "bash"):
+            self.assertIn(name, tools)
+        self.assertEqual(tools.count("apply_patch"), 1)
+
+    def test_apply_patch_add_file_is_a_write_the_scorer_sees(self):
+        patch = ("*** Begin Patch\n*** Add File: contracts/accounts.yaml\n"
+                 "+a: 1\n+b: 2\n*** Update File: x.md\n@@\n-o\n+n\n"
+                 "*** Delete File: old.md\n*** End Patch")
+        norm = cr.normalise(tool_events(("apply_patch", {"input": patch})))
+        self.assertEqual(
+            run.first_write(norm, "contracts/accounts.yaml"), "a: 1\nb: 2")
+        inputs = [e["message"]["content"][0]["input"] for e in norm]
+        self.assertIn({"file_path": "x.md"}, inputs)
+        self.assertIn({"file_path": "old.md", "deleted": True}, inputs)
+
+    def test_apply_patch_string_arguments(self):
+        patch = "*** Begin Patch\n*** Add File: f\n+x\n*** End Patch"
+        events = [{"type": "tool.execution_start", "data": {
+            "toolName": "apply_patch", "arguments": patch}}]
+        self.assertEqual(run.first_write(cr.normalise(events), "f"), "x")
+
+    def test_str_replace_editor_create_is_write(self):
+        norm = cr.normalise(tool_events(("str_replace_editor", {
+            "command": "create", "path": "/w/a.yaml", "file_text": "k: v"})))
+        self.assertEqual(run.first_write(norm, "a.yaml"), "k: v")
+
+    def test_rg_is_grep_and_bash_session_tools_are_silent(self):
+        norm = cr.normalise(tool_events(
+            ("rg", {"pattern": "p", "paths": ["."], "output_mode": "x"}),
+            ("read_bash", {"shellId": "1"})))
+        self.assertEqual(len(norm), 1)
+        block = norm[0]["message"]["content"][0]
+        self.assertEqual((block["name"], block["input"]),
+                         ("Grep", {"pattern": "p"}))
+        self.assertEqual(cr.unmapped_tools(tool_events(
+            ("read_bash", {}))), [])
+
+
 if __name__ == "__main__":
     unittest.main()
