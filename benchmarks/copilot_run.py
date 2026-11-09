@@ -33,25 +33,43 @@ WALL_TIMEOUT = 600
 PROBE_PROMPT = "List the skills and agents you can use."
 # Claude-named tools per task, as in run.TASKS (same tool set in both arms).
 TOOLS = run.TASKS
-# TODO(verify) at calibration: Claude tool name -> Copilot tool name.
+# Claude tool name -> Copilot 1.0.105 tool name (used to build the command).
+# skill, view and glob are observed; the rest are TODO(verify: not yet
+# observed).
 TOOL_MAP = {
     "Bash": "shell", "Read": "view", "Write": "create", "Edit": "edit",
     "Glob": "glob", "Grep": "grep", "Skill": "skill",
 }
-# TODO(verify) at calibration: Claude input key -> Copilot argument key.
+# Copilot tool name seen in traces -> Claude name.
+TOOL_NAMES = {
+    "skill": "Skill", "view": "Read", "glob": "Glob",
+    "shell": "Bash", "bash": "Bash",  # TODO(verify: not yet observed)
+    "create": "Write",  # TODO(verify: not yet observed)
+    "edit": "Edit", "str_replace": "Edit",  # TODO(verify: not yet observed)
+    "grep": "Grep",  # TODO(verify: not yet observed)
+}
+# Claude input key -> Copilot argument key. Write content is file_text or
+# content, see tool_input. Shell/Write/Edit are TODO(verify: not yet
+# observed).
 ARG_MAP = {
     "Bash": {"command": "command"},
-    "Write": {"file_path": "path", "content": "file_text"},
+    "Read": {"file_path": "path"},
+    "Glob": {"pattern": "pattern"},
+    "Write": {"file_path": "path"},
     "Edit": {"file_path": "path", "old_string": "old_str",
              "new_string": "new_str"},
     "Skill": {"skill": "skill"},
 }
-# TODO(verify) at calibration: event types that carry nothing we score.
+# Observed event types that carry nothing we score. Tool calls come from
+# tool.execution_start only; assistant.message toolRequests would double
+# count. Unknown types still raise.
 IGNORED_EVENTS = {
-    "assistant.turn_start", "assistant.turn_end", "assistant.message_delta",
-    "assistant.reasoning", "assistant.reasoning_delta", "assistant.usage",
-    "tool.execution_complete", "tool.execution_partial_result",
-    "user.message", "result", "error",
+    "user.message", "assistant.turn_start", "assistant.turn_end",
+    "assistant.message_start", "assistant.message_delta",
+    "assistant.reasoning", "assistant.reasoning_delta",
+    "assistant.tool_call_delta", "assistant.idle",
+    "model.call_start", "model.call_finished", "model.call_final_result",
+    "tool.execution_complete", "result", "error",
 }
 # TODO(verify): broad on purpose; applied to stderr and error events only.
 COPILOT_LIMIT = re.compile(
@@ -128,15 +146,30 @@ def tool_input(claude_name, args):
     if mapping is None:
         return dict(args)
     try:
-        return {k: args[v] for k, v in mapping.items()}
+        out = {k: args[v] for k, v in mapping.items()}
+        if claude_name == "Write":
+            out["content"] = args["file_text" if "file_text" in args
+                                  else "content"]
     except KeyError as err:
         raise BenchError(
             f"{claude_name} call lacks argument {err}: {str(args)[:120]}")
+    return out
+
+
+def unmapped_tools(events):
+    """Copilot tool names with no TOOL_NAMES entry, in first-seen order."""
+    seen = []
+    for event in events:
+        if isinstance(event, dict) and event.get(
+                "type") == "tool.execution_start":
+            name = _data(event).get("toolName")
+            if name not in TOOL_NAMES and name not in seen:
+                seen.append(name)
+    return seen
 
 
 def normalise(events):
     """Copilot events -> Claude-shaped assistant events with tool_use blocks."""
-    reverse = {v: k for k, v in TOOL_MAP.items()}
     out = []
     for event in events:
         if not isinstance(event, dict) or not isinstance(
@@ -144,18 +177,25 @@ def normalise(events):
             raise BenchError(f"unrecognised event: {str(event)[:120]}")
         kind = event["type"]
         if kind == "assistant.message":
-            text = _data(event).get("content")
+            data = _data(event)
+            text = data.get("content")
             if not isinstance(text, str):
                 raise BenchError(
                     f"unrecognised assistant.message: {str(event)[:120]}")
+            if not text:
+                continue
             block = {"type": "text", "text": text}
+            if data.get("phase"):
+                block["phase"] = data["phase"]
         elif kind == "tool.execution_start":
             data = _data(event)
-            name = reverse.get(data.get("toolName"))
+            name = TOOL_NAMES.get(data.get("toolName"))
             args = data.get("arguments")
-            if name is None or not isinstance(args, dict):
+            if not isinstance(args, dict):
                 raise BenchError(
                     f"unrecognised tool call: {str(event)[:120]}")
+            if name is None:
+                continue
             block = {"type": "tool_use", "name": name,
                      "input": tool_input(name, args)}
         elif kind in IGNORED_EVENTS or kind.startswith("session."):
@@ -167,11 +207,45 @@ def normalise(events):
 
 
 def final_text(norm):
-    for event in reversed(norm):
-        block = event["message"]["content"][0]
-        if block["type"] == "text":
+    texts = [e["message"]["content"][0] for e in norm
+             if e["message"]["content"][0]["type"] == "text"]
+    for block in reversed(texts):
+        if block.get("phase") == "final_answer":
             return block["text"]
-    return ""
+    return texts[-1]["text"] if texts else ""
+
+
+def run_meta(events):
+    """Per-run routing, model and usage facts from raw Copilot events."""
+    meta = {"model_routed": None, "models_called": [], "premium_requests": None,
+            "api_ms": None, "session_ms": None, "nano_aiu": None,
+            "ai_credits_est": None, "turns": 0,
+            "unmapped_tools": unmapped_tools(events)}
+    for event in events:
+        if not isinstance(event, dict):
+            continue
+        kind, data = event.get("type"), event.get("data")
+        data = data if isinstance(data, dict) else {}
+        if kind == "assistant.turn_start":
+            meta["turns"] += 1
+        elif kind == "session.auto_mode_resolved":
+            meta["model_routed"] = data.get("chosenModel")
+        elif kind == "model.call_start":
+            model = data.get("model")
+            if model and model not in meta["models_called"]:
+                meta["models_called"].append(model)
+        elif kind == "session.usage_checkpoint":
+            meta["nano_aiu"] = data.get("totalNanoAiu")
+        elif kind == "result":
+            usage = event.get("usage")
+            usage = usage if isinstance(usage, dict) else {}
+            meta["premium_requests"] = usage.get("premiumRequests")
+            meta["api_ms"] = usage.get("totalApiDurationMs")
+            meta["session_ms"] = usage.get("sessionDurationMs")
+    if meta["nano_aiu"] is not None:
+        # ASSUMPTION, unverified: 1 AIU = 1 AI credit.
+        meta["ai_credits_est"] = meta["nano_aiu"] / 1e9
+    return meta
 
 
 def error_texts(events):
@@ -304,13 +378,17 @@ def run_one(args, task, case, i, arm, prompt, plugin, stage, token, tmp,
              "durationSeconds": seconds, "graders": [],
              "flags": [],
              "tracePath": f"traces/{case}/{label or arm}-{i}/trace.norm.jsonl"}
+    meta = run_meta(events)
     info = {"limit": limit.group(0) if limit else None,
-            "models": models_seen(events), "never_started": False,
+            "meta": meta,
+            "models": ([meta["model_routed"]] if meta["model_routed"]
+                       else models_seen(events)), "never_started": False,
             "first_error": ""}
     if code == SCAFFOLD_FAILED and not error:
         tail = " | ".join(stderr.strip().splitlines()[-3:])
         entry["error"] = f"scaffold failed: {tail}"
-        return entry, {"limit": None, "models": [], "never_started": False,
+        return entry, {"limit": None, "models": [], "meta": meta,
+                       "never_started": False,
                        "first_error": ""}
     if limit:
         entry["error"] = f"usage limit: {limit.group(0)}"
@@ -319,9 +397,8 @@ def run_one(args, task, case, i, arm, prompt, plugin, stage, token, tmp,
     norm = normalise(parsed)
     (run_dir / "trace.norm.jsonl").write_text(
         "".join(json.dumps(e) + "\n" for e in norm))
-    entry["turns"] = sum(1 for e in events
-                         if isinstance(e, dict)
-                         and e.get("type") == "assistant.message")
+    entry["turns"] = meta["turns"]
+    entry["meta"] = meta
     if turns_over(entry["turns"]):
         entry["flags"].append("over_12_turns")
     if truncated and not entry["error"]:
@@ -608,6 +685,7 @@ def run_task(args, task, tmp, out, state, token):
     prior = state.get(task, {"attempts": [], "complete": {},
                              "models_seen": {}})
     prior.setdefault("models_seen", {})
+    prior.setdefault("credits_est", {})
     remaining = [n for n in names if n not in prior["complete"]]
     attempt = len(prior["attempts"]) + 1
     rel = f"{task}/calibrate" if args.calibrate else f"{task}/attempt-{attempt}"
@@ -629,6 +707,7 @@ def run_task(args, task, tmp, out, state, token):
     task_state = {"status": "incomplete", "wraith_sha": sha,
                   "complete": dict(prior["complete"]),
                   "incomplete": [], "models_seen": prior["models_seen"],
+                  "credits_est": prior["credits_est"],
                   "attempts": prior["attempts"] + [attempt_rec]}
     state[task] = task_state
     secrets = [token]
@@ -653,6 +732,10 @@ def run_task(args, task, tmp, out, state, token):
                             first_error = first_error or info["first_error"]
                         task_state["models_seen"][
                             f"{case}/{arm}-{i}"] = info["models"]
+                        est = info["meta"]["ai_credits_est"]
+                        if est is not None:
+                            task_state["credits_est"][
+                                f"{case}/{arm}-{i}"] = est
                         if info["limit"]:
                             limited = info["limit"]
                             break
@@ -720,7 +803,9 @@ def write_usage(dest, task, data):
                     "case": report["name"], "arm": arm, "run": i,
                     "score": entry.get("score"), "turns": entry.get("turns"),
                     "seconds": entry.get("durationSeconds"),
-                    "flags": entry.get("flags", [])})
+                    "flags": entry.get("flags", []),
+                    **{k: v for k, v in entry.get("meta", {}).items()
+                       if k != "turns"}})
     over = sum("over_12_turns" in r["flags"] for r in rows)
     (dest / "usage.json").write_text(json.dumps(
         {"runs": rows, "flag_counts": {"over_12_turns": over}}, indent=2))
@@ -891,6 +976,9 @@ def write_manifest(out, args, tasks, state, secrets=()):
         "image": args.image,
         "judge_model": run.JUDGE_MODEL,
         "max_ai_credits_per_run": args.max_ai_credits,
+        "credits_used_est": sum(
+            sum(state.get(t, {}).get("credits_est", {}).values())
+            for t in tasks),
         "projected_total_credits": runs * cases * 2 * args.max_ai_credits,
         "runs": runs,
         "tasks": state,

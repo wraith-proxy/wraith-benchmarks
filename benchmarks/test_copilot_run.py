@@ -236,9 +236,11 @@ class RunnerTest(unittest.TestCase):
 
 
 def messages(n):
-    return "".join(json.dumps({"type": "assistant.message",
-                               "data": {"content": f"m{i}"}}) + "\n"
-                   for i in range(n))
+    return "".join(
+        json.dumps({"type": "assistant.turn_start", "data": {}}) + "\n"
+        + json.dumps({"type": "assistant.message",
+                      "data": {"content": f"m{i}"}}) + "\n"
+        for i in range(n))
 
 
 class LoggingFake(Fake):
@@ -558,6 +560,53 @@ class FusionTest(unittest.TestCase):
         parsed, _ = cr.split_events(trace)
         norm = cr.normalise(parsed)
         self.assertEqual(norm, [])
+
+
+class RealTraceTest(unittest.TestCase):
+    def setUp(self):
+        self.events = cr.parse_events(fixture("real-plan-review-with.jsonl"))
+        self.norm = cr.normalise(self.events)
+
+    def calls(self):
+        return [(b["name"], b["input"]) for b in run.tool_use_blocks(self.norm)]
+
+    def test_calls_in_order(self):
+        calls = self.calls()
+        self.assertEqual(calls[0], ("Skill", {"skill": "plan-data-review"}))
+        self.assertEqual([n for n, _ in calls[1:4]],
+                         ["Glob", "Read", "Glob"])
+        self.assertEqual(calls[2][1],
+                         {"file_path": "/work/ws/docs/wraith/"
+                          "2026-10-12-daily-revenue/plan.md"})
+        self.assertEqual(len(calls), 11)
+
+    def test_final_text_is_the_final_answer(self):
+        self.assertTrue(cr.final_text(self.norm).startswith(
+            "The plan is **NOT READY**"))
+
+    def test_meta(self):
+        meta = cr.run_meta(self.events)
+        self.assertEqual(meta["model_routed"], "gpt-6-luna")
+        self.assertEqual(meta["models_called"], ["gpt-6-luna"])
+        self.assertEqual(meta["premium_requests"], 1)
+        self.assertEqual(meta["nano_aiu"], 343703000)
+        self.assertAlmostEqual(meta["ai_credits_est"], 0.343703)
+        self.assertEqual(meta["api_ms"], 38910)
+        self.assertEqual(meta["session_ms"], 41611)
+        self.assertEqual(meta["turns"], 5)
+        self.assertEqual(meta["unmapped_tools"], [])
+
+    def test_unmapped_tool_is_recorded_not_raised(self):
+        trace = json.dumps({"type": "tool.execution_start", "data": {
+            "toolName": "web_fetch", "arguments": {"url": "x"}}}) + "\n"
+        events = cr.parse_events(trace)
+        self.assertEqual(cr.normalise(events), [])
+        self.assertEqual(cr.run_meta(events)["unmapped_tools"],
+                         ["web_fetch"])
+
+    def test_unknown_event_type_still_raises(self):
+        with self.assertRaises(run.BenchError):
+            cr.normalise([{"type": "weird.event", "data": {}}])
 
 
 if __name__ == "__main__":
