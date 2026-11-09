@@ -980,6 +980,11 @@ def main(argv=None, env=None):
                   file=sys.stderr)
             return 2
         state = json.loads(state_file.read_text())
+    if (out / "manifest.json").exists() and not args.resume:
+        # Calibration writes no state.json; never overwrite a finished run.
+        print(f"error: {out / 'manifest.json'} exists; pass a new --out",
+              file=sys.stderr)
+        return 2
     write_manifest(out, args, tasks, state, secrets)
     code = 0
     hits = []

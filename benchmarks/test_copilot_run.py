@@ -680,3 +680,15 @@ class ShellEventsTest(unittest.TestCase):
         text = json.dumps(cr.normalise(lines))
         self.assertEqual(text.count('"name": "Bash"'), 1)
         self.assertIn("bq ls", text)
+
+
+class ExistingOutTest(unittest.TestCase):
+    def test_existing_manifest_is_never_overwritten(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            out.mkdir()
+            (out / "manifest.json").write_text('{"keep": true}')
+            code, err = run_main(tmp, Fake(stdout=fixture("shell_ls.jsonl")))
+            self.assertEqual(code, 2)
+            self.assertIn("manifest.json exists", err)
+            self.assertEqual((out / "manifest.json").read_text(), '{"keep": true}')
