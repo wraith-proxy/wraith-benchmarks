@@ -263,6 +263,20 @@ class HardeningTest(unittest.TestCase):
             self.assertEqual(manifest["max_ai_credits_per_run"], 1.0)
             self.assertEqual(manifest["projected_total_credits"], 4.0)
 
+    def test_secret_scan_runs_even_when_a_run_crashes(self):
+        class Crash(Fake):
+            def __call__(self, argv, **kwargs):
+                if argv[0] == "docker":
+                    raise RuntimeError("crash")
+                return super().__call__(argv, **kwargs)
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch.object(
+                cr, "leaks", wraps=cr.leaks
+            ) as scan:
+                with self.assertRaises(RuntimeError):
+                    run_main(tmp, Crash())
+            scan.assert_called_once()
+
     def test_over_12_turns_flag(self):
         with tempfile.TemporaryDirectory() as tmp:
             run_main(tmp, Fake(stdout=messages(13)), runs="1")

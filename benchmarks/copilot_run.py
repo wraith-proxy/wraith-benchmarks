@@ -791,38 +791,41 @@ def main(argv=None, env=None):
         state = json.loads(state_file.read_text())
     write_manifest(out, args, tasks, state, secrets)
     code = 0
-    with tempfile.TemporaryDirectory(prefix="wraith-bench-") as tmp:
-        for task in tasks:
-            if state.get(task, {}).get("status") == "done":
-                print(f"[{task}] already done, skipping")
-                continue
-            try:
-                run_task(args, task, tmp, out, state, token)
-            except (BenchError, subprocess.CalledProcessError) as err:
-                message = redact(str(err), secrets)
-                print(f"error: {message}", file=sys.stderr)
-                state[task] = {**state.get(task, {"attempts": [],
-                                                  "complete": {}}),
-                               "status": "error", "error": message}
-                code = 4
-            if not args.calibrate:
-                write_state(out, state, secrets)
-            if state[task]["status"] == "usage_limit":
-                print(f"[{task}] Copilot usage limit hit; stopping. "
-                      "Rerun with --resume later.", file=sys.stderr)
-                code = 3
-                break
-            if state[task]["status"] not in ("done", "dry_run"):
-                code = code or 4
-    write_manifest(out, args, tasks, state, secrets)
-    hits = leaks(out, secrets)
-    if hits:
-        print("error: credential value found in output files:",
-              file=sys.stderr)
-        for path in hits:
-            print(f"  {path}", file=sys.stderr)
-        return 5
-    return code
+    hits = []
+    try:
+        with tempfile.TemporaryDirectory(prefix="wraith-bench-") as tmp:
+            for task in tasks:
+                if state.get(task, {}).get("status") == "done":
+                    print(f"[{task}] already done, skipping")
+                    continue
+                try:
+                    run_task(args, task, tmp, out, state, token)
+                except (BenchError, subprocess.CalledProcessError) as err:
+                    message = redact(str(err), secrets)
+                    print(f"error: {message}", file=sys.stderr)
+                    state[task] = {**state.get(task, {"attempts": [],
+                                                      "complete": {}}),
+                                   "status": "error", "error": message}
+                    code = 4
+                if not args.calibrate:
+                    write_state(out, state, secrets)
+                if state[task]["status"] == "usage_limit":
+                    print(f"[{task}] Copilot usage limit hit; stopping. "
+                          "Rerun with --resume later.", file=sys.stderr)
+                    code = 3
+                    break
+                if state[task]["status"] not in ("done", "dry_run"):
+                    code = code or 4
+        write_manifest(out, args, tasks, state, secrets)
+    finally:
+        # Runs on crashes too: results are committed to git later.
+        hits = leaks(out, secrets)
+        if hits:
+            print("error: credential value found in output files:",
+                  file=sys.stderr)
+            for path in hits:
+                print(f"  {path}", file=sys.stderr)
+    return 5 if hits else code
 
 
 def write_manifest(out, args, tasks, state, secrets=()):
