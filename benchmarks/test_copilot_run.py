@@ -192,5 +192,90 @@ class RunnerTest(unittest.TestCase):
         self.assertEqual(fake.calls, [])
 
 
+def votes_of(*votes):
+    it = iter(votes * 10)
+    seen = []
+
+    def vote(prompt):
+        seen.append(prompt)
+        return next(it)
+    vote.seen = seen
+    return vote
+
+
+class JudgeTest(unittest.TestCase):
+    def test_majority_and_explanation(self):
+        vote = votes_of("PASS", "FAIL", "PASS")
+        graders = cr.judge_case("plan-review-p01", "final", {}, vote)
+        self.assertEqual(len(graders), 3)
+        self.assertTrue(graders[0]["passed"])
+        self.assertEqual(graders[0]["explanation"],
+                         "judge votes: PASS FAIL PASS")
+
+    def test_unparsable_vote_raises(self):
+        with self.assertRaises(run.BenchError):
+            cr.parse_vote(json.dumps({"result": "Probably PASS"}))
+        with self.assertRaises(run.BenchError):
+            cr.parse_vote("not json")
+        bad = subprocess.CompletedProcess([], 0, "garbage", "")
+        with mock.patch("subprocess.run", return_value=bad), \
+                self.assertRaises(run.BenchError):
+            cr.vote_once("p")
+
+    def test_vote_parses_first_line(self):
+        out = json.dumps({"result": "FAIL\nbecause"})
+        self.assertEqual(cr.parse_vote(out), "FAIL")
+
+    def test_argv_and_env_never_carry_api_key(self):
+        environ = {"ANTHROPIC_API_KEY": "secret", "PATH": "/bin"}
+        argv, kwargs = cr.judge_invocation("prompt", "/empty", environ)
+        self.assertIn("-p", argv)
+        self.assertEqual(argv[argv.index("--model") + 1], "claude-haiku-5-5")
+        self.assertNotIn("ANTHROPIC_API_KEY", kwargs["env"])
+        self.assertEqual(kwargs["env"]["PATH"], "/bin")
+        self.assertEqual(kwargs["input"], "prompt")
+        self.assertEqual(kwargs["cwd"], "/empty")
+
+    def test_judge_input_has_final_text_and_written_files(self):
+        vote = votes_of("PASS")
+        cr.judge_case("plan-review-p01", "FINAL REVIEW TEXT",
+                      {"/work/review.md": "FILE BODY"}, vote)
+        prompt = vote.seen[0]
+        self.assertIn("FINAL REVIEW TEXT", prompt)
+        self.assertIn("--- /work/review.md ---\nFILE BODY", prompt)
+        self.assertIn("Planted defect", prompt)
+
+    def test_rejudge_agreement(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            trace = Path(tmp) / "traces/plan-review-p01/t.jsonl"
+            trace.parent.mkdir(parents=True)
+            trace.write_text(json.dumps({"type": "result",
+                                         "result": "the review"}) + "\n")
+            graders = [{"name": "1-grain", "passed": True},
+                       {"name": "2-dedup", "passed": False},
+                       {"name": "3-scan", "passed": True}]
+            entry = {"tracePath": "traces/plan-review-p01/t.jsonl",
+                     "graders": graders}
+            (Path(tmp) / "plan-review.json").write_text(json.dumps({
+                "cases": [{"name": "plan-review-p01",
+                           "arms": {"with": [entry], "without": []}}]}))
+            record = cr.rejudge(tmp, votes_of("PASS"))
+            self.assertEqual(record["compared"], 3)
+            self.assertEqual(record["agreed"], 2)
+            self.assertTrue((Path(tmp) / "rejudge.json").is_file())
+
+    def test_plan_review_dry_run_prints_commands_only(self):
+        fake = Fake()
+        buf = io.StringIO()
+        with mock.patch("subprocess.run", fake), \
+                contextlib.redirect_stdout(buf):
+            code = cr.main(["--task", "plan-review", "--model", "m",
+                            "--max-ai-credits", "1", "--out", "/nonexistent",
+                            "--dry-run"], {})
+        self.assertEqual(code, 0)
+        self.assertEqual(fake.calls, [])
+        self.assertIn("claude -p --model claude-haiku-5-5", buf.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -316,8 +316,143 @@ def score_contract_arms(attempt_dir, data, validator=run.validate_contract):
     return record
 
 
-def judge_case(task_case, final, files, runner=None):
-    raise BenchError("judge not implemented")
+# ---- judge
+
+JUDGE_PROMPT = HERE / "judge_prompt.md"
+JUDGE_VOTES = 3
+# TODO(verify): that --tools "" disables every tool in claude -p.
+JUDGE_ARGV = ["claude", "-p", "--model", run.JUDGE_MODEL,
+              "--output-format", "json", "--tools", ""]
+
+
+def judge_invocation(prompt, cwd, environ):
+    """argv and subprocess kwargs for one vote; the API key never passes."""
+    env = {k: v for k, v in environ.items() if k != "ANTHROPIC_API_KEY"}
+    return list(JUDGE_ARGV), {"input": prompt, "cwd": cwd, "env": env,
+                              "capture_output": True, "text": True}
+
+
+def agent_output(final, files):
+    parts = [final] + [f"--- {path} ---\n{content}"
+                       for path, content in files.items()]
+    return "\n".join(parts)
+
+
+def build_judge_prompt(answer_key, final, files):
+    template = JUDGE_PROMPT.read_text()
+    return (template.replace("{answer_key}", answer_key)
+            .replace("{agent_output}", agent_output(final, files)))
+
+
+def parse_vote(stdout):
+    try:
+        text = json.loads(stdout).get("result")
+    except (json.JSONDecodeError, AttributeError):
+        raise BenchError(f"judge output is not JSON: {stdout[:120]!r}")
+    if not isinstance(text, str) or not text.strip():
+        raise BenchError(f"judge gave no result text: {stdout[:120]!r}")
+    first = text.strip().splitlines()[0].strip()
+    if first not in ("PASS", "FAIL"):
+        raise BenchError(f"judge vote not PASS or FAIL: {first[:80]!r}")
+    return first
+
+
+def vote_once(prompt):
+    with tempfile.TemporaryDirectory(prefix="judge-") as cwd:
+        argv, kwargs = judge_invocation(prompt, cwd, os.environ)
+        proc = subprocess.run(argv, **kwargs)
+    if proc.returncode != 0:
+        raise BenchError(f"judge exited {proc.returncode}: "
+                         f"{proc.stderr.strip()[-200:]}")
+    return parse_vote(proc.stdout)
+
+
+def llm_graders(case):
+    """(name, answer key) for each llm grader of a plan-review case."""
+    short = case.removeprefix("plan-review-")
+    found = []
+    for f in sorted((HERE / "fixtures" / "plan-review" / short
+                     / "graders").glob("*.md")):
+        parts = f.read_text().split("---", 2)
+        if len(parts) == 3 and re.search(
+                r"^type:\s*llm\s*$", parts[1], re.MULTILINE):
+            found.append((f.stem, parts[2].strip()))
+    return found
+
+
+def judge_case(case, final, files, vote=vote_once):
+    graders = []
+    for name, key in llm_graders(case):
+        prompt = build_judge_prompt(key, final, files)
+        votes = [vote(prompt) for _ in range(JUDGE_VOTES)]
+        graders.append({
+            "name": name, "passed": votes.count("PASS") > len(votes) / 2,
+            "explanation": "judge votes: " + " ".join(votes)})
+    return graders
+
+
+def rejudge(attempt_dir, vote=vote_once):
+    """Re-grade a Claude Code attempt's traces and compare with eval."""
+    attempt_dir = Path(attempt_dir)
+    skip = {"usage.json", "guard-score.json", "validation.json",
+            "rejudge.json"}
+    cases, agree, total = {}, 0, 0
+    for jf in sorted(attempt_dir.glob("*.json")):
+        if jf.name in skip:
+            continue
+        for report in run.find_case_reports(json.loads(jf.read_text())):
+            if not report["name"].startswith("plan-review-"):
+                continue
+            keys = llm_graders(report["name"])
+            rows = cases.setdefault(report["name"], {})
+            for arm, runs in zip(("with", "without"), run.arms_of(report)):
+                for n, entry in enumerate(runs):
+                    events = run.load_trace(run.resolve_trace(
+                        entry.get("tracePath") or entry.get("trace_path")
+                        or "", attempt_dir, "plan-review"))
+                    files = {}
+                    for block in run.tool_use_blocks(events):
+                        if block.get("name") == "Write":
+                            files[block["input"]["file_path"]] = \
+                                block["input"]["content"]
+                    theirs = {g.get("name"): g.get("passed")
+                              for g in entry.get("graders") or []}
+                    mine = judge_case(report["name"], claude_final(events),
+                                      files, vote)
+                    for k, g in enumerate(mine):
+                        verdict = theirs.get(g["name"])
+                        if verdict is None and k < len(theirs):
+                            verdict = list(theirs.values())[k]
+                        same = None if verdict is None else (
+                            bool(verdict) == g["passed"])
+                        if same is not None:
+                            total += 1
+                            agree += same
+                        rows.setdefault(g["name"], []).append({
+                            "arm": arm, "run": n, "judge": g["passed"],
+                            "eval": verdict, "agree": same,
+                            "explanation": g["explanation"]})
+    record = {"cases": cases, "compared": total, "agreed": agree,
+              "agreement_rate": agree / total if total else None}
+    (attempt_dir / "rejudge.json").write_text(json.dumps(record, indent=2))
+    return record
+
+
+def claude_final(events):
+    for event in reversed(events if isinstance(events, list) else []):
+        if isinstance(event, dict) and event.get("type") == "result" \
+                and isinstance(event.get("result"), str):
+            return event["result"]
+    text = ""
+    for event in events if isinstance(events, list) else []:
+        for block in (event.get("message", {}).get("content", [])
+                      if isinstance(event, dict)
+                      and isinstance(event.get("message"), dict)
+                      and isinstance(event["message"].get("content"), list)
+                      else []):
+            if block.get("type") == "text":
+                text = block.get("text", "")
+    return text
 
 
 # ---- runner
@@ -358,6 +493,9 @@ def dry_run_task(args, task):
                             args.max_ai_credits, "with"),
             os.getuid(), os.getgid())
         print(f"[{task}] probe: {' '.join(cmd)}")
+    if task == "plan-review":
+        argv, _ = judge_invocation("<prompt on stdin>", "<empty dir>", {})
+        print(f"[{task}] judge x{JUDGE_VOTES} per grader: {' '.join(argv)}")
     return {"status": "dry_run"}
 
 
@@ -492,10 +630,11 @@ def main(argv=None, env=None):
     ap.add_argument("--wraith-repo", default=run.DEFAULT_REPO)
     ap.add_argument("--runs", type=int, default=5)
     ap.add_argument("--case", help="case name glob, calibration only")
-    ap.add_argument("--model", required=True)
-    ap.add_argument("--max-ai-credits", type=float, required=True,
-                    help="cap per run")
-    ap.add_argument("--out", required=True)
+    ap.add_argument("--model")
+    ap.add_argument("--max-ai-credits", type=float, help="cap per run")
+    ap.add_argument("--out")
+    ap.add_argument("--rejudge", metavar="ATTEMPT_DIR",
+                    help="re-grade a Claude Code attempt with the judge")
     ap.add_argument("--image", default=DEFAULT_IMAGE)
     ap.add_argument("--token-file")
     ap.add_argument("--dry-run", action="store_true")
@@ -507,6 +646,15 @@ def main(argv=None, env=None):
             raise BenchError(
                 "ANTHROPIC_API_KEY is set. This would bill the API. "
                 "Unset it and rerun.")
+        if args.rejudge:
+            record = rejudge(args.rejudge)
+            print(f"rejudge: agreement {record['agreement_rate']} "
+                  f"({record['agreed']}/{record['compared']})")
+            return 0
+        for need in ("model", "max_ai_credits", "out"):
+            if getattr(args, need) is None:
+                raise BenchError(
+                    f"--{need.replace('_', '-')} is required")
         tasks = list(run.TASKS) if args.task == "all" else [args.task]
         if not args.dry_run:
             if not args.token_file:
