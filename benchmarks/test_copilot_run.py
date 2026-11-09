@@ -693,3 +693,15 @@ class ExistingOutTest(unittest.TestCase):
             self.assertEqual(code, 2)
             self.assertIn("manifest.json exists", err)
             self.assertEqual((out / "manifest.json").read_text(), '{"keep": true}')
+
+
+class VoteLineTest(unittest.TestCase):
+    def test_reason_on_vote_line_is_accepted(self):
+        out = json.dumps({"result": "FAIL: the review only asks about it"})
+        self.assertEqual(cr.parse_vote(out), "FAIL")
+        self.assertEqual(cr.parse_vote(json.dumps({"result": "PASS."})),
+                         "PASS")
+
+    def test_vote_must_lead_the_line(self):
+        with self.assertRaises(cr.BenchError):
+            cr.parse_vote(json.dumps({"result": "PASSABLE"}))

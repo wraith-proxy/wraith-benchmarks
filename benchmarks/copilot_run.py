@@ -584,9 +584,11 @@ def parse_vote(stdout):
     if not isinstance(text, str) or not text.strip():
         raise BenchError(f"judge gave no result text: {stdout[:120]!r}")
     first = text.strip().splitlines()[0].strip()
-    if first not in ("PASS", "FAIL"):
+    # Haiku sometimes puts the reason on the vote line: "FAIL: because".
+    m = re.match(r"(PASS|FAIL)(?![A-Za-z])", first)
+    if not m:
         raise BenchError(f"judge vote not PASS or FAIL: {first[:80]!r}")
-    return first
+    return m.group(1)
 
 
 def vote_once(prompt):
@@ -819,6 +821,8 @@ def run_task(args, task, tmp, out, state, token):
                 task_state["status"] = "usage_limit"
                 break
             if not args.calibrate:
+                # Unscored, so a later crash keeps finished cases.
+                dump_json(dest / f"{task}.json", {"cases": reports}, secrets)
                 task_state["complete"][case] = rel
                 attempt_rec["complete"].append(case)
                 write_state(out, state, secrets)
@@ -925,6 +929,8 @@ def main(argv=None, env=None):
     ap.add_argument("--out")
     ap.add_argument("--rejudge", metavar="ATTEMPT_DIR",
                     help="re-grade a Claude Code attempt with the judge")
+    ap.add_argument("--score-only", metavar="ATTEMPT_DIR",
+                    help="score an attempt's <task>.json without new runs")
     ap.add_argument("--image", default=DEFAULT_IMAGE)
     ap.add_argument("--token-file")
     ap.add_argument("--dry-run", action="store_true")
@@ -941,6 +947,14 @@ def main(argv=None, env=None):
             print(f"rejudge: agreement {record['agreement_rate']} "
                   f"({record['agreed']}/{record['compared']}), "
                   f"judge_sensitive {record['judge_sensitive']}")
+            return 0
+        if args.score_only:
+            if args.task == "all":
+                raise BenchError("--score-only needs one --task")
+            dest = Path(args.score_only)
+            data = json.loads((dest / f"{args.task}.json").read_text())
+            finish_attempt(dest, args.task, data, args)
+            print(f"scored {dest / (args.task + '.json')}")
             return 0
         for need in ("model", "max_ai_credits", "out"):
             if getattr(args, need) is None:
