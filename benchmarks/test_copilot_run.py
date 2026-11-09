@@ -667,3 +667,16 @@ class ToolNamesTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ShellEventsTest(unittest.TestCase):
+    def test_shell_progress_events_are_ignored(self):
+        lines = [
+            {"type": "tool.execution_start", "data": {"toolCallId": "1",
+             "toolName": "bash", "arguments": {"command": "bq ls"}}},
+            {"type": "tool.execution_partial_result", "data": {"toolCallId": "1"}},
+            {"type": "tool.shell_output", "data": {"toolCallId": "1"}},
+        ]
+        text = json.dumps(cr.normalise(lines))
+        self.assertEqual(text.count('"name": "Bash"'), 1)
+        self.assertIn("bq ls", text)

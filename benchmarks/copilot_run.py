@@ -79,7 +79,8 @@ IGNORED_EVENTS = {
     "assistant.reasoning", "assistant.reasoning_delta",
     "assistant.tool_call_delta", "assistant.idle",
     "model.call_start", "model.call_finished", "model.call_final_result",
-    "tool.execution_complete", "result", "error",
+    "tool.execution_complete", "tool.execution_partial_result",
+    "tool.shell_output", "result", "error",
 }
 # TODO(verify): broad on purpose; applied to stderr and error events only.
 COPILOT_LIMIT = re.compile(
