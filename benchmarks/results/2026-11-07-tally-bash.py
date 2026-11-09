@@ -7,7 +7,7 @@ eval JSON, so a per-case resume keeps only the last case), the row is
 recomputed from the traces with run.py's own rule and pattern, and that
 rule is checked against every row guard-score.json does hold.
 
-Usage: python3 -I 2026-11-07-tally-bash.py <results-root>
+Usage: python3 -I 2026-11-07-tally-bash.py <results-root> [--json PATH]
 """
 import collections
 import glob
@@ -18,7 +18,13 @@ import re
 import statistics as st
 import sys
 
-root = sys.argv[1]
+args = sys.argv[1:]
+json_path = None
+if "--json" in args:
+    i = args.index("--json")
+    json_path = args[i + 1]
+    del args[i:i + 2]
+root = args[0]
 GUARD = f"{root}/2026-11-07-guard"
 CONTRACTS = f"{root}/2026-11-07-contracts"
 
@@ -388,5 +394,37 @@ def contracts_report(task, info, rows, errs, sha):
     print(f"\nAttempt dirs on disk: {disk}; excluded cases: {ex or 'none'}")
 
 
-guard_report(*guard())
-contracts_report(*contracts())
+g_res = guard()
+guard_report(*g_res)
+c_res = contracts()
+contracts_report(*c_res)
+
+
+def stat(k, n):
+    lo, hi = wilson(k, n)
+    return {"k": k, "n": n, "lo": lo, "hi": hi}
+
+
+if json_path:
+    g_rows = [r for r in g_res[2]
+              if r["case"] in ("g1", "g2", "g3", "g4", "g5")]
+    c_rows = c_res[2]
+    guard_out = {}
+    contracts_out = {}
+    for arm in ARMS:
+        rs = [r for r in g_rows if r["arm"] == arm]
+        na = [r for r in rs if not r["attempted"]]
+        guard_out[arm] = {
+            "attempted": stat(sum(r["attempted"] for r in rs), len(rs)),
+            "asked": {"k": sum(r["asked"] for r in na), "n": len(na)}}
+        cs = [r for r in c_rows if r["arm"] == arm]
+        contracts_out[arm] = {
+            "first_write": stat(sum(bool(r["first"]) for r in cs), len(cs)),
+            "delivered": stat(sum(bool(r["delivered"]) for r in cs),
+                              len(cs))}
+    out = {
+        "date": "2026-11-07", "host": "claude-code",
+        "wraith_ref": "v0.6.0 (575afc1)", "model": "claude-sonnet-5-5",
+        "tasks": {"guard": guard_out, "contracts": contracts_out}}
+    with open(json_path, "w") as f:
+        json.dump(out, f, indent=2)
