@@ -46,7 +46,7 @@ def run_main(tmp, fake, extra=(), env=None, runs="2"):
     token = Path(tmp) / "token"
     token.write_text(TOKEN + "\n")
     argv = ["--task", "guard", "--case", "g1", "--runs", runs,
-            "--model", "m", "--max-ai-credits", "1",
+            "--model", "m", "--max-ai-credits", "30",
             "--token-file", str(token), "--out", str(Path(tmp) / "out"),
             *extra]
     err = io.StringIO()
@@ -229,7 +229,7 @@ class RunnerTest(unittest.TestCase):
         with mock.patch("subprocess.run", fake), \
                 contextlib.redirect_stdout(io.StringIO()):
             code = cr.main(["--task", "guard", "--model", "m",
-                            "--max-ai-credits", "1", "--out", "/nonexistent",
+                            "--max-ai-credits", "30", "--out", "/nonexistent",
                             "--dry-run"], {})
         self.assertEqual(code, 0)
         self.assertEqual(fake.calls, [])
@@ -303,8 +303,8 @@ class HardeningTest(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 run_main(tmp, Crash())
             manifest = out_json(tmp, "manifest.json")
-            self.assertEqual(manifest["max_ai_credits_per_run"], 1.0)
-            self.assertEqual(manifest["projected_total_credits"], 4.0)
+            self.assertEqual(manifest["max_ai_credits_per_run"], 30.0)
+            self.assertEqual(manifest["projected_total_credits"], 120.0)
 
     def test_secret_scan_runs_even_when_a_run_crashes(self):
         class Crash(Fake):
@@ -498,11 +498,66 @@ class JudgeTest(unittest.TestCase):
         with mock.patch("subprocess.run", fake), \
                 contextlib.redirect_stdout(buf):
             code = cr.main(["--task", "plan-review", "--model", "m",
-                            "--max-ai-credits", "1", "--out", "/nonexistent",
+                            "--max-ai-credits", "30", "--out", "/nonexistent",
                             "--dry-run"], {})
         self.assertEqual(code, 0)
         self.assertEqual(fake.calls, [])
         self.assertIn("claude -p --model claude-haiku-5-5", buf.getvalue())
+
+
+class FusionTest(unittest.TestCase):
+    def test_auto_without_tier_exits_2(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = Fake()
+            code, err = run_main(tmp, fake, extra=["--model", "auto"])
+            self.assertEqual(code, 2)
+            self.assertIn("--auto-tier", err)
+            self.assertEqual(fake.calls, [])
+
+    def test_auto_tier_in_argv_and_manifest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = Fake(stdout=fixture("shell_ls.jsonl"))
+            code, _ = run_main(
+                tmp, fake, runs="1",
+                extra=["--model", "auto", "--auto-tier", "intelligence"])
+            self.assertEqual(code, 0)
+            argv = fake.dockers()[0]
+            i = argv.index("--auto-tier")
+            self.assertEqual(argv[i + 1], "intelligence")
+            self.assertEqual(out_json(tmp, "manifest.json")["auto_tier"],
+                             "intelligence")
+
+    def test_credits_below_30_exit_2(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = Fake()
+            code, err = run_main(tmp, fake,
+                                 extra=["--max-ai-credits", "29"])
+            self.assertEqual(code, 2)
+            self.assertIn("Copilot needs --max-ai-credits of at least 30",
+                          err)
+            self.assertEqual(fake.calls, [])
+
+    def test_all_runs_failing_before_a_turn_exits_4(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = Fake(code=1, stderr='Error: Model "x" from --model '
+                                       'flag is not available.\n')
+            code, err = run_main(tmp, fake)
+            self.assertEqual(code, 4)
+            self.assertIn("[guard] no run reached the model; first error: "
+                          'Error: Model "x" from --model flag is not '
+                          "available.", err)
+
+    def test_session_only_trace_parses_with_zero_tool_calls(self):
+        trace = "".join(json.dumps(e) + "\n" for e in (
+            {"type": "session.mcp_server_status_changed",
+             "data": {"serverName": "a", "status": "connected"}},
+            {"type": "session.mcp_server_tools_loaded",
+             "data": {"serverName": "a", "tools": []}},
+            {"type": "session.mcp_server_status_changed",
+             "data": {"serverName": "b", "status": "connected"}}))
+        parsed, _ = cr.split_events(trace)
+        norm = cr.normalise(parsed)
+        self.assertEqual(norm, [])
 
 
 if __name__ == "__main__":

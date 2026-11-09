@@ -209,7 +209,8 @@ def arm_order(i):
     return ("with", "without") if i % 2 == 0 else ("without", "with")
 
 
-def copilot_command(task, prompt, model, credits, arm, out_share="/out/share.md"):
+def copilot_command(task, prompt, model, credits, arm,
+                    out_share="/out/share.md", tier=None):
     tools = [TOOL_MAP[t] for t in TOOLS[task]]
     cmd = [
         "copilot", "-p", prompt, "--model", model,
@@ -219,11 +220,14 @@ def copilot_command(task, prompt, model, credits, arm, out_share="/out/share.md"
         "--allow-all-tools", "--trust-folder",
         "--available-tools", *tools,
     ]
+    if tier:
+        cmd += ["--auto-tier", tier]
     if arm == "with":
         cmd += ["--plugin-dir", "/plugin"]
     return cmd
 
 
+MIN_CREDITS = 30
 SCAFFOLD_FAILED = 97
 CONTAINER_SCRIPT = (
     'set -e; cd /work/ws; '
@@ -272,7 +276,8 @@ def run_one(args, task, case, i, arm, prompt, plugin, stage, token, tmp,
     ws = Path(tempfile.mkdtemp(prefix="ws-", dir=tmp))
     cmd = docker_command(
         args.image, ws, run_dir, plugin, arm,
-        copilot_command(task, prompt, args.model, args.max_ai_credits, arm),
+        copilot_command(task, prompt, args.model, args.max_ai_credits, arm,
+                        tier=args.auto_tier),
         os.getuid(), os.getgid(), task, case)
     env = {**os.environ, TOKEN_ENV: token}
     started = time.monotonic()
@@ -300,11 +305,13 @@ def run_one(args, task, case, i, arm, prompt, plugin, stage, token, tmp,
              "flags": [],
              "tracePath": f"traces/{case}/{label or arm}-{i}/trace.norm.jsonl"}
     info = {"limit": limit.group(0) if limit else None,
-            "models": models_seen(events)}
+            "models": models_seen(events), "never_started": False,
+            "first_error": ""}
     if code == SCAFFOLD_FAILED and not error:
         tail = " | ".join(stderr.strip().splitlines()[-3:])
         entry["error"] = f"scaffold failed: {tail}"
-        return entry, {"limit": None, "models": []}
+        return entry, {"limit": None, "models": [], "never_started": False,
+                       "first_error": ""}
     if limit:
         entry["error"] = f"usage limit: {limit.group(0)}"
         return entry, info
@@ -321,6 +328,12 @@ def run_one(args, task, case, i, arm, prompt, plugin, stage, token, tmp,
         entry["error"] = "truncated output"
     if code != 0 and not entry["error"]:
         entry["error"] = f"exit {code}: {' | '.join(stderr.strip().splitlines()[-3:])}"
+    if entry["error"] and not any(
+            isinstance(e, dict) and not str(e.get("type", "")).startswith(
+                "session.") for e in events):
+        info["never_started"] = True
+        lines = stderr.strip().splitlines()
+        info["first_error"] = lines[0] if lines else entry["error"]
     return entry, info
 
 
@@ -567,14 +580,16 @@ def dry_run_task(args, task):
                     args.image, "<workspace>", f"<out>/{case}/{arm}-{i}",
                     plugin, arm,
                     copilot_command(task, prompt, args.model,
-                                    args.max_ai_credits, arm),
+                                    args.max_ai_credits, arm,
+                                    tier=args.auto_tier),
                     os.getuid(), os.getgid(), task, case)
                 print(f"[{task}] {case} {arm}-{i}: {' '.join(cmd)}")
     if args.calibrate:
         cmd = docker_command(
             args.image, "<workspace>", "<out>/probe", plugin, "with",
             copilot_command(task, PROBE_PROMPT, args.model,
-                            args.max_ai_credits, "with"),
+                            args.max_ai_credits, "with",
+                            tier=args.auto_tier),
             os.getuid(), os.getgid(), task, names[0])
         print(f"[{task}] probe: {' '.join(cmd)}")
     if task == "plan-review":
@@ -618,6 +633,8 @@ def run_task(args, task, tmp, out, state, token):
     state[task] = task_state
     secrets = [token]
     reports = []
+    ran = never = 0
+    first_error = ""
     print(f"[{task}] wraith {args.wraith_ref} = {sha}, attempt {attempt}")
     try:
         for case in remaining:
@@ -630,6 +647,10 @@ def run_task(args, task, tmp, out, state, token):
                         entry, info = run_one(args, task, case, i, arm, prompt,
                                               plugin, stage, token, tmp)
                         arms[arm].append(entry)
+                        ran += 1
+                        if info["never_started"]:
+                            never += 1
+                            first_error = first_error or info["first_error"]
                         task_state["models_seen"][
                             f"{case}/{arm}-{i}"] = info["models"]
                         if info["limit"]:
@@ -644,6 +665,11 @@ def run_task(args, task, tmp, out, state, token):
             finally:
                 if (stage / case).is_dir():
                     copy_stage(stage / case, dest / "traces" / case, secrets)
+            if ran and ran == never:
+                print(f"[{task}] no run reached the model; first error: "
+                      f"{first_error}", file=sys.stderr)
+                task_state["status"] = "error"
+                break
             reports.append({"name": case, "arms": arms})
             if limited:
                 task_state["incomplete"].append(case)
@@ -748,6 +774,8 @@ def main(argv=None, env=None):
     ap.add_argument("--runs", type=int, default=5)
     ap.add_argument("--case", help="case name glob, calibration only")
     ap.add_argument("--model")
+    ap.add_argument("--auto-tier",
+                    choices=["efficiency", "balance", "intelligence"])
     ap.add_argument("--max-ai-credits", type=float, help="cap per run")
     ap.add_argument("--out")
     ap.add_argument("--rejudge", metavar="ATTEMPT_DIR",
@@ -773,6 +801,11 @@ def main(argv=None, env=None):
             if getattr(args, need) is None:
                 raise BenchError(
                     f"--{need.replace('_', '-')} is required")
+        if args.model == "auto" and not args.auto_tier:
+            raise BenchError("--model auto requires --auto-tier")
+        if args.max_ai_credits < MIN_CREDITS:
+            raise BenchError(
+                f"Copilot needs --max-ai-credits of at least {MIN_CREDITS}")
         tasks = list(run.TASKS) if args.task == "all" else [args.task]
         if not args.dry_run:
             if not args.token_file:
@@ -850,6 +883,7 @@ def write_manifest(out, args, tasks, state, secrets=()):
         "calibrate": args.calibrate,
         "copilot_version": args.image.rsplit(":", 1)[-1],
         "model_requested": args.model,
+        "auto_tier": args.auto_tier,
         "models_seen": {t: state.get(t, {}).get("models_seen", {})
                         for t in tasks},
         "wraith_ref": args.wraith_ref,
