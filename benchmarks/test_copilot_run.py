@@ -676,6 +676,7 @@ class ShellEventsTest(unittest.TestCase):
              "toolName": "bash", "arguments": {"command": "bq ls"}}},
             {"type": "tool.execution_partial_result", "data": {"toolCallId": "1"}},
             {"type": "tool.shell_output", "data": {"toolCallId": "1"}},
+            {"type": "prompt_cache_break", "data": {"primaryReason": "x"}},
         ]
         text = json.dumps(cr.normalise(lines))
         self.assertEqual(text.count('"name": "Bash"'), 1)
