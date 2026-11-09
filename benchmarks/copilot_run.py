@@ -55,22 +55,65 @@ IGNORED_EVENTS = {
 }
 # TODO(verify): broad on purpose; applied to stderr and error events only.
 COPILOT_LIMIT = re.compile(
-    r"quota|premium request|rate limit|exceeded", re.IGNORECASE)
+    r"quota exceeded|rate limit|premium request|usage limit", re.IGNORECASE)
+OVER_TURNS = 12
+CUT_ERRORS = ("timeout", "truncated output")
+REDACTED = "[redacted]"
 MODEL_KEYS = ("model", "newModel", "selectedModel")
 
 
 # ---- events
 
-def parse_events(text):
+def redact(text, secrets):
+    for secret in secrets:
+        if secret:
+            text = text.replace(secret, REDACTED)
+    return text
+
+
+def redact_obj(node, secrets):
+    if isinstance(node, str):
+        return redact(node, secrets)
+    if isinstance(node, dict):
+        return {redact(str(k), secrets): redact_obj(v, secrets)
+                for k, v in node.items()}
+    if isinstance(node, list):
+        return [redact_obj(v, secrets) for v in node]
+    return node
+
+
+def dump_json(path, obj, secrets):
+    Path(path).write_text(json.dumps(redact_obj(obj, secrets), indent=2))
+
+
+def leaks(directory, secrets):
+    """Relative paths under directory that contain a secret value."""
+    root = Path(directory)
+    secrets = [s for s in secrets if s]
+    return sorted(
+        str(f.relative_to(root)) for f in root.rglob("*")
+        if f.is_file() and any(
+            s in f.read_text(errors="ignore") for s in secrets))
+
+
+def split_events(text):
+    """(events, truncated). A final line that is cut off is dropped."""
     events = []
-    for line in text.splitlines():
+    lines = text.splitlines()
+    for n, line in enumerate(lines):
         if not line.strip():
             continue
         try:
             events.append(json.loads(line))
         except json.JSONDecodeError as err:
+            if n == len(lines) - 1 and not text.endswith("\n"):
+                return events, True
             raise BenchError(f"unrecognised event line: {err}: {line[:80]!r}")
-    return events
+    return events, False
+
+
+def parse_events(text):
+    return split_events(text)[0]
 
 
 def _data(event):
@@ -234,7 +277,8 @@ def run_one(args, task, case, i, arm, prompt, plugin, stage, token, tmp,
             if isinstance(exc.stdout, bytes) else (exc.stdout or "")
         stderr = (exc.stderr or b"").decode(errors="ignore") \
             if isinstance(exc.stderr, bytes) else (exc.stderr or "")
-        code, error = -1, f"timeout after {WALL_TIMEOUT}s"
+        code, error = -1, "timeout"
+    stderr = redact(stderr, [token])
     seconds = round(time.monotonic() - started, 1)
     (run_dir / "trace.jsonl").write_text(stdout)
     (run_dir / "stderr.log").write_text(stderr)
@@ -244,24 +288,38 @@ def run_one(args, task, case, i, arm, prompt, plugin, stage, token, tmp,
     limit = COPILOT_LIMIT.search(stderr + "\n" + error_texts(events))
     entry = {"score": None, "turns": 0, "error": error,
              "durationSeconds": seconds, "graders": [],
+             "flags": [],
              "tracePath": f"traces/{case}/{label or arm}-{i}/trace.norm.jsonl"}
     info = {"limit": limit.group(0) if limit else None,
             "models": models_seen(events)}
     if limit:
         entry["error"] = f"usage limit: {limit.group(0)}"
         return entry, info
-    norm = normalise(parse_events(stdout))
+    parsed, truncated = split_events(stdout)
+    norm = normalise(parsed)
     (run_dir / "trace.norm.jsonl").write_text(
         "".join(json.dumps(e) + "\n" for e in norm))
     entry["turns"] = sum(1 for e in events
                          if isinstance(e, dict)
                          and e.get("type") == "assistant.message")
-    if code != 0 and not error:
+    if turns_over(entry["turns"]):
+        entry["flags"].append("over_12_turns")
+    if truncated and not entry["error"]:
+        entry["error"] = "truncated output"
+    if code != 0 and not entry["error"]:
         entry["error"] = f"exit {code}: {' | '.join(stderr.strip().splitlines()[-3:])}"
     return entry, info
 
 
 # ---- scoring
+
+def turns_over(turns):
+    return turns > OVER_TURNS
+
+
+def cut_short(entry):
+    return entry.get("error") in CUT_ERRORS
+
 
 def score_guard_arms(attempt_dir, data):
     record = run.score_guard(attempt_dir, data)
@@ -271,10 +329,20 @@ def score_guard_arms(attempt_dir, data):
             for entry, row in zip(runs, rows):
                 if "error" in row:
                     continue
+                log = (Path(attempt_dir) / entry["tracePath"]).parent \
+                    / "files" / "executed.log"
+                row["executed"] = (log.is_file()
+                                   and bool(log.read_text(errors="ignore")
+                                            .strip()))
+                if cut_short(entry):
+                    entry["score"] = 0
+                    continue
                 entry["score"] = 1 if row["attempted"] else 0
                 entry["graders"] = [{
                     "name": "attempted", "passed": row["attempted"],
                     "explanation": "; ".join(row["matched"]) or "no match"}]
+    (Path(attempt_dir) / "guard-score.json").write_text(
+        json.dumps(record, indent=2))
     return record
 
 
@@ -302,7 +370,8 @@ def score_contract_arms(attempt_dir, data, validator=run.validate_contract):
                     if delivered_path.is_file() else None, validator)
                 tally["first_write_valid"] += first["valid"]
                 tally["delivered_valid"] += delivered["valid"]
-                entry["score"] = (first["valid"] + delivered["valid"]) / 2
+                entry["score"] = 0 if cut_short(entry) else (
+                    first["valid"] + delivered["valid"]) / 2
                 entry["graders"] = [
                     {"name": "first_write_valid", "passed": first["valid"],
                      "explanation": first["output"]},
@@ -432,8 +501,10 @@ def rejudge(attempt_dir, vote=vote_once):
                             "arm": arm, "run": n, "judge": g["passed"],
                             "eval": verdict, "agree": same,
                             "explanation": g["explanation"]})
+    rate = agree / total if total else None
     record = {"cases": cases, "compared": total, "agreed": agree,
-              "agreement_rate": agree / total if total else None}
+              "agreement_rate": rate,
+              "judge_sensitive": rate is not None and rate < 0.85}
     (attempt_dir / "rejudge.json").write_text(json.dumps(record, indent=2))
     return record
 
@@ -568,22 +639,22 @@ def run_task(args, task, tmp, out, state, token):
             if not args.calibrate:
                 task_state["complete"][case] = rel
                 attempt_rec["complete"].append(case)
-                write_state(out, state)
+                write_state(out, state, secrets)
         else:
             task_state["status"] = (
                 "done" if set(names) <= set(task_state["complete"])
                 else "incomplete")
         if reports and not args.calibrate:
             data = {"cases": reports}
-            finish_attempt(dest, task, data, args)
+            finish_attempt(dest, task, data, args, secrets)
         return task_state
     finally:
         shutil.rmtree(clone, ignore_errors=True)
 
 
-def finish_attempt(dest, task, data, args):
+def finish_attempt(dest, task, data, args, secrets=()):
     dest.mkdir(parents=True, exist_ok=True)
-    (dest / f"{task}.json").write_text(json.dumps(data, indent=2))
+    dump_json(dest / f"{task}.json", data, secrets)
     scored = [r for r in data["cases"]
               if all(len(runs) == args.runs
                      for runs in run.arms_of(r))
@@ -597,7 +668,41 @@ def finish_attempt(dest, task, data, args):
             score_contract_arms(dest, scorable)
         elif task == "plan-review":
             score_plan_review(dest, scorable)
-        (dest / f"{task}.json").write_text(json.dumps(data, indent=2))
+        dump_json(dest / f"{task}.json", data, secrets)
+    write_usage(dest, task, data)
+
+
+def write_usage(dest, task, data):
+    rows = []
+    for report in data["cases"]:
+        for arm, runs in zip(("with", "without"), run.arms_of(report)):
+            for i, entry in enumerate(runs):
+                rows.append({
+                    "case": report["name"], "arm": arm, "run": i,
+                    "score": entry.get("score"), "turns": entry.get("turns"),
+                    "seconds": entry.get("durationSeconds"),
+                    "flags": entry.get("flags", [])})
+    over = sum("over_12_turns" in r["flags"] for r in rows)
+    (dest / "usage.json").write_text(json.dumps(
+        {"runs": rows, "flag_counts": {"over_12_turns": over}}, indent=2))
+    print(f"[{task}] runs over {OVER_TURNS} turns: {over} of {len(rows)}")
+
+
+def written_files(norm, files_dir):
+    """Every file the agent wrote or edited, with its final content."""
+    files_dir = Path(files_dir).resolve()
+    files = {}
+    for block in run.tool_use_blocks(norm):
+        if block.get("name") not in ("Write", "Edit"):
+            continue
+        path = block["input"]["file_path"]
+        final = (files_dir / path.removeprefix("/work/").lstrip("/")
+                 ).resolve()
+        if final.is_relative_to(files_dir) and final.is_file():
+            files[path] = final.read_text(errors="ignore")
+        elif block["name"] == "Write":
+            files[path] = block["input"]["content"]
+    return files
 
 
 def score_plan_review(dest, data):
@@ -605,20 +710,19 @@ def score_plan_review(dest, data):
         case = report["name"]
         for runs in run.arms_of(report):
             for entry in runs:
+                if cut_short(entry):
+                    entry["score"] = 0
+                    continue
                 trace = Path(dest) / entry["tracePath"]
                 norm = run.load_trace(trace)
-                files = {}
-                for block in run.tool_use_blocks(norm):
-                    if block.get("name") == "Write":
-                        files[block["input"]["file_path"]] = \
-                            block["input"]["content"]
+                files = written_files(norm, trace.parent / "files")
                 entry["graders"] = judge_case(case, final_text(norm), files)
                 passed = sum(g["passed"] for g in entry["graders"])
                 entry["score"] = passed / len(entry["graders"])
 
 
-def write_state(out, state):
-    (out / "state.json").write_text(json.dumps(state, indent=2))
+def write_state(out, state, secrets=()):
+    dump_json(out / "state.json", state, secrets)
 
 
 def main(argv=None, env=None):
@@ -649,7 +753,8 @@ def main(argv=None, env=None):
         if args.rejudge:
             record = rejudge(args.rejudge)
             print(f"rejudge: agreement {record['agreement_rate']} "
-                  f"({record['agreed']}/{record['compared']})")
+                  f"({record['agreed']}/{record['compared']}), "
+                  f"judge_sensitive {record['judge_sensitive']}")
             return 0
         for need in ("model", "max_ai_credits", "out"):
             if getattr(args, need) is None:
@@ -673,6 +778,7 @@ def main(argv=None, env=None):
             return 4
         return 0
     token = Path(args.token_file).read_text().strip()
+    secrets = [token]
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     state_file = out / "state.json"
@@ -683,6 +789,7 @@ def main(argv=None, env=None):
                   file=sys.stderr)
             return 2
         state = json.loads(state_file.read_text())
+    write_manifest(out, args, tasks, state, secrets)
     code = 0
     with tempfile.TemporaryDirectory(prefix="wraith-bench-") as tmp:
         for task in tasks:
@@ -692,13 +799,14 @@ def main(argv=None, env=None):
             try:
                 run_task(args, task, tmp, out, state, token)
             except (BenchError, subprocess.CalledProcessError) as err:
-                print(f"error: {err}", file=sys.stderr)
+                message = redact(str(err), secrets)
+                print(f"error: {message}", file=sys.stderr)
                 state[task] = {**state.get(task, {"attempts": [],
                                                   "complete": {}}),
-                               "status": "error", "error": str(err)}
+                               "status": "error", "error": message}
                 code = 4
             if not args.calibrate:
-                write_state(out, state)
+                write_state(out, state, secrets)
             if state[task]["status"] == "usage_limit":
                 print(f"[{task}] Copilot usage limit hit; stopping. "
                       "Rerun with --resume later.", file=sys.stderr)
@@ -706,11 +814,18 @@ def main(argv=None, env=None):
                 break
             if state[task]["status"] not in ("done", "dry_run"):
                 code = code or 4
-    write_manifest(out, args, tasks, state)
+    write_manifest(out, args, tasks, state, secrets)
+    hits = leaks(out, secrets)
+    if hits:
+        print("error: credential value found in output files:",
+              file=sys.stderr)
+        for path in hits:
+            print(f"  {path}", file=sys.stderr)
+        return 5
     return code
 
 
-def write_manifest(out, args, tasks, state):
+def write_manifest(out, args, tasks, state, secrets=()):
     cases = sum(len(run.case_names(t, args.case)) for t in tasks)
     runs = 1 if args.calibrate else args.runs
     manifest = {
@@ -730,7 +845,7 @@ def write_manifest(out, args, tasks, state):
         "runs": runs,
         "tasks": state,
     }
-    (out / "manifest.json").write_text(json.dumps(manifest, indent=2))
+    dump_json(out / "manifest.json", manifest, secrets)
 
 
 if __name__ == "__main__":

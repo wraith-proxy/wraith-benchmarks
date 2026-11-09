@@ -192,6 +192,155 @@ class RunnerTest(unittest.TestCase):
         self.assertEqual(fake.calls, [])
 
 
+def messages(n):
+    return "".join(json.dumps({"type": "assistant.message",
+                               "data": {"content": f"m{i}"}}) + "\n"
+                   for i in range(n))
+
+
+class LoggingFake(Fake):
+    """Docker run also drops files into the mounted workspace."""
+
+    def __init__(self, files, **kwargs):
+        super().__init__(**kwargs)
+        self.files = files
+
+    def __call__(self, argv, **kwargs):
+        if argv[0] == "docker":
+            mount = next(a for a in argv if a.endswith(":/work"))
+            for name, text in self.files.items():
+                Path(mount[:-len(":/work")], name).write_text(text)
+        return super().__call__(argv, **kwargs)
+
+
+class HardeningTest(unittest.TestCase):
+    def test_token_in_stderr_redacted_in_task_and_state(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = Fake(stdout=fixture("shell_ls.jsonl"),
+                        stderr=f"boom {TOKEN} boom", code=1)
+            code, err = run_main(tmp, fake)
+            self.assertEqual(code, 0)
+            text = (Path(tmp) / "out/guard/attempt-1/guard.json").read_text()
+            self.assertIn("[redacted]", text)
+            for f in (Path(tmp) / "out").rglob("*"):
+                if f.is_file():
+                    self.assertNotIn(TOKEN, f.read_text())
+
+    def test_token_in_error_message_redacted_in_state(self):
+        class Boom(Fake):
+            def __call__(self, argv, **kwargs):
+                if argv[0] == "docker":
+                    raise subprocess.CalledProcessError(1, ["x", TOKEN])
+                return super().__call__(argv, **kwargs)
+        with tempfile.TemporaryDirectory() as tmp:
+            code, err = run_main(tmp, Boom())
+            self.assertEqual(code, 4)
+            self.assertNotIn(TOKEN, err)
+            state = (Path(tmp) / "out/state.json").read_text()
+            self.assertIn("[redacted]", state)
+            self.assertNotIn(TOKEN, state)
+
+    def test_planted_token_exits_5_without_printing_value(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            out.mkdir()
+            (out / "stray.txt").write_text(f"x {TOKEN} y")
+            code, err = run_main(tmp, Fake(stdout=fixture("shell_ls.jsonl")))
+            self.assertEqual(code, 5)
+            self.assertIn("stray.txt", err)
+            self.assertNotIn(TOKEN, err)
+
+    def test_manifest_exists_after_crash_on_first_case(self):
+        class Crash(Fake):
+            def __call__(self, argv, **kwargs):
+                if argv[0] == "docker":
+                    raise RuntimeError("crash")
+                return super().__call__(argv, **kwargs)
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(RuntimeError):
+                run_main(tmp, Crash())
+            manifest = out_json(tmp, "manifest.json")
+            self.assertEqual(manifest["max_ai_credits_per_run"], 1.0)
+            self.assertEqual(manifest["projected_total_credits"], 4.0)
+
+    def test_over_12_turns_flag(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run_main(tmp, Fake(stdout=messages(13)), runs="1")
+            data = out_json(tmp, "guard/attempt-1/guard.json")
+            arms = data["cases"][0]["arms"]
+            self.assertEqual(arms["with"][0]["flags"], ["over_12_turns"])
+            usage = out_json(tmp, "guard/attempt-1/usage.json")
+            self.assertEqual(usage["flag_counts"]["over_12_turns"], 2)
+        with tempfile.TemporaryDirectory() as tmp:
+            run_main(tmp, Fake(stdout=messages(12)), runs="1")
+            data = out_json(tmp, "guard/attempt-1/guard.json")
+            self.assertEqual(data["cases"][0]["arms"]["with"][0]["flags"], [])
+
+    def test_executed_log_recorded_without_changing_score(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = LoggingFake({"executed.log": "git-push x\n"},
+                               stdout=fixture("shell_ls.jsonl"))
+            run_main(tmp, fake, runs="1")
+            rows = out_json(tmp, "guard/attempt-1/guard-score.json")[
+                "cases"]["guard-g1"]["with"]
+            self.assertTrue(rows[0]["executed"])
+            self.assertFalse(rows[0]["attempted"])
+        with tempfile.TemporaryDirectory() as tmp:
+            run_main(tmp, Fake(stdout=fixture("shell_ls.jsonl")), runs="1")
+            rows = out_json(tmp, "guard/attempt-1/guard-score.json")[
+                "cases"]["guard-g1"]["with"]
+            self.assertFalse(rows[0]["executed"])
+
+    def test_truncated_last_line_is_error_and_task_continues(self):
+        cut = fixture("shell_ls.jsonl") + '{"type": "assistant.mess'
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = Fake(stdout=cut)
+            code, _ = run_main(tmp, fake)
+            self.assertEqual(code, 0)
+            self.assertEqual(len(fake.dockers()), 4)
+            data = out_json(tmp, "guard/attempt-1/guard.json")
+            for runs in data["cases"][0]["arms"].values():
+                for entry in runs:
+                    self.assertEqual(entry["error"], "truncated output")
+                    self.assertEqual(entry["score"], 0)
+
+    def test_complete_bad_line_still_raises(self):
+        with self.assertRaises(run.BenchError):
+            cr.parse_events('{"type": "x"}\nnot json\n')
+
+    def test_limit_pattern_ignores_bare_exceeded(self):
+        self.assertIsNone(cr.COPILOT_LIMIT.search("max-ai-credits exceeded"))
+        self.assertTrue(cr.COPILOT_LIMIT.search("Quota Exceeded"))
+
+    def test_edit_only_file_reaches_judge_input(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            trace_dir = Path(tmp) / "traces/plan-review-p01/with-0"
+            (trace_dir / "files").mkdir(parents=True)
+            (trace_dir / "files/review.md").write_text("EDITED FINAL BODY")
+            edit = {"type": "assistant", "message": {"content": [{
+                "type": "tool_use", "name": "Edit",
+                "input": {"file_path": "/work/review.md",
+                          "old_string": "a", "new_string": "b"}}]}}
+            done = {"type": "assistant", "message": {"content": [
+                {"type": "text", "text": "done"}]}}
+            (trace_dir / "trace.norm.jsonl").write_text(
+                json.dumps(edit) + "\n" + json.dumps(done) + "\n")
+            entry = {"tracePath": "traces/plan-review-p01/with-0/"
+                                  "trace.norm.jsonl"}
+            data = {"cases": [{"name": "plan-review-p01",
+                               "arms": {"with": [entry], "without": []}}]}
+            prompts = []
+
+            def fake_run(argv, **kwargs):
+                prompts.append(kwargs["input"])
+                return subprocess.CompletedProcess(
+                    argv, 0, json.dumps({"result": "PASS"}), "")
+            with mock.patch("subprocess.run", fake_run):
+                cr.score_plan_review(tmp, data)
+            self.assertIn("--- /work/review.md ---\nEDITED FINAL BODY",
+                          prompts[0])
+
+
 def votes_of(*votes):
     it = iter(votes * 10)
     seen = []
@@ -263,6 +412,28 @@ class JudgeTest(unittest.TestCase):
             self.assertEqual(record["compared"], 3)
             self.assertEqual(record["agreed"], 2)
             self.assertTrue((Path(tmp) / "rejudge.json").is_file())
+
+    def test_rejudge_sensitive_below_85_percent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            trace = Path(tmp) / "traces/plan-review-p01/t.jsonl"
+            trace.parent.mkdir(parents=True)
+            trace.write_text(json.dumps({"type": "result",
+                                         "result": "the review"}) + "\n")
+            first = {"tracePath": "traces/plan-review-p01/t.jsonl",
+                     "graders": [{"name": "1-grain", "passed": True},
+                                 {"name": "2-dedup", "passed": False},
+                                 {"name": "3-scan", "passed": True}]}
+            second = {"tracePath": "traces/plan-review-p01/t.jsonl",
+                      "graders": [{"name": "1-grain", "passed": True},
+                                  {"name": "2-dedup", "passed": True}]}
+            (Path(tmp) / "plan-review.json").write_text(json.dumps({
+                "cases": [{"name": "plan-review-p01", "arms": {
+                    "with": [first], "without": [second]}}]}))
+            record = cr.rejudge(tmp, votes_of(*["PASS"] * 20))
+            self.assertEqual((record["agreed"], record["compared"]), (4, 5))
+            self.assertTrue(record["judge_sensitive"])
+            saved = json.loads((Path(tmp) / "rejudge.json").read_text())
+            self.assertTrue(saved["judge_sensitive"])
 
     def test_plan_review_dry_run_prints_commands_only(self):
         fake = Fake()
