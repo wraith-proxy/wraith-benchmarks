@@ -328,3 +328,12 @@ class RunnerTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PluginRootTest(unittest.TestCase):
+    def test_subfolder_plugin_is_the_eval_target(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            clone = Path(tmp)
+            self.assertEqual(run.plugin_root(clone), clone)
+            (clone / "plugin").mkdir()
+            self.assertEqual(run.plugin_root(clone), clone / "plugin")
