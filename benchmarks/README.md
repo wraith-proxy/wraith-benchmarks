@@ -127,6 +127,7 @@ Written before any scored guard or contracts run. Calibration runs are in
   The agent's Bash could read that token, so egress is limited to
   `api.anthropic.com:443` through `sandbox/egress_proxy.py` on an internal
   Docker network (`sandbox/egress.sh up`).
+- From wraith v0.8.2 the plugin lives in `plugin/` (wraith-skills ADR 0007). The runner targets `<clone>/plugin` when it exists and copies fixtures to `<clone>/plugin/bench-<task>/`; otherwise eval's ablation finds no plugin and both arms would run the same config. A run with no eval JSON keeps its log under `<out>/<task>/failed-<n>/`.
 - Per-case resumes now merge usage.json, guard-score.json and validation.json across the attempt's eval JSONs; before this only the last case survived.
 
 ## Tasks

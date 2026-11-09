@@ -126,6 +126,10 @@ def check_auth(env, credentials, dry_run, tasks=(), token_file=None):
         raise BenchError(f"credentials file not found: {credentials}")
 
 
+def plugin_root(clone):
+    return clone / "plugin" if (clone / "plugin").is_dir() else clone
+
+
 def eval_command(task, runs, cap, case=None, root="/work", json_name=None,
                  keep_temp=False):
     cmd = [
@@ -515,9 +519,12 @@ def run_task(args, task, tmp, out, state):
     sha = subprocess.run(["git", "-C", str(clone), "rev-parse", "HEAD"],
                          capture_output=True, text=True, check=True
                          ).stdout.strip()
+    # Since wraith v0.8.2 (ADR 0007) the plugin lives in plugin/; eval
+    # must target it or ablation finds no plugin.json.
+    plugin = plugin_root(clone)
     try:
-        shutil.copytree(HERE / "fixtures" / task, clone / f"bench-{task}")
-        results = clone / f"bench-{task}" / "results"
+        shutil.copytree(HERE / "fixtures" / task, plugin / f"bench-{task}")
+        results = plugin / f"bench-{task}" / "results"
         results.mkdir(exist_ok=True)
         tmpdir = Path(tmp) / f"tmp-{task}"
         tmpdir.mkdir()
@@ -532,7 +539,7 @@ def run_task(args, task, tmp, out, state):
                 case = names[0]
             cmd = eval_command(task, args.runs, case_cap, case, json_name=jname,
                                keep_temp=args.keep_temp)
-            full = docker_command(args.image, clone, args.credentials, cmd,
+            full = docker_command(args.image, plugin, args.credentials, cmd,
                                   os.getuid(), os.getgid(), tmpdir,
                                   bwrap=needs_bwrap(task),
                                   token=bool(args.token_file))
@@ -551,6 +558,10 @@ def run_task(args, task, tmp, out, state):
             (results / f"{jname}.log").write_text(text)
             jf = results / f"{jname}.json"
             if not jf.is_file():
+                # Keep the log: the clone is deleted on exit.
+                out.joinpath(task).mkdir(parents=True, exist_ok=True)
+                shutil.copytree(results, out / task / f"failed-{attempt}",
+                                dirs_exist_ok=True)
                 raise BenchError(
                     f"no eval JSON for {jname} (exit {code}); see "
                     f"{jname}.log in the results, nothing is scored")
