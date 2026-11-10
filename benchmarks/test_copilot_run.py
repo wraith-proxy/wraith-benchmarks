@@ -719,3 +719,13 @@ class WrittenFilesTest(unittest.TestCase):
                  "input": {"file_path": "/work/ws/docs/plan.md"}}]}}]
             got = cr.written_files(norm, files)
         self.assertIn("Verdict: NOT READY", got["/work/ws/docs/plan.md"])
+
+
+class TraceFilesTest(unittest.TestCase):
+    def test_edit_inserted_text_reaches_the_judge(self):
+        ev = [{"type": "assistant", "message": {"content": [
+            {"type": "tool_use", "name": "Edit", "input": {
+                "file_path": "/work/plan.md", "old_string": "end",
+                "new_string": "end\n## Data review\nVerdict: NOT READY"}}]}}]
+        files = cr.trace_files(ev)
+        self.assertIn("Verdict: NOT READY", files["/work/plan.md"])

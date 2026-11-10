@@ -644,11 +644,7 @@ def rejudge(attempt_dir, vote=vote_once):
                     events = run.load_trace(run.resolve_trace(
                         entry.get("tracePath") or entry.get("trace_path")
                         or "", attempt_dir, "plan-review"))
-                    files = {}
-                    for block in run.tool_use_blocks(events):
-                        if block.get("name") == "Write":
-                            files[block["input"]["file_path"]] = \
-                                block["input"]["content"]
+                    files = trace_files(events)
                     theirs = {g.get("name"): g.get("passed")
                               for g in entry.get("graders") or []}
                     mine = judge_case(report["name"], claude_final(events),
@@ -672,6 +668,28 @@ def rejudge(attempt_dir, vote=vote_once):
               "judge_sensitive": rate is not None and rate < 0.85}
     (attempt_dir / "rejudge.json").write_text(json.dumps(record, indent=2))
     return record
+
+
+def trace_files(events):
+    """Claude Code trace: Write content, plus the text each Edit inserted.
+
+    Claude Code traces keep no file snapshots, so an edited file shows
+    only what the agent added, which is where a review appended to the
+    plan lands.
+    """
+    files = {}
+    for block in run.tool_use_blocks(events):
+        name, inp = block.get("name"), block.get("input") or {}
+        path = inp.get("file_path")
+        if name == "Write":
+            files[path] = inp.get("content", "")
+        elif name in ("Edit", "MultiEdit"):
+            edits = inp.get("edits") or [inp]
+            added = "\n".join(e.get("new_string", "") for e in edits)
+            files[path] = (files.get(path)
+                           or "(edited; only inserted text shown)") + \
+                "\n" + added
+    return files
 
 
 def claude_final(events):
