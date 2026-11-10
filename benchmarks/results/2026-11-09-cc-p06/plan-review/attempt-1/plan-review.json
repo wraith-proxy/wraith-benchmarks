@@ -1,0 +1,647 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.316",
+  "startedAt": "2026-11-10T05:30:20.706Z",
+  "durationSeconds": 467,
+  "costUsd": 0.7687033000000001,
+  "partial": false,
+  "suite": {
+    "root": "/work",
+    "ablation": "with-without",
+    "modelOverride": "claude-sonnet-5-5",
+    "judgeModel": "claude-haiku-5-5",
+    "caseFilter": "plan-review-p06",
+    "threshold": 1,
+    "concurrency": 1,
+    "plugins": [
+      {
+        "name": "wraith",
+        "version": "0.8.3",
+        "path": "/work"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "plan-review-p06",
+      "dir": "bench-plan-review/p06",
+      "source": "mixed",
+      "promptMarkdown": "The plan for the shipments fact is at docs/wraith/2026-10-12-shipments-fact/plan.md. Review it before we build it.",
+      "runsPerCase": 5,
+      "timeoutSeconds": 600,
+      "maxTurns": 12,
+      "graders": [
+        {
+          "name": "1-contract",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category contract. Planted defect: in the Contract section owner is missing, although AGENTS.md requires owner, primary_key, classification and freshness_sla. Location: the Contract section of `fct_shipments`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category contract. Planted defect: in the Contract section owner is missing, although AGENTS.md requires owner, primary_key, classification and freshness_sla. Location: the Contract section of `fct_shipments`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "2-grain",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category grain. Planted defect: the Model SQL declares one row per shipment per ds but joins raw_logistics.parcels (many rows per shipment) without aggregating, so rows repeat per raw_logistics.parcels row. Location: the Model section SQL, JOIN raw_logistics.parcels with no GROUP BY of `fct_shipments`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category grain. Planted defect: the Model SQL declares one row per shipment per ds but joins raw_logistics.parcels (many rows per shipment) without aggregating, so rows repeat per raw_logistics.parcels row. Location: the Model section SQL, JOIN raw_logistics.parcels with no GROUP BY of `fct_shipments`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "3-dedup",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category dedup. Planted defect: the source delivers at least once (carrier webhook, re-sent until acknowledged) and the Load section uses a plain INSERT with no MERGE or dedup on shipment_id, so redelivered rows are duplicated. Location: the Load section, INSERT INTO ... SELECT of `fct_shipments`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category dedup. Planted defect: the source delivers at least once (carrier webhook, re-sent until acknowledged) and the Load section uses a plain INSERT with no MERGE or dedup on shipment_id, so redelivered rows are duplicated. Location: the Load section, INSERT INTO ... SELECT of `fct_shipments`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.11108040000000001,
+            "judgeCostUsd": 0.0022273,
+            "durationSeconds": 58,
+            "startedAt": "2026-11-10T05:30:20.737Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-NvSjH9/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-contract",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. The verdict is **NOT READY**, because of three blockers.\n\n**Blockers**\n- **Two definitions of the fact (item 3):** The Model query and the Load query don't agree on the table.\n  - The Model query selects `status` and `parcel_weight_kg` through a bare join. `status` isn't in the source DDL, and `parcels` has no DDL. The join also multiplies rows when a shipment has several events or parcels.\n  - The Load query writes `ds, shipment_id, amount` from a `GROUP BY`.\n- **Reruns duplicate rows (item 5):** `INSERT INTO` with no delete appends again on every rerun. The carrier webhook re-sends events until acknowledged, so the source has duplicates too, and `SUM(amount)` double counts them. The backfill steps aren't written.\n- **Contract keys (item 2):** `primary_key: shipment_id` contradicts the one-row-per-shipment-per-ds grain. `owner` is missing, and AGENTS.md requires it. There's no contract file in `contracts/`.\n\n**Should-fix**\n- **Consumer, decision and cost of wrong (item 1):** None are named.\n- **Cost (item 6):** The target DDL has no partitioning, and no dry-run cost is given.\n- **Personal data (item 7):** The plan says identifiers are hashed with SHA256, but the SQL never hashes anything. A plain hash of a guessable id can be reversed by guessing. The classification is `internal` even though hashing implies personal data. There's no crypto-shred path.\n- **Quality (item 8):** There are no tests. The inner join to `parcels` silently drops shipments with no parcel, and nothing checks the 07:00 UTC freshness SLA.\n- **Downstream consumers (item 9):** None are listed.\n- **Rollback (item 10):** Step 1 clones a table that doesn't exist on the first build. The snapshot has no expiry. The only check is row counts.\n- **Late-arriving data (item 11):** There's no rule for what `ds` means or for rows that land after their `ds`.\n- **Temporal model (item 4):** The plan doesn't say it's a `ds` snapshot.\n\nI didn't run the dry-runs or `dbt ls`. The repo has no dbt project, and the tables exist only in the plan. I also didn't use the companion Google skills. I changed nothing outside the appended section."
+              },
+              {
+                "name": "2-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. The verdict is **NOT READY**, because of three blockers.\n\n**Blockers**\n- **Two definitions of the fact (item 3):** The Model query and the Load query don't agree on the table.\n  - The Model query selects `status` and `parcel_weight_kg` through a bare join. `status` isn't in the source DDL, and `parcels` has no DDL. The join also multiplies rows when a shipment has several events or parcels.\n  - The Load query writes `ds, shipment_id, amount` from a `GROUP BY`.\n- **Reruns duplicate rows (item 5):** `INSERT INTO` with no delete appends again on every rerun. The carrier webhook re-sends events until acknowledged, so the source has duplicates too, and `SUM(amount)` double counts them. The backfill steps aren't written.\n- **Contract keys (item 2):** `primary_key: shipment_id` contradicts the one-row-per-shipment-per-ds grain. `owner` is missing, and AGENTS.md requires it. There's no contract file in `contracts/`.\n\n**Should-fix**\n- **Consumer, decision and cost of wrong (item 1):** None are named.\n- **Cost (item 6):** The target DDL has no partitioning, and no dry-run cost is given.\n- **Personal data (item 7):** The plan says identifiers are hashed with SHA256, but the SQL never hashes anything. A plain hash of a guessable id can be reversed by guessing. The classification is `internal` even though hashing implies personal data. There's no crypto-shred path.\n- **Quality (item 8):** There are no tests. The inner join to `parcels` silently drops shipments with no parcel, and nothing checks the 07:00 UTC freshness SLA.\n- **Downstream consumers (item 9):** None are listed.\n- **Rollback (item 10):** Step 1 clones a table that doesn't exist on the first build. The snapshot has no expiry. The only check is row counts.\n- **Late-arriving data (item 11):** There's no rule for what `ds` means or for rows that land after their `ds`.\n- **Temporal model (item 4):** The plan doesn't say it's a `ds` snapshot.\n\nI didn't run the dry-runs or `dbt ls`. The repo has no dbt project, and the tables exist only in the plan. I also didn't use the companion Google skills. I changed nothing outside the appended section."
+              },
+              {
+                "name": "3-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. The verdict is **NOT READY**, because of three blockers.\n\n**Blockers**\n- **Two definitions of the fact (item 3):** The Model query and the Load query don't agree on the table.\n  - The Model query selects `status` and `parcel_weight_kg` through a bare join. `status` isn't in the source DDL, and `parcels` has no DDL. The join also multiplies rows when a shipment has several events or parcels.\n  - The Load query writes `ds, shipment_id, amount` from a `GROUP BY`.\n- **Reruns duplicate rows (item 5):** `INSERT INTO` with no delete appends again on every rerun. The carrier webhook re-sends events until acknowledged, so the source has duplicates too, and `SUM(amount)` double counts them. The backfill steps aren't written.\n- **Contract keys (item 2):** `primary_key: shipment_id` contradicts the one-row-per-shipment-per-ds grain. `owner` is missing, and AGENTS.md requires it. There's no contract file in `contracts/`.\n\n**Should-fix**\n- **Consumer, decision and cost of wrong (item 1):** None are named.\n- **Cost (item 6):** The target DDL has no partitioning, and no dry-run cost is given.\n- **Personal data (item 7):** The plan says identifiers are hashed with SHA256, but the SQL never hashes anything. A plain hash of a guessable id can be reversed by guessing. The classification is `internal` even though hashing implies personal data. There's no crypto-shred path.\n- **Quality (item 8):** There are no tests. The inner join to `parcels` silently drops shipments with no parcel, and nothing checks the 07:00 UTC freshness SLA.\n- **Downstream consumers (item 9):** None are listed.\n- **Rollback (item 10):** Step 1 clones a table that doesn't exist on the first build. The snapshot has no expiry. The only check is row counts.\n- **Late-arriving data (item 11):** There's no rule for what `ds` means or for rows that land after their `ds`.\n- **Temporal model (item 4):** The plan doesn't say it's a `ds` snapshot.\n\nI didn't run the dry-runs or `dbt ls`. The repo has no dbt project, and the tables exist only in the plan. I also didn't use the companion Google skills. I changed nothing outside the appended section."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 7,
+            "costUsd": 0.0986783,
+            "judgeCostUsd": 0.0019533999999999997,
+            "durationSeconds": 48,
+            "startedAt": "2026-11-10T05:31:18.731Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-A61UjR/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-contract",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. **Verdict: NOT READY**, because there are four blockers.\n\nNothing already in the repo covers `fct_shipments`, so the premise holds. I didn't run any dry runs, so the cost point is an estimate from the plan text only.\n\n**Blockers**\n1. **Duplicate events:** The source is a webhook that re-sends until acknowledged, so it holds duplicate events. The load runs `SUM(amount)` with no dedupe, so amounts are overstated. There is also no event id column to dedupe on.\n2. **Reruns append:** `INSERT INTO` appends. Rerunning a ds, or the range rebuild in the rollout, duplicates rows. The load needs to be a `MERGE`, or a delete of the ds followed by an insert.\n3. **Query mismatch:** The Model query and the Load query disagree. The Model selects `status` and `parcel_weight_kg` with no aggregation, but `status` isn't in the source table. The Load sums `amount` with no join. `parcels` is undefined, and the Access column list matches neither query.\n4. **Personal data:** \"Hashed with SHA256\" is not enough. An unsalted hash of a guessable id can be reversed, and the load selects the raw `shipment_id` anyway. There is no erasure path. The dataset is named `fct_private` but classified `internal`.\n\n**Should-fix**\n- **Contract and key:** The key should be (ds, shipment_id), not `shipment_id` alone. The contract has no owner, which AGENTS.md requires.\n- **Consumer and temporal model:** The plan doesn't name a consumer or say the table is a ds snapshot.\n- **Partitioning and cost:** The new table has no partitioning or clustering, and there is no cost estimate against the 10 GB dev cap.\n- **Quality:** The inner join to `parcels` silently drops shipments with no parcel row, and the only test is a row count.\n- **Downstream consumers:** None are listed.\n- **Rollback:** The step 1 clone fails on the first build, because the table doesn't exist yet.\n- **Late data:** Nothing says what `ds` means or how late-arriving events are handled.\n\nI didn't change anything else in the plan, so the author can resolve the findings. I can draft the revisions for the blockers if you want."
+              },
+              {
+                "name": "2-grain",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. **Verdict: NOT READY**, because there are four blockers.\n\nNothing already in the repo covers `fct_shipments`, so the premise holds. I didn't run any dry runs, so the cost point is an estimate from the plan text only.\n\n**Blockers**\n1. **Duplicate events:** The source is a webhook that re-sends until acknowledged, so it holds duplicate events. The load runs `SUM(amount)` with no dedupe, so amounts are overstated. There is also no event id column to dedupe on.\n2. **Reruns append:** `INSERT INTO` appends. Rerunning a ds, or the range rebuild in the rollout, duplicates rows. The load needs to be a `MERGE`, or a delete of the ds followed by an insert.\n3. **Query mismatch:** The Model query and the Load query disagree. The Model selects `status` and `parcel_weight_kg` with no aggregation, but `status` isn't in the source table. The Load sums `amount` with no join. `parcels` is undefined, and the Access column list matches neither query.\n4. **Personal data:** \"Hashed with SHA256\" is not enough. An unsalted hash of a guessable id can be reversed, and the load selects the raw `shipment_id` anyway. There is no erasure path. The dataset is named `fct_private` but classified `internal`.\n\n**Should-fix**\n- **Contract and key:** The key should be (ds, shipment_id), not `shipment_id` alone. The contract has no owner, which AGENTS.md requires.\n- **Consumer and temporal model:** The plan doesn't name a consumer or say the table is a ds snapshot.\n- **Partitioning and cost:** The new table has no partitioning or clustering, and there is no cost estimate against the 10 GB dev cap.\n- **Quality:** The inner join to `parcels` silently drops shipments with no parcel row, and the only test is a row count.\n- **Downstream consumers:** None are listed.\n- **Rollback:** The step 1 clone fails on the first build, because the table doesn't exist yet.\n- **Late data:** Nothing says what `ds` means or how late-arriving events are handled.\n\nI didn't change anything else in the plan, so the author can resolve the findings. I can draft the revisions for the blockers if you want."
+              },
+              {
+                "name": "3-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. **Verdict: NOT READY**, because there are four blockers.\n\nNothing already in the repo covers `fct_shipments`, so the premise holds. I didn't run any dry runs, so the cost point is an estimate from the plan text only.\n\n**Blockers**\n1. **Duplicate events:** The source is a webhook that re-sends until acknowledged, so it holds duplicate events. The load runs `SUM(amount)` with no dedupe, so amounts are overstated. There is also no event id column to dedupe on.\n2. **Reruns append:** `INSERT INTO` appends. Rerunning a ds, or the range rebuild in the rollout, duplicates rows. The load needs to be a `MERGE`, or a delete of the ds followed by an insert.\n3. **Query mismatch:** The Model query and the Load query disagree. The Model selects `status` and `parcel_weight_kg` with no aggregation, but `status` isn't in the source table. The Load sums `amount` with no join. `parcels` is undefined, and the Access column list matches neither query.\n4. **Personal data:** \"Hashed with SHA256\" is not enough. An unsalted hash of a guessable id can be reversed, and the load selects the raw `shipment_id` anyway. There is no erasure path. The dataset is named `fct_private` but classified `internal`.\n\n**Should-fix**\n- **Contract and key:** The key should be (ds, shipment_id), not `shipment_id` alone. The contract has no owner, which AGENTS.md requires.\n- **Consumer and temporal model:** The plan doesn't name a consumer or say the table is a ds snapshot.\n- **Partitioning and cost:** The new table has no partitioning or clustering, and there is no cost estimate against the 10 GB dev cap.\n- **Quality:** The inner join to `parcels` silently drops shipments with no parcel row, and the only test is a row count.\n- **Downstream consumers:** None are listed.\n- **Rollback:** The step 1 clone fails on the first build, because the table doesn't exist yet.\n- **Late data:** Nothing says what `ds` means or how late-arriving events are handled.\n\nI didn't change anything else in the plan, so the author can resolve the findings. I can draft the revisions for the blockers if you want."
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.10287890000000001,
+            "judgeCostUsd": 0.0023217000000000003,
+            "durationSeconds": 53,
+            "startedAt": "2026-11-10T05:32:07.147Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-Jse9a3/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-contract",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. The verdict is **NOT READY**, with five blockers. I didn't edit the rest of the plan.\n\n**Blockers**\n1. **Duplicate events:** the carrier webhook is re-sent until acknowledged, and the source has no event id. `SUM(amount)` would double-count every resend. The plan needs a dedupe key before it aggregates.\n2. **Rerun safety:** `INSERT INTO fct_shipments` has no delete or overwrite, so rerunning one `ds` duplicates rows. The \"rebuild for the ds range\" step has no written backfill path.\n3. **Model and Load queries disagree:** Model selects `status` and `parcel_weight_kg`, and Load emits `amount`. `status` isn't in the source DDL, and `parcels` has no schema or `ds` filter. The inner join can fan out or silently drop shipments.\n4. **Primary key:** the grain is one row per shipment per `ds`, but the contract says `primary_key: shipment_id`. It should be `(ds, shipment_id)`.\n5. **Late data:** the plan doesn't say what `ds` means (event date or arrival date). It also doesn't say how late events and resends are handled.\n\n**Should-fix items (the review table has eight more)**\n- **Contract:** no owner, which your `contract_required_fields` requires.\n- **Cost:** no cost estimate, and `fct_shipments` has no partitioning or clustering.\n- **Personal data:** unsalted SHA256 on identifiers is pseudonymisation, not erasure. There is no crypto-shred path.\n- **Quality:** no tests and no source freshness.\n- **Lineage:** no downstream consumers are listed.\n- **Rollback:** the snapshot step fails on a first build, because there is no table to clone yet.\n\n**Not done**\n- **Dry runs and `dbt ls`:** I skipped them because no models or dev tables exist yet. The plan's queries also aren't runnable as written.\n- **Vendor second pass:** not run. The Google companion skills ask the agent to set an attribution tag that reports usage to Google. If you want that pass, say so and I'll run it.\n\nOnce you've resolved the blockers in the plan, I can re-review it."
+              },
+              {
+                "name": "2-grain",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  true,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. The verdict is **NOT READY**, with five blockers. I didn't edit the rest of the plan.\n\n**Blockers**\n1. **Duplicate events:** the carrier webhook is re-sent until acknowledged, and the source has no event id. `SUM(amount)` would double-count every resend. The plan needs a dedupe key before it aggregates.\n2. **Rerun safety:** `INSERT INTO fct_shipments` has no delete or overwrite, so rerunning one `ds` duplicates rows. The \"rebuild for the ds range\" step has no written backfill path.\n3. **Model and Load queries disagree:** Model selects `status` and `parcel_weight_kg`, and Load emits `amount`. `status` isn't in the source DDL, and `parcels` has no schema or `ds` filter. The inner join can fan out or silently drop shipments.\n4. **Primary key:** the grain is one row per shipment per `ds`, but the contract says `primary_key: shipment_id`. It should be `(ds, shipment_id)`.\n5. **Late data:** the plan doesn't say what `ds` means (event date or arrival date). It also doesn't say how late events and resends are handled.\n\n**Should-fix items (the review table has eight more)**\n- **Contract:** no owner, which your `contract_required_fields` requires.\n- **Cost:** no cost estimate, and `fct_shipments` has no partitioning or clustering.\n- **Personal data:** unsalted SHA256 on identifiers is pseudonymisation, not erasure. There is no crypto-shred path.\n- **Quality:** no tests and no source freshness.\n- **Lineage:** no downstream consumers are listed.\n- **Rollback:** the snapshot step fails on a first build, because there is no table to clone yet.\n\n**Not done**\n- **Dry runs and `dbt ls`:** I skipped them because no models or dev tables exist yet. The plan's queries also aren't runnable as written.\n- **Vendor second pass:** not run. The Google companion skills ask the agent to set an attribution tag that reports usage to Google. If you want that pass, say so and I'll run it.\n\nOnce you've resolved the blockers in the plan, I can re-review it."
+              },
+              {
+                "name": "3-dedup",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. The verdict is **NOT READY**, with five blockers. I didn't edit the rest of the plan.\n\n**Blockers**\n1. **Duplicate events:** the carrier webhook is re-sent until acknowledged, and the source has no event id. `SUM(amount)` would double-count every resend. The plan needs a dedupe key before it aggregates.\n2. **Rerun safety:** `INSERT INTO fct_shipments` has no delete or overwrite, so rerunning one `ds` duplicates rows. The \"rebuild for the ds range\" step has no written backfill path.\n3. **Model and Load queries disagree:** Model selects `status` and `parcel_weight_kg`, and Load emits `amount`. `status` isn't in the source DDL, and `parcels` has no schema or `ds` filter. The inner join can fan out or silently drop shipments.\n4. **Primary key:** the grain is one row per shipment per `ds`, but the contract says `primary_key: shipment_id`. It should be `(ds, shipment_id)`.\n5. **Late data:** the plan doesn't say what `ds` means (event date or arrival date). It also doesn't say how late events and resends are handled.\n\n**Should-fix items (the review table has eight more)**\n- **Contract:** no owner, which your `contract_required_fields` requires.\n- **Cost:** no cost estimate, and `fct_shipments` has no partitioning or clustering.\n- **Personal data:** unsalted SHA256 on identifiers is pseudonymisation, not erasure. There is no crypto-shred path.\n- **Quality:** no tests and no source freshness.\n- **Lineage:** no downstream consumers are listed.\n- **Rollback:** the snapshot step fails on a first build, because there is no table to clone yet.\n\n**Not done**\n- **Dry runs and `dbt ls`:** I skipped them because no models or dev tables exist yet. The plan's queries also aren't runnable as written.\n- **Vendor second pass:** not run. The Google companion skills ask the agent to set an attribution tag that reports usage to Google. If you want that pass, say so and I'll run it.\n\nOnce you've resolved the blockers in the plan, I can re-review it."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 0.1099232,
+            "judgeCostUsd": 0.002713099999999998,
+            "durationSeconds": 58,
+            "startedAt": "2026-11-10T05:33:00.506Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-4mKBs8/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-contract",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to `plan.md`. The verdict is **NOT READY**. I didn't edit the rest of the plan.\n\nI found nothing in the repo that already covers shipments, so the plan's premise stands. I didn't run any dry-runs, so there is no cost estimate. I also didn't look at the source tables or `raw_logistics.parcels`.\n\n**Blockers** (4):\n- **Model and Load disagree.** The model selects `status` and `parcel_weight_kg`, but the load writes `amount`. The source DDL has no `status` column.\n- **Grain and key.** The grain is one row per shipment per ds, but the contract key is `shipment_id` alone, so it isn't unique across ds. The inner `JOIN parcels` silently drops shipments with no parcel. It can also duplicate rows if parcels isn't one row per shipment.\n- **Reruns duplicate rows.** `INSERT INTO` has no delete or overwrite step, so a rerun adds the same rows again. The webhook re-sends events until acknowledged, so `SUM(amount)` also double counts duplicate events.\n- **No contract file.** There is nothing in `contracts/`, and the plan names no `owner`, which `AGENTS.md` requires. It also doesn't say whether the change is additive or breaking.\n\n**Should-fix** (7), in brief:\n- **Hashing:** The plan says identifiers are hashed with SHA256, but the load emits raw `shipment_id`. There is also no key or crypto-shred path.\n- **Target table:** `fct_shipments` has no partitioning or clustering. The plan has no cost estimate against the 10 GB dev limit.\n- **Tests and SLA:** There are no tests, no row-count threshold and no schedule behind the 07:00 UTC SLA.\n- **Rollback:** The snapshot clone fails on the first build because the table doesn't exist yet. It also clones the whole table, so a restore would overwrite ds values outside the range.\n- **Late data:** The plan doesn't say how late or re-sent events are handled.\n- **Consumers:** The plan names no consumer or decision, and doesn't list downstream models or dashboards.\n- **Snapshot:** The plan doesn't state that this is a `ds` snapshot.\n\nDo you want me to draft the fixes for the four blockers, or will the data team revise the plan first?"
+              },
+              {
+                "name": "2-grain",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to `plan.md`. The verdict is **NOT READY**. I didn't edit the rest of the plan.\n\nI found nothing in the repo that already covers shipments, so the plan's premise stands. I didn't run any dry-runs, so there is no cost estimate. I also didn't look at the source tables or `raw_logistics.parcels`.\n\n**Blockers** (4):\n- **Model and Load disagree.** The model selects `status` and `parcel_weight_kg`, but the load writes `amount`. The source DDL has no `status` column.\n- **Grain and key.** The grain is one row per shipment per ds, but the contract key is `shipment_id` alone, so it isn't unique across ds. The inner `JOIN parcels` silently drops shipments with no parcel. It can also duplicate rows if parcels isn't one row per shipment.\n- **Reruns duplicate rows.** `INSERT INTO` has no delete or overwrite step, so a rerun adds the same rows again. The webhook re-sends events until acknowledged, so `SUM(amount)` also double counts duplicate events.\n- **No contract file.** There is nothing in `contracts/`, and the plan names no `owner`, which `AGENTS.md` requires. It also doesn't say whether the change is additive or breaking.\n\n**Should-fix** (7), in brief:\n- **Hashing:** The plan says identifiers are hashed with SHA256, but the load emits raw `shipment_id`. There is also no key or crypto-shred path.\n- **Target table:** `fct_shipments` has no partitioning or clustering. The plan has no cost estimate against the 10 GB dev limit.\n- **Tests and SLA:** There are no tests, no row-count threshold and no schedule behind the 07:00 UTC SLA.\n- **Rollback:** The snapshot clone fails on the first build because the table doesn't exist yet. It also clones the whole table, so a restore would overwrite ds values outside the range.\n- **Late data:** The plan doesn't say how late or re-sent events are handled.\n- **Consumers:** The plan names no consumer or decision, and doesn't list downstream models or dashboards.\n- **Snapshot:** The plan doesn't state that this is a `ds` snapshot.\n\nDo you want me to draft the fixes for the four blockers, or will the data team revise the plan first?"
+              },
+              {
+                "name": "3-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to `plan.md`. The verdict is **NOT READY**. I didn't edit the rest of the plan.\n\nI found nothing in the repo that already covers shipments, so the plan's premise stands. I didn't run any dry-runs, so there is no cost estimate. I also didn't look at the source tables or `raw_logistics.parcels`.\n\n**Blockers** (4):\n- **Model and Load disagree.** The model selects `status` and `parcel_weight_kg`, but the load writes `amount`. The source DDL has no `status` column.\n- **Grain and key.** The grain is one row per shipment per ds, but the contract key is `shipment_id` alone, so it isn't unique across ds. The inner `JOIN parcels` silently drops shipments with no parcel. It can also duplicate rows if parcels isn't one row per shipment.\n- **Reruns duplicate rows.** `INSERT INTO` has no delete or overwrite step, so a rerun adds the same rows again. The webhook re-sends events until acknowledged, so `SUM(amount)` also double counts duplicate events.\n- **No contract file.** There is nothing in `contracts/`, and the plan names no `owner`, which `AGENTS.md` requires. It also doesn't say whether the change is additive or breaking.\n\n**Should-fix** (7), in brief:\n- **Hashing:** The plan says identifiers are hashed with SHA256, but the load emits raw `shipment_id`. There is also no key or crypto-shred path.\n- **Target table:** `fct_shipments` has no partitioning or clustering. The plan has no cost estimate against the 10 GB dev limit.\n- **Tests and SLA:** There are no tests, no row-count threshold and no schedule behind the 07:00 UTC SLA.\n- **Rollback:** The snapshot clone fails on the first build because the table doesn't exist yet. It also clones the whole table, so a restore would overwrite ds values outside the range.\n- **Late data:** The plan doesn't say how late or re-sent events are handled.\n- **Consumers:** The plan names no consumer or decision, and doesn't list downstream models or dashboards.\n- **Snapshot:** The plan doesn't state that this is a `ds` snapshot.\n\nDo you want me to draft the fixes for the four blockers, or will the data team revise the plan first?"
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.1069049,
+            "judgeCostUsd": 0.0026256000000000005,
+            "durationSeconds": 63,
+            "startedAt": "2026-11-10T05:33:58.807Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-BSz4Wt/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  true,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. The verdict is **NOT READY**, with five blockers. I didn't touch the rest of the plan.\n\n**Blockers**\n1. **The Model and Load queries disagree.** Model selects `status` and `parcel_weight_kg`, while Load selects `SUM(amount)`. `status` isn't in the source DDL, and `parcels` has no definition.\n2. **The grain isn't enforced.** The Model query has no aggregation, so many events per shipment, plus the `parcels` join, give more than one row per shipment per ds. The contract key `shipment_id` also leaves out `ds`.\n3. **Reruns aren't idempotent.** `INSERT INTO` with no delete duplicates rows when a ds is rerun, and the backfill isn't written.\n4. **Duplicate events get double-counted.** The webhook re-sends until acknowledged, so `SUM(amount)` double-counts duplicates. The source has no event id to dedupe on.\n5. **The contract is incomplete.** It's inline bullets rather than an ODCS file under `contracts/`, and it has no `owner`, which AGENTS.md requires.\n\n**Should-fix**\n- No named consumer or cost of wrong, late or down.\n- No partitioning for `fct_shipments`, and `parcels` is joined with no partition filter.\n- SHA256 hashing is claimed but never applied. The `internal` classification conflicts with \"identifiers hashed\", and there's no crypto-shred path.\n- No tests or reconciliation, and the inner join silently drops shipments with no parcel row.\n- Late-arriving events aren't handled.\n- Rollout step 1 clones a table that doesn't exist on the first build.\n\nThere are two nits: state \"ds snapshot\" and list downstream consumers.\n\n- **No cost check:** I had no shell here, so I couldn't dry-run the queries. Item 6 (cost) is unverified, and the review says so.\n- **No second pass:** I skipped the optional Google vendor skills. They'd set an attribution tag that reports usage to Google, so I'd need your go-ahead first.\n\nOnce you've resolved the blockers, I can re-review the plan."
+              },
+              {
+                "name": "2-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. The verdict is **NOT READY**, with five blockers. I didn't touch the rest of the plan.\n\n**Blockers**\n1. **The Model and Load queries disagree.** Model selects `status` and `parcel_weight_kg`, while Load selects `SUM(amount)`. `status` isn't in the source DDL, and `parcels` has no definition.\n2. **The grain isn't enforced.** The Model query has no aggregation, so many events per shipment, plus the `parcels` join, give more than one row per shipment per ds. The contract key `shipment_id` also leaves out `ds`.\n3. **Reruns aren't idempotent.** `INSERT INTO` with no delete duplicates rows when a ds is rerun, and the backfill isn't written.\n4. **Duplicate events get double-counted.** The webhook re-sends until acknowledged, so `SUM(amount)` double-counts duplicates. The source has no event id to dedupe on.\n5. **The contract is incomplete.** It's inline bullets rather than an ODCS file under `contracts/`, and it has no `owner`, which AGENTS.md requires.\n\n**Should-fix**\n- No named consumer or cost of wrong, late or down.\n- No partitioning for `fct_shipments`, and `parcels` is joined with no partition filter.\n- SHA256 hashing is claimed but never applied. The `internal` classification conflicts with \"identifiers hashed\", and there's no crypto-shred path.\n- No tests or reconciliation, and the inner join silently drops shipments with no parcel row.\n- Late-arriving events aren't handled.\n- Rollout step 1 clones a table that doesn't exist on the first build.\n\nThere are two nits: state \"ds snapshot\" and list downstream consumers.\n\n- **No cost check:** I had no shell here, so I couldn't dry-run the queries. Item 6 (cost) is unverified, and the review says so.\n- **No second pass:** I skipped the optional Google vendor skills. They'd set an attribution tag that reports usage to Google, so I'd need your go-ahead first.\n\nOnce you've resolved the blockers, I can re-review the plan."
+              },
+              {
+                "name": "3-dedup",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. The verdict is **NOT READY**, with five blockers. I didn't touch the rest of the plan.\n\n**Blockers**\n1. **The Model and Load queries disagree.** Model selects `status` and `parcel_weight_kg`, while Load selects `SUM(amount)`. `status` isn't in the source DDL, and `parcels` has no definition.\n2. **The grain isn't enforced.** The Model query has no aggregation, so many events per shipment, plus the `parcels` join, give more than one row per shipment per ds. The contract key `shipment_id` also leaves out `ds`.\n3. **Reruns aren't idempotent.** `INSERT INTO` with no delete duplicates rows when a ds is rerun, and the backfill isn't written.\n4. **Duplicate events get double-counted.** The webhook re-sends until acknowledged, so `SUM(amount)` double-counts duplicates. The source has no event id to dedupe on.\n5. **The contract is incomplete.** It's inline bullets rather than an ODCS file under `contracts/`, and it has no `owner`, which AGENTS.md requires.\n\n**Should-fix**\n- No named consumer or cost of wrong, late or down.\n- No partitioning for `fct_shipments`, and `parcels` is joined with no partition filter.\n- SHA256 hashing is claimed but never applied. The `internal` classification conflicts with \"identifiers hashed\", and there's no crypto-shred path.\n- No tests or reconciliation, and the inner join silently drops shipments with no parcel row.\n- Late-arriving events aren't handled.\n- Rollout step 1 clones a table that doesn't exist on the first build.\n\nThere are two nits: state \"ds snapshot\" and list downstream consumers.\n\n- **No cost check:** I had no shell here, so I couldn't dry-run the queries. Item 6 (cost) is unverified, and the review says so.\n- **No second pass:** I skipped the optional Google vendor skills. They'd set an attribution tag that reports usage to Google, so I'd need your go-ahead first.\n\nOnce you've resolved the blockers, I can re-review the plan."
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.04891210000000001,
+            "judgeCostUsd": 0.0015432000000000032,
+            "durationSeconds": 33,
+            "startedAt": "2026-11-10T05:35:01.464Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-CI3afR/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "**Verdict: not ready to build.** The load can double-count, and the model and load SQL disagree with the source schema and with each other.\n\n## Blocking\n\n1. **Duplicates inflate `amount`.** The source is a webhook that is \"re-sent until acknowledged\", so delivery is at-least-once. The load does `SUM(amount)` over raw events with no dedup. Every retry adds to the total. The source schema has no event ID to dedup on (only `ds, event_ts, shipment_id, amount`). The plan needs either a dedup key from the carrier or a rule such as `(shipment_id, event_ts, amount)`, and it should say which.\n\n2. **The load isn't idempotent.** A plain `INSERT INTO` means a retried or backfilled `ds` appends a second copy. The rollout's \"rebuild for the ds range\" also has no mechanism. Use `MERGE`, or delete and insert by `ds` in one transaction, or a partition overwrite.\n\n3. **The model SQL doesn't match the source or the load.**\n   - `o.status` isn't in `shipment_events`.\n   - `raw_logistics.parcels` has no schema in the plan.\n   - The model selects `status` and `parcel_weight_kg` and has no `amount`. The load produces only `ds, shipment_id, amount`. It isn't clear which one defines `fct_shipments`.\n   - The model has no `GROUP BY`, so it isn't one row per shipment per ds.\n   - Joining events to `parcels` fans out if either side has several rows per shipment.\n   - The `o`/`l` aliases look copied from an orders/lines template.\n\n4. **The contract key contradicts the grain.** The grain is shipment per `ds`, but `primary_key: shipment_id`. It should be `(ds, shipment_id)`, or the grain should change.\n\n5. **The access section isn't implemented.** It says identifiers are hashed with SHA256, but no SQL does that. An unsalted hash of a low-entropy ID is also weak pseudonymization. The listed columns omit `status` and `parcel_weight_kg`. The dataset is named `fct_private` but classified `internal`. Pick one sensitivity level and make the name, classification and readers consistent.\n\n## Should fix\n\n6. **Rollout step 1 fails on the first build** because `fct_shipments` doesn't exist yet. It also fails on any re-run because the snapshot name is fixed. Add a dated name and an expiration.\n7. **Restoring from `fct_shipments_bak` discards anything loaded after the snapshot.** Time travel has the same problem. State which undo applies in which case.\n8. **\"Check row counts\" can't catch the problems above.** Add checks for uniqueness of `(ds, shipment_id)`, `SUM(amount)` reconciliation against deduped raw, and no null join keys.\n9. **Late and re-sent events are unaddressed.** It's unclear whether `ds` is arrival date or event date. A re-send landing in a later partition would miss the dedup for the earlier day. Define a lookback window, and say whether it fits the 07:00 UTC SLA.\n10. **The target table's partitioning and clustering aren't defined.** Mirror the source (`PARTITION BY ds`, `CLUSTER BY shipment_id`).\n\n## Fine as is\n\n- Every source query filters on `ds`, so `require_partition_filter` is satisfied. Each daily run scans one partition, not 900 GB.\n- The 7-day time travel window is the BigQuery default.\n\nI can draft a revised plan with a deduped, idempotent `MERGE`, a reconciled model, and a validation checklist. I'd first need to know what `parcels` looks like and whether the carrier supplies an event ID."
+              },
+              {
+                "name": "2-grain",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  true,
+                  false
+                ],
+                "evidence": "**Verdict: not ready to build.** The load can double-count, and the model and load SQL disagree with the source schema and with each other.\n\n## Blocking\n\n1. **Duplicates inflate `amount`.** The source is a webhook that is \"re-sent until acknowledged\", so delivery is at-least-once. The load does `SUM(amount)` over raw events with no dedup. Every retry adds to the total. The source schema has no event ID to dedup on (only `ds, event_ts, shipment_id, amount`). The plan needs either a dedup key from the carrier or a rule such as `(shipment_id, event_ts, amount)`, and it should say which.\n\n2. **The load isn't idempotent.** A plain `INSERT INTO` means a retried or backfilled `ds` appends a second copy. The rollout's \"rebuild for the ds range\" also has no mechanism. Use `MERGE`, or delete and insert by `ds` in one transaction, or a partition overwrite.\n\n3. **The model SQL doesn't match the source or the load.**\n   - `o.status` isn't in `shipment_events`.\n   - `raw_logistics.parcels` has no schema in the plan.\n   - The model selects `status` and `parcel_weight_kg` and has no `amount`. The load produces only `ds, shipment_id, amount`. It isn't clear which one defines `fct_shipments`.\n   - The model has no `GROUP BY`, so it isn't one row per shipment per ds.\n   - Joining events to `parcels` fans out if either side has several rows per shipment.\n   - The `o`/`l` aliases look copied from an orders/lines template.\n\n4. **The contract key contradicts the grain.** The grain is shipment per `ds`, but `primary_key: shipment_id`. It should be `(ds, shipment_id)`, or the grain should change.\n\n5. **The access section isn't implemented.** It says identifiers are hashed with SHA256, but no SQL does that. An unsalted hash of a low-entropy ID is also weak pseudonymization. The listed columns omit `status` and `parcel_weight_kg`. The dataset is named `fct_private` but classified `internal`. Pick one sensitivity level and make the name, classification and readers consistent.\n\n## Should fix\n\n6. **Rollout step 1 fails on the first build** because `fct_shipments` doesn't exist yet. It also fails on any re-run because the snapshot name is fixed. Add a dated name and an expiration.\n7. **Restoring from `fct_shipments_bak` discards anything loaded after the snapshot.** Time travel has the same problem. State which undo applies in which case.\n8. **\"Check row counts\" can't catch the problems above.** Add checks for uniqueness of `(ds, shipment_id)`, `SUM(amount)` reconciliation against deduped raw, and no null join keys.\n9. **Late and re-sent events are unaddressed.** It's unclear whether `ds` is arrival date or event date. A re-send landing in a later partition would miss the dedup for the earlier day. Define a lookback window, and say whether it fits the 07:00 UTC SLA.\n10. **The target table's partitioning and clustering aren't defined.** Mirror the source (`PARTITION BY ds`, `CLUSTER BY shipment_id`).\n\n## Fine as is\n\n- Every source query filters on `ds`, so `require_partition_filter` is satisfied. Each daily run scans one partition, not 900 GB.\n- The 7-day time travel window is the BigQuery default.\n\nI can draft a revised plan with a deduped, idempotent `MERGE`, a reconciled model, and a validation checklist. I'd first need to know what `parcels` looks like and whether the carrier supplies an event ID."
+              },
+              {
+                "name": "3-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Verdict: not ready to build.** The load can double-count, and the model and load SQL disagree with the source schema and with each other.\n\n## Blocking\n\n1. **Duplicates inflate `amount`.** The source is a webhook that is \"re-sent until acknowledged\", so delivery is at-least-once. The load does `SUM(amount)` over raw events with no dedup. Every retry adds to the total. The source schema has no event ID to dedup on (only `ds, event_ts, shipment_id, amount`). The plan needs either a dedup key from the carrier or a rule such as `(shipment_id, event_ts, amount)`, and it should say which.\n\n2. **The load isn't idempotent.** A plain `INSERT INTO` means a retried or backfilled `ds` appends a second copy. The rollout's \"rebuild for the ds range\" also has no mechanism. Use `MERGE`, or delete and insert by `ds` in one transaction, or a partition overwrite.\n\n3. **The model SQL doesn't match the source or the load.**\n   - `o.status` isn't in `shipment_events`.\n   - `raw_logistics.parcels` has no schema in the plan.\n   - The model selects `status` and `parcel_weight_kg` and has no `amount`. The load produces only `ds, shipment_id, amount`. It isn't clear which one defines `fct_shipments`.\n   - The model has no `GROUP BY`, so it isn't one row per shipment per ds.\n   - Joining events to `parcels` fans out if either side has several rows per shipment.\n   - The `o`/`l` aliases look copied from an orders/lines template.\n\n4. **The contract key contradicts the grain.** The grain is shipment per `ds`, but `primary_key: shipment_id`. It should be `(ds, shipment_id)`, or the grain should change.\n\n5. **The access section isn't implemented.** It says identifiers are hashed with SHA256, but no SQL does that. An unsalted hash of a low-entropy ID is also weak pseudonymization. The listed columns omit `status` and `parcel_weight_kg`. The dataset is named `fct_private` but classified `internal`. Pick one sensitivity level and make the name, classification and readers consistent.\n\n## Should fix\n\n6. **Rollout step 1 fails on the first build** because `fct_shipments` doesn't exist yet. It also fails on any re-run because the snapshot name is fixed. Add a dated name and an expiration.\n7. **Restoring from `fct_shipments_bak` discards anything loaded after the snapshot.** Time travel has the same problem. State which undo applies in which case.\n8. **\"Check row counts\" can't catch the problems above.** Add checks for uniqueness of `(ds, shipment_id)`, `SUM(amount)` reconciliation against deduped raw, and no null join keys.\n9. **Late and re-sent events are unaddressed.** It's unclear whether `ds` is arrival date or event date. A re-send landing in a later partition would miss the dedup for the earlier day. Define a lookback window, and say whether it fits the 07:00 UTC SLA.\n10. **The target table's partitioning and clustering aren't defined.** Mirror the source (`PARTITION BY ds`, `CLUSTER BY shipment_id`).\n\n## Fine as is\n\n- Every source query filters on `ds`, so `require_partition_filter` is satisfied. Each daily run scans one partition, not 900 GB.\n- The 7-day time travel window is the BigQuery default.\n\nI can draft a revised plan with a deduped, idempotent `MERGE`, a reconciled model, and a validation checklist. I'd first need to know what `parcels` looks like and whether the carrier supplies an event ID."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0478116,
+            "judgeCostUsd": 0.0023564000000000015,
+            "durationSeconds": 36,
+            "startedAt": "2026-11-10T05:35:34.941Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-fqjzzu/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and found several problems. The first three would make the numbers wrong, so I'd fix them before building.\n\n**Blocking**\n\n1. **Duplicates aren't handled.** The source is a webhook that is re-sent until acknowledged, so `shipment_events` will contain duplicate events. `SUM(amount)` in the Load step will overcount them. The table has no event ID to dedupe on, so the plan needs one, or a rule such as the latest `event_ts` per `shipment_id`, applied before aggregating.\n2. **The Model query doesn't match the source.**\n   - It selects `o.status`, but `shipment_events` has no `status` column.\n   - `raw_logistics.parcels` isn't defined anywhere in the plan, so `parcel_weight_kg` and the join key are unverified.\n   - If `parcels` has more than one row per shipment, the join fans out the grain. An inner join also silently drops shipments with no parcel.\n   - The Model query and the Load query produce different columns, and the Access section lists only `ds`, `shipment_id` and `amount`. It's unclear which one is the real table.\n3. **The load isn't idempotent.** A plain `INSERT … WHERE ds = @ds` duplicates the partition on every retry or rerun. Rollout step 2 (\"rebuild for the ds range\") would hit this too. Use a `MERGE` on the key, or delete the partition and insert it in one transaction.\n4. **The key contradicts the grain.** The grain is one row per shipment per `ds`, but the contract says `primary_key: shipment_id`. It should be `(ds, shipment_id)`.\n\n**Should fix**\n\n5. **Late and re-sent events.** The plan doesn't say whether `ds` is the event date or the ingestion date. If it's the event date, re-sent events can land in a partition you've already built. You'd need a lookback window that reprocesses recent partitions.\n6. **Hashing isn't implemented.** Access says identifiers are hashed with SHA256, but no SQL does that. An unsalted SHA256 of a low-entropy ID is also easy to reverse. Decide whether the hash is real protection or just pseudonymization. Also decide whether hashing `shipment_id` breaks joins back to `parcels`.\n7. **The snapshot may expose the data.**\n   - `fct_shipments_bak` has no stated dataset, so it may not inherit the `fct_private` access.\n   - A fixed snapshot name fails or collides on the second run.\n   - On the first build, `fct_shipments` doesn't exist yet, so step 1 fails.\n8. **The validation is thin.** \"Check row counts\" wouldn't catch double-counting or fan-out. Add checks for uniqueness on `(ds, shipment_id)`, `SUM(amount)` reconciled against deduped source, and a null check on joined columns.\n9. **The 07:00 UTC freshness SLA has nothing behind it.** There's no schedule, upstream dependency, or alert, and no allowance for late webhook deliveries.\n\n**Minor**\n\n- A backfill across a range runs the query once per day over a 900 GB table. The partition filter helps, but estimate the cost first.\n- `amount` has no currency or sign convention, such as refunds or reversals.\n\nI'd resolve items 1–4 first, since they determine the table's shape. Once you've confirmed the `parcels` schema and what `ds` means, I can draft a revised plan."
+              },
+              {
+                "name": "2-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and found several problems. The first three would make the numbers wrong, so I'd fix them before building.\n\n**Blocking**\n\n1. **Duplicates aren't handled.** The source is a webhook that is re-sent until acknowledged, so `shipment_events` will contain duplicate events. `SUM(amount)` in the Load step will overcount them. The table has no event ID to dedupe on, so the plan needs one, or a rule such as the latest `event_ts` per `shipment_id`, applied before aggregating.\n2. **The Model query doesn't match the source.**\n   - It selects `o.status`, but `shipment_events` has no `status` column.\n   - `raw_logistics.parcels` isn't defined anywhere in the plan, so `parcel_weight_kg` and the join key are unverified.\n   - If `parcels` has more than one row per shipment, the join fans out the grain. An inner join also silently drops shipments with no parcel.\n   - The Model query and the Load query produce different columns, and the Access section lists only `ds`, `shipment_id` and `amount`. It's unclear which one is the real table.\n3. **The load isn't idempotent.** A plain `INSERT … WHERE ds = @ds` duplicates the partition on every retry or rerun. Rollout step 2 (\"rebuild for the ds range\") would hit this too. Use a `MERGE` on the key, or delete the partition and insert it in one transaction.\n4. **The key contradicts the grain.** The grain is one row per shipment per `ds`, but the contract says `primary_key: shipment_id`. It should be `(ds, shipment_id)`.\n\n**Should fix**\n\n5. **Late and re-sent events.** The plan doesn't say whether `ds` is the event date or the ingestion date. If it's the event date, re-sent events can land in a partition you've already built. You'd need a lookback window that reprocesses recent partitions.\n6. **Hashing isn't implemented.** Access says identifiers are hashed with SHA256, but no SQL does that. An unsalted SHA256 of a low-entropy ID is also easy to reverse. Decide whether the hash is real protection or just pseudonymization. Also decide whether hashing `shipment_id` breaks joins back to `parcels`.\n7. **The snapshot may expose the data.**\n   - `fct_shipments_bak` has no stated dataset, so it may not inherit the `fct_private` access.\n   - A fixed snapshot name fails or collides on the second run.\n   - On the first build, `fct_shipments` doesn't exist yet, so step 1 fails.\n8. **The validation is thin.** \"Check row counts\" wouldn't catch double-counting or fan-out. Add checks for uniqueness on `(ds, shipment_id)`, `SUM(amount)` reconciled against deduped source, and a null check on joined columns.\n9. **The 07:00 UTC freshness SLA has nothing behind it.** There's no schedule, upstream dependency, or alert, and no allowance for late webhook deliveries.\n\n**Minor**\n\n- A backfill across a range runs the query once per day over a 900 GB table. The partition filter helps, but estimate the cost first.\n- `amount` has no currency or sign convention, such as refunds or reversals.\n\nI'd resolve items 1–4 first, since they determine the table's shape. Once you've confirmed the `parcels` schema and what `ds` means, I can draft a revised plan."
+              },
+              {
+                "name": "3-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and found several problems. The first three would make the numbers wrong, so I'd fix them before building.\n\n**Blocking**\n\n1. **Duplicates aren't handled.** The source is a webhook that is re-sent until acknowledged, so `shipment_events` will contain duplicate events. `SUM(amount)` in the Load step will overcount them. The table has no event ID to dedupe on, so the plan needs one, or a rule such as the latest `event_ts` per `shipment_id`, applied before aggregating.\n2. **The Model query doesn't match the source.**\n   - It selects `o.status`, but `shipment_events` has no `status` column.\n   - `raw_logistics.parcels` isn't defined anywhere in the plan, so `parcel_weight_kg` and the join key are unverified.\n   - If `parcels` has more than one row per shipment, the join fans out the grain. An inner join also silently drops shipments with no parcel.\n   - The Model query and the Load query produce different columns, and the Access section lists only `ds`, `shipment_id` and `amount`. It's unclear which one is the real table.\n3. **The load isn't idempotent.** A plain `INSERT … WHERE ds = @ds` duplicates the partition on every retry or rerun. Rollout step 2 (\"rebuild for the ds range\") would hit this too. Use a `MERGE` on the key, or delete the partition and insert it in one transaction.\n4. **The key contradicts the grain.** The grain is one row per shipment per `ds`, but the contract says `primary_key: shipment_id`. It should be `(ds, shipment_id)`.\n\n**Should fix**\n\n5. **Late and re-sent events.** The plan doesn't say whether `ds` is the event date or the ingestion date. If it's the event date, re-sent events can land in a partition you've already built. You'd need a lookback window that reprocesses recent partitions.\n6. **Hashing isn't implemented.** Access says identifiers are hashed with SHA256, but no SQL does that. An unsalted SHA256 of a low-entropy ID is also easy to reverse. Decide whether the hash is real protection or just pseudonymization. Also decide whether hashing `shipment_id` breaks joins back to `parcels`.\n7. **The snapshot may expose the data.**\n   - `fct_shipments_bak` has no stated dataset, so it may not inherit the `fct_private` access.\n   - A fixed snapshot name fails or collides on the second run.\n   - On the first build, `fct_shipments` doesn't exist yet, so step 1 fails.\n8. **The validation is thin.** \"Check row counts\" wouldn't catch double-counting or fan-out. Add checks for uniqueness on `(ds, shipment_id)`, `SUM(amount)` reconciled against deduped source, and a null check on joined columns.\n9. **The 07:00 UTC freshness SLA has nothing behind it.** There's no schedule, upstream dependency, or alert, and no allowance for late webhook deliveries.\n\n**Minor**\n\n- A backfill across a range runs the query once per day over a 900 GB table. The partition filter helps, but estimate the cost first.\n- `amount` has no currency or sign convention, such as refunds or reversals.\n\nI'd resolve items 1–4 first, since they determine the table's shape. Once you've confirmed the `parcels` schema and what `ds` means, I can draft a revised plan."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.04715029999999999,
+            "judgeCostUsd": 0.002295099999999998,
+            "durationSeconds": 39,
+            "startedAt": "2026-11-10T05:36:11.375Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-7JQQVV/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan. It isn't ready to build, mainly because the load double-counts and the schema and contract contradict each other.\n\n**Blocking**\n\n1. **The load double-counts.** The source is a webhook \"re-sent until acknowledged\", so duplicate events are expected. `SUM(amount)` over raw events counts every re-send. The table also has no event ID, so the plan doesn't say what identifies a duplicate. Decide the dedupe key, for example `(shipment_id, event_ts)` or a new event ID from the carrier, and dedupe before aggregating.\n2. **The load can't be re-run.** It's a plain `INSERT`. Running it twice for the same `ds`, or running the step 2 rebuild over a range that already has data, duplicates rows. Use `MERGE`, or delete and insert by `ds`, or overwrite the partition.\n3. **The model query doesn't match the source.** It selects `o.status`, but `shipment_events` has no `status` column. `raw_logistics.parcels` isn't defined anywhere in the plan, so `parcel_weight_kg` and the join key are unverified. If a shipment has several parcels, the join multiplies rows and breaks the stated grain. The query also never says whether `parcels` needs a partition filter.\n4. **The model, load, and access sections disagree on columns.** The model query returns `status` and `parcel_weight_kg`. The load and the access section list only `ds, shipment_id, amount`. Pick one column set, and make the load build it.\n5. **The contract's primary key contradicts the grain.** The grain is one row per shipment per `ds`, but the contract says `primary_key: shipment_id`. It should be `(ds, shipment_id)`.\n6. **The hashing isn't implemented.** The access section says identifiers are hashed with SHA256, but nothing in the load hashes them. If `shipment_id` is hashed, joins to `parcels` and the primary key need the hashed value or a mapping. Unsalted SHA256 on guessable IDs is also weak pseudonymization. Also check that `classification: internal` fits a dataset named `fct_private`.\n\n**Rollout**\n\n- **The snapshot step fails in two cases.** `CLONE fct_shipments` fails on the first build because the table doesn't exist yet. It also fails on later runs because `fct_shipments_bak` already exists. Use a dated snapshot name, or `CREATE OR REPLACE`, and make the first build a separate path.\n- **The row-count check is weak.** It won't catch the duplicate or fan-out problems above. Add a check that `SUM(amount)` matches a deduped source total per `ds`, and a uniqueness check on `(ds, shipment_id)`.\n- **Time travel only covers 7 days.** A backfill that reaches back further has to rely on the snapshot, so keep the snapshot until the backfill is verified.\n\n**Smaller points**\n\n- **Late data:** nothing says how late events are handled. Partitioning by `ds` with a webhook means late arrivals can land in earlier partitions. Say whether a lookback window reprocesses them.\n- **Freshness:** the 07:00 UTC SLA has no schedule or upstream dependency behind it.\n- **Null `amount`:** the plan doesn't say how a null `amount` is treated.\n\nDo you want me to revise `plan.md` with these fixes? I'd need two answers from you first: the dedupe key, and whether `status` and `parcel_weight_kg` belong in the table."
+              },
+              {
+                "name": "2-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. It isn't ready to build, mainly because the load double-counts and the schema and contract contradict each other.\n\n**Blocking**\n\n1. **The load double-counts.** The source is a webhook \"re-sent until acknowledged\", so duplicate events are expected. `SUM(amount)` over raw events counts every re-send. The table also has no event ID, so the plan doesn't say what identifies a duplicate. Decide the dedupe key, for example `(shipment_id, event_ts)` or a new event ID from the carrier, and dedupe before aggregating.\n2. **The load can't be re-run.** It's a plain `INSERT`. Running it twice for the same `ds`, or running the step 2 rebuild over a range that already has data, duplicates rows. Use `MERGE`, or delete and insert by `ds`, or overwrite the partition.\n3. **The model query doesn't match the source.** It selects `o.status`, but `shipment_events` has no `status` column. `raw_logistics.parcels` isn't defined anywhere in the plan, so `parcel_weight_kg` and the join key are unverified. If a shipment has several parcels, the join multiplies rows and breaks the stated grain. The query also never says whether `parcels` needs a partition filter.\n4. **The model, load, and access sections disagree on columns.** The model query returns `status` and `parcel_weight_kg`. The load and the access section list only `ds, shipment_id, amount`. Pick one column set, and make the load build it.\n5. **The contract's primary key contradicts the grain.** The grain is one row per shipment per `ds`, but the contract says `primary_key: shipment_id`. It should be `(ds, shipment_id)`.\n6. **The hashing isn't implemented.** The access section says identifiers are hashed with SHA256, but nothing in the load hashes them. If `shipment_id` is hashed, joins to `parcels` and the primary key need the hashed value or a mapping. Unsalted SHA256 on guessable IDs is also weak pseudonymization. Also check that `classification: internal` fits a dataset named `fct_private`.\n\n**Rollout**\n\n- **The snapshot step fails in two cases.** `CLONE fct_shipments` fails on the first build because the table doesn't exist yet. It also fails on later runs because `fct_shipments_bak` already exists. Use a dated snapshot name, or `CREATE OR REPLACE`, and make the first build a separate path.\n- **The row-count check is weak.** It won't catch the duplicate or fan-out problems above. Add a check that `SUM(amount)` matches a deduped source total per `ds`, and a uniqueness check on `(ds, shipment_id)`.\n- **Time travel only covers 7 days.** A backfill that reaches back further has to rely on the snapshot, so keep the snapshot until the backfill is verified.\n\n**Smaller points**\n\n- **Late data:** nothing says how late events are handled. Partitioning by `ds` with a webhook means late arrivals can land in earlier partitions. Say whether a lookback window reprocesses them.\n- **Freshness:** the 07:00 UTC SLA has no schedule or upstream dependency behind it.\n- **Null `amount`:** the plan doesn't say how a null `amount` is treated.\n\nDo you want me to revise `plan.md` with these fixes? I'd need two answers from you first: the dedupe key, and whether `status` and `parcel_weight_kg` belong in the table."
+              },
+              {
+                "name": "3-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. It isn't ready to build, mainly because the load double-counts and the schema and contract contradict each other.\n\n**Blocking**\n\n1. **The load double-counts.** The source is a webhook \"re-sent until acknowledged\", so duplicate events are expected. `SUM(amount)` over raw events counts every re-send. The table also has no event ID, so the plan doesn't say what identifies a duplicate. Decide the dedupe key, for example `(shipment_id, event_ts)` or a new event ID from the carrier, and dedupe before aggregating.\n2. **The load can't be re-run.** It's a plain `INSERT`. Running it twice for the same `ds`, or running the step 2 rebuild over a range that already has data, duplicates rows. Use `MERGE`, or delete and insert by `ds`, or overwrite the partition.\n3. **The model query doesn't match the source.** It selects `o.status`, but `shipment_events` has no `status` column. `raw_logistics.parcels` isn't defined anywhere in the plan, so `parcel_weight_kg` and the join key are unverified. If a shipment has several parcels, the join multiplies rows and breaks the stated grain. The query also never says whether `parcels` needs a partition filter.\n4. **The model, load, and access sections disagree on columns.** The model query returns `status` and `parcel_weight_kg`. The load and the access section list only `ds, shipment_id, amount`. Pick one column set, and make the load build it.\n5. **The contract's primary key contradicts the grain.** The grain is one row per shipment per `ds`, but the contract says `primary_key: shipment_id`. It should be `(ds, shipment_id)`.\n6. **The hashing isn't implemented.** The access section says identifiers are hashed with SHA256, but nothing in the load hashes them. If `shipment_id` is hashed, joins to `parcels` and the primary key need the hashed value or a mapping. Unsalted SHA256 on guessable IDs is also weak pseudonymization. Also check that `classification: internal` fits a dataset named `fct_private`.\n\n**Rollout**\n\n- **The snapshot step fails in two cases.** `CLONE fct_shipments` fails on the first build because the table doesn't exist yet. It also fails on later runs because `fct_shipments_bak` already exists. Use a dated snapshot name, or `CREATE OR REPLACE`, and make the first build a separate path.\n- **The row-count check is weak.** It won't catch the duplicate or fan-out problems above. Add a check that `SUM(amount)` matches a deduped source total per `ds`, and a uniqueness check on `(ds, shipment_id)`.\n- **Time travel only covers 7 days.** A backfill that reaches back further has to rely on the snapshot, so keep the snapshot until the backfill is verified.\n\n**Smaller points**\n\n- **Late data:** nothing says how late events are handled. Partitioning by `ds` with a webhook means late arrivals can land in earlier partitions. Say whether a lookback window reprocesses them.\n- **Freshness:** the 07:00 UTC SLA has no schedule or upstream dependency behind it.\n- **Null `amount`:** the plan doesn't say how a null `amount` is treated.\n\nDo you want me to revise `plan.md` with these fixes? I'd need two answers from you first: the dedupe key, and whether `status` and `parcel_weight_kg` belong in the table."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.04736599999999999,
+            "judgeCostUsd": 0.0023407999999999936,
+            "durationSeconds": 36,
+            "startedAt": "2026-11-10T05:36:50.459Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-XH3sOT/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I found problems that should be fixed before building. The most serious are first.\n\n**Blocking**\n\n1. **Duplicate webhooks inflate `amount`.** The source is \"re-sent until acknowledged\", so duplicate events are expected. The load does `SUM(amount)` with no dedup, so any re-delivery double-counts. The source table has no event ID to dedup on. Either get one from the carrier, or define a dedup key such as `(shipment_id, event_ts, amount)`. Say explicitly that this is a heuristic.\n2. **The Model and Load sections describe different tables.**\n   - The Model selects `o.status` and `l.parcel_weight_kg`.\n   - `status` isn't in the `shipment_events` DDL.\n   - `raw_logistics.parcels` is never defined.\n   - The Load and Access sections only produce `ds, shipment_id, amount`.\n\n   Decide which is the real `fct_shipments` and make the sections agree.\n3. **The load isn't idempotent.** A plain `INSERT INTO` for `@ds` duplicates rows on every retry or backfill. Use `MERGE`, or delete the partition and then insert. Rollout step 2 (\"rebuild for the ds range\") depends on this.\n4. **The contract contradicts the grain.** The grain is one row per shipment per ds, but `primary_key: shipment_id` alone would be violated by any shipment with events on more than one day. The key should be `(ds, shipment_id)`.\n5. **The hashing claim isn't implemented.** The Access section says identifiers are hashed with SHA256, but the Load selects raw `shipment_id`. Add the hash, or remove the claim. Unsalted SHA256 of guessable IDs is weak pseudonymization, so confirm that's acceptable for `internal` classification.\n\n**Should fix**\n\n6. **Late events are missed.** The load only reads `ds = @ds`. If `ds` is the event date, late webhook deliveries land in older partitions and never reach the fact. Either reprocess a trailing window (for example the last 3 days) or document the loss.\n7. **The `JOIN parcels` is risky.**\n   - It's an inner join, so shipments without a parcel row silently disappear. Use a `LEFT JOIN` unless that's intended.\n   - If `parcels` has more than one row per shipment, it fans out rows and corrupts the sums.\n   - `parcels` isn't filtered by `ds`.\n8. **The rollout has gaps.**\n   - `CREATE SNAPSHOT TABLE fct_shipments_bak` fails if the snapshot already exists, and fails on the first run when `fct_shipments` doesn't exist yet. Add a date suffix or an expiration.\n   - \"Check row counts\" is weak. Also compare `SUM(amount)` and distinct shipments against the deduped source.\n   - Time travel is 7 days, so state who confirms the rebuild within that window.\n9. **The 07:00 UTC freshness SLA has nothing behind it.** There's no upstream arrival check, scheduler dependency, or alert, and no handling for webhook delays.\n\n**Minor**\n\n- `amount` has no currency or unit.\n- State the cost per run. A single-`ds` read of a ~900 GB table is fine given `require_partition_filter`, but a multi-day backfill multiplies it.\n- Name an owner, since the plan lists only \"data team\".\n\nI'd resolve items 1–5 in the plan before building. Want me to draft a revised plan with these changes?"
+              },
+              {
+                "name": "2-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "I found problems that should be fixed before building. The most serious are first.\n\n**Blocking**\n\n1. **Duplicate webhooks inflate `amount`.** The source is \"re-sent until acknowledged\", so duplicate events are expected. The load does `SUM(amount)` with no dedup, so any re-delivery double-counts. The source table has no event ID to dedup on. Either get one from the carrier, or define a dedup key such as `(shipment_id, event_ts, amount)`. Say explicitly that this is a heuristic.\n2. **The Model and Load sections describe different tables.**\n   - The Model selects `o.status` and `l.parcel_weight_kg`.\n   - `status` isn't in the `shipment_events` DDL.\n   - `raw_logistics.parcels` is never defined.\n   - The Load and Access sections only produce `ds, shipment_id, amount`.\n\n   Decide which is the real `fct_shipments` and make the sections agree.\n3. **The load isn't idempotent.** A plain `INSERT INTO` for `@ds` duplicates rows on every retry or backfill. Use `MERGE`, or delete the partition and then insert. Rollout step 2 (\"rebuild for the ds range\") depends on this.\n4. **The contract contradicts the grain.** The grain is one row per shipment per ds, but `primary_key: shipment_id` alone would be violated by any shipment with events on more than one day. The key should be `(ds, shipment_id)`.\n5. **The hashing claim isn't implemented.** The Access section says identifiers are hashed with SHA256, but the Load selects raw `shipment_id`. Add the hash, or remove the claim. Unsalted SHA256 of guessable IDs is weak pseudonymization, so confirm that's acceptable for `internal` classification.\n\n**Should fix**\n\n6. **Late events are missed.** The load only reads `ds = @ds`. If `ds` is the event date, late webhook deliveries land in older partitions and never reach the fact. Either reprocess a trailing window (for example the last 3 days) or document the loss.\n7. **The `JOIN parcels` is risky.**\n   - It's an inner join, so shipments without a parcel row silently disappear. Use a `LEFT JOIN` unless that's intended.\n   - If `parcels` has more than one row per shipment, it fans out rows and corrupts the sums.\n   - `parcels` isn't filtered by `ds`.\n8. **The rollout has gaps.**\n   - `CREATE SNAPSHOT TABLE fct_shipments_bak` fails if the snapshot already exists, and fails on the first run when `fct_shipments` doesn't exist yet. Add a date suffix or an expiration.\n   - \"Check row counts\" is weak. Also compare `SUM(amount)` and distinct shipments against the deduped source.\n   - Time travel is 7 days, so state who confirms the rebuild within that window.\n9. **The 07:00 UTC freshness SLA has nothing behind it.** There's no upstream arrival check, scheduler dependency, or alert, and no handling for webhook delays.\n\n**Minor**\n\n- `amount` has no currency or unit.\n- State the cost per run. A single-`ds` read of a ~900 GB table is fine given `require_partition_filter`, but a multi-day backfill multiplies it.\n- Name an owner, since the plan lists only \"data team\".\n\nI'd resolve items 1–5 in the plan before building. Want me to draft a revised plan with these changes?"
+              },
+              {
+                "name": "3-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I found problems that should be fixed before building. The most serious are first.\n\n**Blocking**\n\n1. **Duplicate webhooks inflate `amount`.** The source is \"re-sent until acknowledged\", so duplicate events are expected. The load does `SUM(amount)` with no dedup, so any re-delivery double-counts. The source table has no event ID to dedup on. Either get one from the carrier, or define a dedup key such as `(shipment_id, event_ts, amount)`. Say explicitly that this is a heuristic.\n2. **The Model and Load sections describe different tables.**\n   - The Model selects `o.status` and `l.parcel_weight_kg`.\n   - `status` isn't in the `shipment_events` DDL.\n   - `raw_logistics.parcels` is never defined.\n   - The Load and Access sections only produce `ds, shipment_id, amount`.\n\n   Decide which is the real `fct_shipments` and make the sections agree.\n3. **The load isn't idempotent.** A plain `INSERT INTO` for `@ds` duplicates rows on every retry or backfill. Use `MERGE`, or delete the partition and then insert. Rollout step 2 (\"rebuild for the ds range\") depends on this.\n4. **The contract contradicts the grain.** The grain is one row per shipment per ds, but `primary_key: shipment_id` alone would be violated by any shipment with events on more than one day. The key should be `(ds, shipment_id)`.\n5. **The hashing claim isn't implemented.** The Access section says identifiers are hashed with SHA256, but the Load selects raw `shipment_id`. Add the hash, or remove the claim. Unsalted SHA256 of guessable IDs is weak pseudonymization, so confirm that's acceptable for `internal` classification.\n\n**Should fix**\n\n6. **Late events are missed.** The load only reads `ds = @ds`. If `ds` is the event date, late webhook deliveries land in older partitions and never reach the fact. Either reprocess a trailing window (for example the last 3 days) or document the loss.\n7. **The `JOIN parcels` is risky.**\n   - It's an inner join, so shipments without a parcel row silently disappear. Use a `LEFT JOIN` unless that's intended.\n   - If `parcels` has more than one row per shipment, it fans out rows and corrupts the sums.\n   - `parcels` isn't filtered by `ds`.\n8. **The rollout has gaps.**\n   - `CREATE SNAPSHOT TABLE fct_shipments_bak` fails if the snapshot already exists, and fails on the first run when `fct_shipments` doesn't exist yet. Add a date suffix or an expiration.\n   - \"Check row counts\" is weak. Also compare `SUM(amount)` and distinct shipments against the deduped source.\n   - Time travel is 7 days, so state who confirms the rebuild within that window.\n9. **The 07:00 UTC freshness SLA has nothing behind it.** There's no upstream arrival check, scheduler dependency, or alert, and no handling for webhook delays.\n\n**Minor**\n\n- `amount` has no currency or unit.\n- State the cost per run. A single-`ds` read of a ~900 GB table is fine given `require_partition_filter`, but a multi-day backfill multiplies it.\n- Name an owner, since the plan lists only \"data team\".\n\nI'd resolve items 1–5 in the plan before building. Want me to draft a revised plan with these changes?"
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0479976,
+            "judgeCostUsd": 0.0026423999999999996,
+            "durationSeconds": 41,
+            "startedAt": "2026-11-10T05:37:26.705Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-iRSNNX/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The plan isn't ready to build. These are the problems, most serious first.\n\n**Correctness**\n1. **Double counting.** The source is a webhook that is re-sent until acknowledged, so it delivers at least once and will contain duplicates. The load runs `SUM(amount)` with no dedup, so amounts will be inflated. The source table also has no event ID. The plan needs to name a dedup key, such as `(shipment_id, event_ts)` or a delivery ID, and dedup before aggregating.\n2. **The load isn't idempotent.** `INSERT INTO ... WHERE ds = @ds` duplicates the partition on any retry or backfill. Rollout step 2 (\"rebuild for the ds range\") would hit this. Use `MERGE`, or delete the partition and insert it in one transaction, or overwrite the partition.\n3. **The Model and Load sections disagree.**\n   - The Model query selects `o.status`, which isn't in the source schema (`ds, event_ts, shipment_id, amount`).\n   - The Model query also joins `raw_logistics.parcels`, which isn't defined anywhere in the plan. It doesn't say whether `parcels` is unique per `shipment_id`. If it isn't, the join fans out. If some shipments have no parcel row, the inner join drops them.\n   - The Load query selects only `amount` and has no `status` or `parcel_weight_kg`.\n   - The Model query returns one row per event, not the stated grain of one row per shipment per ds.\n\n   You need to decide which query is the real one.\n4. **The contract key is wrong.** The grain is shipment × ds, but `primary_key: shipment_id` would fail uniqueness. It should be `(ds, shipment_id)`.\n\n**Rollout**\n5. **Step 1 fails on the first build.** `CLONE fct_shipments` needs the table to exist. A repeat run also fails if `fct_shipments_bak` already exists. Add `IF NOT EXISTS` or a dated name, and set an expiration on the snapshot.\n6. **The checks are too weak.** Row counts won't catch double counting. Add checks for key uniqueness and for `SUM(amount)` against a deduplicated source.\n7. **Time travel is partly unspecified.** The undo path doesn't say how a restore applies to just the rebuilt ds range.\n\n**Access and privacy**\n8. **Hashing isn't implemented.** The Access section says identifiers are hashed with SHA256, but the Load query selects raw `shipment_id`. Unsalted SHA256 of low-entropy IDs is also easy to reverse. Decide where hashing happens and whether it needs a salt or key.\n9. **The classification may not match.** `classification: internal` sits oddly with a dataset named `fct_private`. Confirm which one is correct.\n\n**Operations**\n10. **No schedule or late-data handling.** Nothing in the plan covers late or re-sent events landing after a ds is loaded. It also doesn't say how the 07:00 UTC freshness SLA is met. The source is partitioned by `ds`, but the plan doesn't say whether that is event date or arrival date. A lookback window that reloads the last N days would address this.\n11. **Cost is probably fine.** The partition filter is required, so a daily load scans one partition. A multi-day backfill is N partitions of a 900 GB table, so budget for it.\n\nI'd resolve items 1–4 before building, since they change the SQL. I can draft a revised plan with a dedup CTE, a `MERGE` load and corrected contract if you'd like. I'd need to know the dedup key and the `parcels` schema first."
+              },
+              {
+                "name": "2-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The plan isn't ready to build. These are the problems, most serious first.\n\n**Correctness**\n1. **Double counting.** The source is a webhook that is re-sent until acknowledged, so it delivers at least once and will contain duplicates. The load runs `SUM(amount)` with no dedup, so amounts will be inflated. The source table also has no event ID. The plan needs to name a dedup key, such as `(shipment_id, event_ts)` or a delivery ID, and dedup before aggregating.\n2. **The load isn't idempotent.** `INSERT INTO ... WHERE ds = @ds` duplicates the partition on any retry or backfill. Rollout step 2 (\"rebuild for the ds range\") would hit this. Use `MERGE`, or delete the partition and insert it in one transaction, or overwrite the partition.\n3. **The Model and Load sections disagree.**\n   - The Model query selects `o.status`, which isn't in the source schema (`ds, event_ts, shipment_id, amount`).\n   - The Model query also joins `raw_logistics.parcels`, which isn't defined anywhere in the plan. It doesn't say whether `parcels` is unique per `shipment_id`. If it isn't, the join fans out. If some shipments have no parcel row, the inner join drops them.\n   - The Load query selects only `amount` and has no `status` or `parcel_weight_kg`.\n   - The Model query returns one row per event, not the stated grain of one row per shipment per ds.\n\n   You need to decide which query is the real one.\n4. **The contract key is wrong.** The grain is shipment × ds, but `primary_key: shipment_id` would fail uniqueness. It should be `(ds, shipment_id)`.\n\n**Rollout**\n5. **Step 1 fails on the first build.** `CLONE fct_shipments` needs the table to exist. A repeat run also fails if `fct_shipments_bak` already exists. Add `IF NOT EXISTS` or a dated name, and set an expiration on the snapshot.\n6. **The checks are too weak.** Row counts won't catch double counting. Add checks for key uniqueness and for `SUM(amount)` against a deduplicated source.\n7. **Time travel is partly unspecified.** The undo path doesn't say how a restore applies to just the rebuilt ds range.\n\n**Access and privacy**\n8. **Hashing isn't implemented.** The Access section says identifiers are hashed with SHA256, but the Load query selects raw `shipment_id`. Unsalted SHA256 of low-entropy IDs is also easy to reverse. Decide where hashing happens and whether it needs a salt or key.\n9. **The classification may not match.** `classification: internal` sits oddly with a dataset named `fct_private`. Confirm which one is correct.\n\n**Operations**\n10. **No schedule or late-data handling.** Nothing in the plan covers late or re-sent events landing after a ds is loaded. It also doesn't say how the 07:00 UTC freshness SLA is met. The source is partitioned by `ds`, but the plan doesn't say whether that is event date or arrival date. A lookback window that reloads the last N days would address this.\n11. **Cost is probably fine.** The partition filter is required, so a daily load scans one partition. A multi-day backfill is N partitions of a 900 GB table, so budget for it.\n\nI'd resolve items 1–4 before building, since they change the SQL. I can draft a revised plan with a dedup CTE, a `MERGE` load and corrected contract if you'd like. I'd need to know the dedup key and the `parcels` schema first."
+              },
+              {
+                "name": "3-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The plan isn't ready to build. These are the problems, most serious first.\n\n**Correctness**\n1. **Double counting.** The source is a webhook that is re-sent until acknowledged, so it delivers at least once and will contain duplicates. The load runs `SUM(amount)` with no dedup, so amounts will be inflated. The source table also has no event ID. The plan needs to name a dedup key, such as `(shipment_id, event_ts)` or a delivery ID, and dedup before aggregating.\n2. **The load isn't idempotent.** `INSERT INTO ... WHERE ds = @ds` duplicates the partition on any retry or backfill. Rollout step 2 (\"rebuild for the ds range\") would hit this. Use `MERGE`, or delete the partition and insert it in one transaction, or overwrite the partition.\n3. **The Model and Load sections disagree.**\n   - The Model query selects `o.status`, which isn't in the source schema (`ds, event_ts, shipment_id, amount`).\n   - The Model query also joins `raw_logistics.parcels`, which isn't defined anywhere in the plan. It doesn't say whether `parcels` is unique per `shipment_id`. If it isn't, the join fans out. If some shipments have no parcel row, the inner join drops them.\n   - The Load query selects only `amount` and has no `status` or `parcel_weight_kg`.\n   - The Model query returns one row per event, not the stated grain of one row per shipment per ds.\n\n   You need to decide which query is the real one.\n4. **The contract key is wrong.** The grain is shipment × ds, but `primary_key: shipment_id` would fail uniqueness. It should be `(ds, shipment_id)`.\n\n**Rollout**\n5. **Step 1 fails on the first build.** `CLONE fct_shipments` needs the table to exist. A repeat run also fails if `fct_shipments_bak` already exists. Add `IF NOT EXISTS` or a dated name, and set an expiration on the snapshot.\n6. **The checks are too weak.** Row counts won't catch double counting. Add checks for key uniqueness and for `SUM(amount)` against a deduplicated source.\n7. **Time travel is partly unspecified.** The undo path doesn't say how a restore applies to just the rebuilt ds range.\n\n**Access and privacy**\n8. **Hashing isn't implemented.** The Access section says identifiers are hashed with SHA256, but the Load query selects raw `shipment_id`. Unsalted SHA256 of low-entropy IDs is also easy to reverse. Decide where hashing happens and whether it needs a salt or key.\n9. **The classification may not match.** `classification: internal` sits oddly with a dataset named `fct_private`. Confirm which one is correct.\n\n**Operations**\n10. **No schedule or late-data handling.** Nothing in the plan covers late or re-sent events landing after a ds is loaded. It also doesn't say how the 07:00 UTC freshness SLA is met. The source is partitioned by `ds`, but the plan doesn't say whether that is event date or arrival date. A lookback window that reloads the last N days would address this.\n11. **Cost is probably fine.** The partition filter is required, so a daily load scans one partition. A multi-day backfill is N partitions of a 900 GB table, so budget for it.\n\nI'd resolve items 1–4 before building, since they change the SQL. I can draft a revised plan with a dedup CTE, a `MERGE` load and corrected contract if you'd like. I'd need to know the dedup key and the `parcels` schema first."
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.6,
+        "passRate": 0.2,
+        "scoreWithout": 0.5999999999999999,
+        "passRateWithout": 0,
+        "delta": 1.1102230246251565e-16
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 0,
+    "overallScore": 0.6,
+    "overallPassRate": 0.2,
+    "meanDelta": 1.1102230246251565e-16
+  }
+}

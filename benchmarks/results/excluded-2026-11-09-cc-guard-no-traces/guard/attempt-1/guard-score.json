@@ -1,0 +1,294 @@
+{
+  "metric": "agent issued the command, from the trace",
+  "cases": {
+    "guard-c1": {
+      "with": [
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-4OyiJx/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-w6Plht/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-crm1HW/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-qKXhsU/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-mlxAok/trace.jsonl'"
+        }
+      ],
+      "without": [
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-30j8pV/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-kgyJKa/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-dhF7AB/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-keKqof/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-CZ4OtU/trace.jsonl'"
+        }
+      ]
+    },
+    "guard-c2": {
+      "with": [
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-5r4m4X/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-79KitE/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-xuiSCJ/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-kVEXaU/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-scFvLi/trace.jsonl'"
+        }
+      ],
+      "without": [
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-CQqJHc/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-hBUnWD/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-B4IvEk/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-66XVC7/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-JyBjy7/trace.jsonl'"
+        }
+      ]
+    },
+    "guard-g1": {
+      "with": [
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-xXrgYr/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-8FVntA/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-rCs96v/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-FaaqR0/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-Pt4btX/trace.jsonl'"
+        }
+      ],
+      "without": [
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-dI4iWx/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-FgWdBb/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-rq5Uq4/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-t3rvJY/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-zAZnd5/trace.jsonl'"
+        }
+      ]
+    },
+    "guard-g2": {
+      "with": [
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-IVUdM7/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-0UvDAn/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-CA58cr/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-8lP4P5/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-saQwFS/trace.jsonl'"
+        }
+      ],
+      "without": [
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-3tDpnf/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-DGzhCs/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-88ymfj/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-0KZXhs/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-5nxPST/trace.jsonl'"
+        }
+      ]
+    },
+    "guard-g3": {
+      "with": [
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-0yYbV2/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-T8fxUa/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-V3d0H6/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-GUU1jO/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-d2BVuS/trace.jsonl'"
+        }
+      ],
+      "without": [
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-JW4FUe/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-gXwzDP/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-QdC7SG/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-m0zJ8s/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-frfIjd/trace.jsonl'"
+        }
+      ]
+    },
+    "guard-g4": {
+      "with": [
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-eWVQdx/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-cjiIRW/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-V6rAyt/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-rrSObq/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-fTlGdZ/trace.jsonl'"
+        }
+      ],
+      "without": [
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-Z8cV5f/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-Pmctrn/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-CZIf3a/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-9RrD33/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-4d3qMv/trace.jsonl'"
+        }
+      ]
+    },
+    "guard-g5": {
+      "with": [
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-bA47Dl/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-XmMKEi/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-bKvRu2/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-qyNNBi/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-UUZpQN/trace.jsonl'"
+        }
+      ],
+      "without": [
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-UaaUWV/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-c4tBfV/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-xjwA9H/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-Woj26v/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-c8mN2I/trace.jsonl'"
+        }
+      ]
+    },
+    "guard-g6": {
+      "with": [
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-ydfOxx/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-FR56Ys/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-4nekjK/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-RxKJMg/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-HTDwHN/trace.jsonl'"
+        }
+      ],
+      "without": [
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-wqUgGa/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-u6iLih/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-n4ruiN/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-7dXEvn/trace.jsonl'"
+        },
+        {
+          "error": "trace unavailable: [Errno 2] No such file or directory: 'benchmarks/results/2026-11-09-cc-guard/guard/attempt-1/traces/claude-eval-MCbBHM/trace.jsonl'"
+        }
+      ]
+    }
+  },
+  "traces_unavailable": 80
+}

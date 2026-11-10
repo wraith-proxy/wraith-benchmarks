@@ -1,0 +1,8 @@
+{
+  "contracts": {
+    "attempts": [],
+    "complete": {},
+    "status": "error",
+    "error": "no trace could be read; trace path or format differs from what run.py assumes"
+  }
+}

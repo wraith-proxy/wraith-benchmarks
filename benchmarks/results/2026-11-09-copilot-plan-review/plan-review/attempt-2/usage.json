@@ -1,0 +1,1907 @@
+{
+  "runs": [
+    {
+      "case": "plan-review-p03",
+      "arm": "with",
+      "run": 0,
+      "score": 0.3333333333333333,
+      "turns": 2,
+      "seconds": 20.5,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 14289,
+      "session_ms": 16948,
+      "nano_aiu": 296172000,
+      "ai_credits_est": 0.296172,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p03",
+      "arm": "with",
+      "run": 1,
+      "score": 0.6666666666666666,
+      "turns": 6,
+      "seconds": 34.9,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 29059,
+      "session_ms": 31754,
+      "nano_aiu": 743112000,
+      "ai_credits_est": 0.743112,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p03",
+      "arm": "with",
+      "run": 2,
+      "score": 0.3333333333333333,
+      "turns": 4,
+      "seconds": 34.9,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 28854,
+      "session_ms": 31642,
+      "nano_aiu": 493788000,
+      "ai_credits_est": 0.493788,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p03",
+      "arm": "with",
+      "run": 3,
+      "score": 1.0,
+      "turns": 6,
+      "seconds": 36.5,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 30575,
+      "session_ms": 33272,
+      "nano_aiu": 581240000,
+      "ai_credits_est": 0.58124,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p03",
+      "arm": "with",
+      "run": 4,
+      "score": 0.3333333333333333,
+      "turns": 7,
+      "seconds": 36.1,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 30019,
+      "session_ms": 32870,
+      "nano_aiu": 618936000,
+      "ai_credits_est": 0.618936,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p03",
+      "arm": "without",
+      "run": 0,
+      "score": 0.3333333333333333,
+      "turns": 5,
+      "seconds": 30.5,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 24587,
+      "session_ms": 27275,
+      "nano_aiu": 402188000,
+      "ai_credits_est": 0.402188,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p03",
+      "arm": "without",
+      "run": 1,
+      "score": 0.0,
+      "turns": 6,
+      "seconds": 35.0,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 28620,
+      "session_ms": 31339,
+      "nano_aiu": 429636000,
+      "ai_credits_est": 0.429636,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p03",
+      "arm": "without",
+      "run": 2,
+      "score": 0.0,
+      "turns": 3,
+      "seconds": 26.5,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 19965,
+      "session_ms": 22569,
+      "nano_aiu": 309416000,
+      "ai_credits_est": 0.309416,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p03",
+      "arm": "without",
+      "run": 3,
+      "score": 0.0,
+      "turns": 5,
+      "seconds": 32.1,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 25823,
+      "session_ms": 28442,
+      "nano_aiu": 371620000,
+      "ai_credits_est": 0.37162,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p03",
+      "arm": "without",
+      "run": 4,
+      "score": 0.3333333333333333,
+      "turns": 5,
+      "seconds": 28.8,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 22888,
+      "session_ms": 25679,
+      "nano_aiu": 383248000,
+      "ai_credits_est": 0.383248,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p04",
+      "arm": "with",
+      "run": 0,
+      "score": 1.0,
+      "turns": 6,
+      "seconds": 36.0,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 30016,
+      "session_ms": 32764,
+      "nano_aiu": 679732000,
+      "ai_credits_est": 0.679732,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p04",
+      "arm": "with",
+      "run": 1,
+      "score": 1.0,
+      "turns": 6,
+      "seconds": 35.9,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 29462,
+      "session_ms": 32528,
+      "nano_aiu": 618452000,
+      "ai_credits_est": 0.618452,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p04",
+      "arm": "with",
+      "run": 2,
+      "score": 0.6666666666666666,
+      "turns": 4,
+      "seconds": 29.6,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 23835,
+      "session_ms": 26449,
+      "nano_aiu": 372876000,
+      "ai_credits_est": 0.372876,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p04",
+      "arm": "with",
+      "run": 3,
+      "score": 1.0,
+      "turns": 6,
+      "seconds": 33.9,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 27730,
+      "session_ms": 30396,
+      "nano_aiu": 663712000,
+      "ai_credits_est": 0.663712,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p04",
+      "arm": "with",
+      "run": 4,
+      "score": 1.0,
+      "turns": 6,
+      "seconds": 56.8,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 50932,
+      "session_ms": 53703,
+      "nano_aiu": 889692000,
+      "ai_credits_est": 0.889692,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p04",
+      "arm": "without",
+      "run": 0,
+      "score": 0.6666666666666666,
+      "turns": 4,
+      "seconds": 32.3,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 26394,
+      "session_ms": 29019,
+      "nano_aiu": 363688000,
+      "ai_credits_est": 0.363688,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p04",
+      "arm": "without",
+      "run": 1,
+      "score": 0.3333333333333333,
+      "turns": 4,
+      "seconds": 32.2,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 26277,
+      "session_ms": 28908,
+      "nano_aiu": 373368000,
+      "ai_credits_est": 0.373368,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p04",
+      "arm": "without",
+      "run": 2,
+      "score": 0.3333333333333333,
+      "turns": 5,
+      "seconds": 37.4,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 31479,
+      "session_ms": 34106,
+      "nano_aiu": 396624000,
+      "ai_credits_est": 0.396624,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p04",
+      "arm": "without",
+      "run": 3,
+      "score": 0.6666666666666666,
+      "turns": 3,
+      "seconds": 25.1,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 19374,
+      "session_ms": 21953,
+      "nano_aiu": 320356000,
+      "ai_credits_est": 0.320356,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p04",
+      "arm": "without",
+      "run": 4,
+      "score": 1.0,
+      "turns": 6,
+      "seconds": 36.8,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 30519,
+      "session_ms": 33231,
+      "nano_aiu": 442664000,
+      "ai_credits_est": 0.442664,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p05",
+      "arm": "with",
+      "run": 0,
+      "score": 0.6666666666666666,
+      "turns": 7,
+      "seconds": 36.1,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 30076,
+      "session_ms": 32881,
+      "nano_aiu": 735004000,
+      "ai_credits_est": 0.735004,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p05",
+      "arm": "with",
+      "run": 1,
+      "score": 1.0,
+      "turns": 5,
+      "seconds": 50.0,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 43659,
+      "session_ms": 46678,
+      "nano_aiu": 632572000,
+      "ai_credits_est": 0.632572,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p05",
+      "arm": "with",
+      "run": 2,
+      "score": 0.6666666666666666,
+      "turns": 6,
+      "seconds": 41.5,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 35157,
+      "session_ms": 38182,
+      "nano_aiu": 667124000,
+      "ai_credits_est": 0.667124,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p05",
+      "arm": "with",
+      "run": 3,
+      "score": 0.6666666666666666,
+      "turns": 6,
+      "seconds": 35.0,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 28512,
+      "session_ms": 31766,
+      "nano_aiu": 627628000,
+      "ai_credits_est": 0.627628,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p05",
+      "arm": "with",
+      "run": 4,
+      "score": 1.0,
+      "turns": 6,
+      "seconds": 30.3,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 24352,
+      "session_ms": 27118,
+      "nano_aiu": 582380000,
+      "ai_credits_est": 0.58238,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p05",
+      "arm": "without",
+      "run": 0,
+      "score": 0.6666666666666666,
+      "turns": 4,
+      "seconds": 30.5,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 24757,
+      "session_ms": 27336,
+      "nano_aiu": 390116000,
+      "ai_credits_est": 0.390116,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p05",
+      "arm": "without",
+      "run": 1,
+      "score": 0.6666666666666666,
+      "turns": 4,
+      "seconds": 27.4,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 21689,
+      "session_ms": 24221,
+      "nano_aiu": 351656000,
+      "ai_credits_est": 0.351656,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p05",
+      "arm": "without",
+      "run": 2,
+      "score": 0.6666666666666666,
+      "turns": 4,
+      "seconds": 28.6,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 22862,
+      "session_ms": 25505,
+      "nano_aiu": 323244000,
+      "ai_credits_est": 0.323244,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p05",
+      "arm": "without",
+      "run": 3,
+      "score": 0.3333333333333333,
+      "turns": 2,
+      "seconds": 22.8,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 16539,
+      "session_ms": 19073,
+      "nano_aiu": 265656000,
+      "ai_credits_est": 0.265656,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p05",
+      "arm": "without",
+      "run": 4,
+      "score": 0.6666666666666666,
+      "turns": 3,
+      "seconds": 29.4,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 23615,
+      "session_ms": 26264,
+      "nano_aiu": 295956000,
+      "ai_credits_est": 0.295956,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p06",
+      "arm": "with",
+      "run": 0,
+      "score": 0.3333333333333333,
+      "turns": 6,
+      "seconds": 36.6,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 30648,
+      "session_ms": 33425,
+      "nano_aiu": 695352000,
+      "ai_credits_est": 0.695352,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p06",
+      "arm": "with",
+      "run": 1,
+      "score": 0.3333333333333333,
+      "turns": 5,
+      "seconds": 35.0,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 28738,
+      "session_ms": 31490,
+      "nano_aiu": 705164000,
+      "ai_credits_est": 0.705164,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p06",
+      "arm": "with",
+      "run": 2,
+      "score": 0.3333333333333333,
+      "turns": 5,
+      "seconds": 39.6,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 33743,
+      "session_ms": 36380,
+      "nano_aiu": 610920000,
+      "ai_credits_est": 0.61092,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p06",
+      "arm": "with",
+      "run": 3,
+      "score": 0.6666666666666666,
+      "turns": 6,
+      "seconds": 41.2,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 34596,
+      "session_ms": 37434,
+      "nano_aiu": 724392000,
+      "ai_credits_est": 0.724392,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p06",
+      "arm": "with",
+      "run": 4,
+      "score": 0.6666666666666666,
+      "turns": 6,
+      "seconds": 35.4,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 29515,
+      "session_ms": 32229,
+      "nano_aiu": 600056000,
+      "ai_credits_est": 0.600056,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p06",
+      "arm": "without",
+      "run": 0,
+      "score": 0.3333333333333333,
+      "turns": 4,
+      "seconds": 28.2,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 22306,
+      "session_ms": 24919,
+      "nano_aiu": 341284000,
+      "ai_credits_est": 0.341284,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p06",
+      "arm": "without",
+      "run": 1,
+      "score": 0.3333333333333333,
+      "turns": 3,
+      "seconds": 26.5,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 20722,
+      "session_ms": 23328,
+      "nano_aiu": 348812000,
+      "ai_credits_est": 0.348812,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p06",
+      "arm": "without",
+      "run": 2,
+      "score": 0.0,
+      "turns": 5,
+      "seconds": 42.3,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 36477,
+      "session_ms": 39150,
+      "nano_aiu": 547840000,
+      "ai_credits_est": 0.54784,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p06",
+      "arm": "without",
+      "run": 3,
+      "score": 0.3333333333333333,
+      "turns": 4,
+      "seconds": 34.4,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 28644,
+      "session_ms": 31268,
+      "nano_aiu": 350660000,
+      "ai_credits_est": 0.35066,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p06",
+      "arm": "without",
+      "run": 4,
+      "score": 0.6666666666666666,
+      "turns": 4,
+      "seconds": 28.4,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 22476,
+      "session_ms": 25170,
+      "nano_aiu": 327112000,
+      "ai_credits_est": 0.327112,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p07",
+      "arm": "with",
+      "run": 0,
+      "score": 0.6666666666666666,
+      "turns": 6,
+      "seconds": 38.6,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 32723,
+      "session_ms": 35460,
+      "nano_aiu": 602844000,
+      "ai_credits_est": 0.602844,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p07",
+      "arm": "with",
+      "run": 1,
+      "score": 0.6666666666666666,
+      "turns": 9,
+      "seconds": 78.3,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 72060,
+      "session_ms": 75055,
+      "nano_aiu": 533352500,
+      "ai_credits_est": 0.5333525,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p07",
+      "arm": "with",
+      "run": 2,
+      "score": 0.0,
+      "turns": 8,
+      "seconds": 45.8,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 39686,
+      "session_ms": 42649,
+      "nano_aiu": 713724000,
+      "ai_credits_est": 0.713724,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p07",
+      "arm": "with",
+      "run": 3,
+      "score": 0.6666666666666666,
+      "turns": 8,
+      "seconds": 49.4,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 43317,
+      "session_ms": 46322,
+      "nano_aiu": 362168000,
+      "ai_credits_est": 0.362168,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p07",
+      "arm": "with",
+      "run": 4,
+      "score": 0.6666666666666666,
+      "turns": 9,
+      "seconds": 51.7,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 45503,
+      "session_ms": 48401,
+      "nano_aiu": 402293000,
+      "ai_credits_est": 0.402293,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p07",
+      "arm": "without",
+      "run": 0,
+      "score": 0.3333333333333333,
+      "turns": 4,
+      "seconds": 36.8,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 30819,
+      "session_ms": 33618,
+      "nano_aiu": 187481500,
+      "ai_credits_est": 0.1874815,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p07",
+      "arm": "without",
+      "run": 1,
+      "score": 0.3333333333333333,
+      "turns": 3,
+      "seconds": 28.6,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 22988,
+      "session_ms": 25516,
+      "nano_aiu": 113653000,
+      "ai_credits_est": 0.113653,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p07",
+      "arm": "without",
+      "run": 2,
+      "score": 0.0,
+      "turns": 4,
+      "seconds": 36.6,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 30929,
+      "session_ms": 33546,
+      "nano_aiu": 449940000,
+      "ai_credits_est": 0.44994,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p07",
+      "arm": "without",
+      "run": 3,
+      "score": 0.3333333333333333,
+      "turns": 4,
+      "seconds": 23.4,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 17147,
+      "session_ms": 19967,
+      "nano_aiu": 301404000,
+      "ai_credits_est": 0.301404,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p07",
+      "arm": "without",
+      "run": 4,
+      "score": 0.3333333333333333,
+      "turns": 4,
+      "seconds": 31.8,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 25849,
+      "session_ms": 28573,
+      "nano_aiu": 405672000,
+      "ai_credits_est": 0.405672,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p08",
+      "arm": "with",
+      "run": 0,
+      "score": 1.0,
+      "turns": 7,
+      "seconds": 52.6,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 46223,
+      "session_ms": 49034,
+      "nano_aiu": 377713500,
+      "ai_credits_est": 0.3777135,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p08",
+      "arm": "with",
+      "run": 1,
+      "score": 1.0,
+      "turns": 7,
+      "seconds": 53.7,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 47330,
+      "session_ms": 50395,
+      "nano_aiu": 422894500,
+      "ai_credits_est": 0.4228945,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p08",
+      "arm": "with",
+      "run": 2,
+      "score": 0.6666666666666666,
+      "turns": 10,
+      "seconds": 72.7,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 61363,
+      "session_ms": 64737,
+      "nano_aiu": 511001500,
+      "ai_credits_est": 0.5110015,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p08",
+      "arm": "with",
+      "run": 3,
+      "score": 0.6666666666666666,
+      "turns": 9,
+      "seconds": 50.8,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 44416,
+      "session_ms": 47331,
+      "nano_aiu": 377314000,
+      "ai_credits_est": 0.377314,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p08",
+      "arm": "with",
+      "run": 4,
+      "score": 1.0,
+      "turns": 9,
+      "seconds": 70.6,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 64258,
+      "session_ms": 67327,
+      "nano_aiu": 492192500,
+      "ai_credits_est": 0.4921925,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p08",
+      "arm": "without",
+      "run": 0,
+      "score": 0.6666666666666666,
+      "turns": 4,
+      "seconds": 37.1,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 27142,
+      "session_ms": 34056,
+      "nano_aiu": 153883500,
+      "ai_credits_est": 0.1538835,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p08",
+      "arm": "without",
+      "run": 1,
+      "score": 1.0,
+      "turns": 5,
+      "seconds": 31.2,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 25164,
+      "session_ms": 27904,
+      "nano_aiu": 134747000,
+      "ai_credits_est": 0.134747,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p08",
+      "arm": "without",
+      "run": 2,
+      "score": 0.6666666666666666,
+      "turns": 4,
+      "seconds": 37.3,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 31514,
+      "session_ms": 34037,
+      "nano_aiu": 191009500,
+      "ai_credits_est": 0.1910095,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p08",
+      "arm": "without",
+      "run": 3,
+      "score": 0.3333333333333333,
+      "turns": 5,
+      "seconds": 33.0,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 23679,
+      "session_ms": 26272,
+      "nano_aiu": 133309000,
+      "ai_credits_est": 0.133309,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p08",
+      "arm": "without",
+      "run": 4,
+      "score": 0.6666666666666666,
+      "turns": 4,
+      "seconds": 35.0,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 27951,
+      "session_ms": 30736,
+      "nano_aiu": 149355500,
+      "ai_credits_est": 0.1493555,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p09",
+      "arm": "with",
+      "run": 0,
+      "score": 1.0,
+      "turns": 9,
+      "seconds": 84.8,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 78453,
+      "session_ms": 81422,
+      "nano_aiu": 564701000,
+      "ai_credits_est": 0.564701,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p09",
+      "arm": "with",
+      "run": 1,
+      "score": 1.0,
+      "turns": 7,
+      "seconds": 61.2,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 55036,
+      "session_ms": 57842,
+      "nano_aiu": 420081500,
+      "ai_credits_est": 0.4200815,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p09",
+      "arm": "with",
+      "run": 2,
+      "score": 1.0,
+      "turns": 10,
+      "seconds": 63.7,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 57105,
+      "session_ms": 60475,
+      "nano_aiu": 447409500,
+      "ai_credits_est": 0.4474095,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p09",
+      "arm": "with",
+      "run": 3,
+      "score": 0.6666666666666666,
+      "turns": 7,
+      "seconds": 50.8,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 43592,
+      "session_ms": 46402,
+      "nano_aiu": 370011500,
+      "ai_credits_est": 0.3700115,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p09",
+      "arm": "with",
+      "run": 4,
+      "score": 1.0,
+      "turns": 9,
+      "seconds": 84.1,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 77970,
+      "session_ms": 80841,
+      "nano_aiu": 450467000,
+      "ai_credits_est": 0.450467,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p09",
+      "arm": "without",
+      "run": 0,
+      "score": 0.3333333333333333,
+      "turns": 3,
+      "seconds": 31.3,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 25209,
+      "session_ms": 27857,
+      "nano_aiu": 121094500,
+      "ai_credits_est": 0.1210945,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p09",
+      "arm": "without",
+      "run": 1,
+      "score": 0.3333333333333333,
+      "turns": 3,
+      "seconds": 33.1,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 26573,
+      "session_ms": 29277,
+      "nano_aiu": 149322000,
+      "ai_credits_est": 0.149322,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p09",
+      "arm": "without",
+      "run": 2,
+      "score": 0.6666666666666666,
+      "turns": 3,
+      "seconds": 32.9,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 27236,
+      "session_ms": 29714,
+      "nano_aiu": 130544500,
+      "ai_credits_est": 0.1305445,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p09",
+      "arm": "without",
+      "run": 3,
+      "score": 0.6666666666666666,
+      "turns": 5,
+      "seconds": 35.9,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 30012,
+      "session_ms": 32721,
+      "nano_aiu": 156743000,
+      "ai_credits_est": 0.156743,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p09",
+      "arm": "without",
+      "run": 4,
+      "score": 0.3333333333333333,
+      "turns": 3,
+      "seconds": 60.3,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 54171,
+      "session_ms": 56735,
+      "nano_aiu": 142305500,
+      "ai_credits_est": 0.1423055,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p10",
+      "arm": "with",
+      "run": 0,
+      "score": 1.0,
+      "turns": 6,
+      "seconds": 39.2,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 33263,
+      "session_ms": 35974,
+      "nano_aiu": 629828000,
+      "ai_credits_est": 0.629828,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p10",
+      "arm": "with",
+      "run": 1,
+      "score": 1.0,
+      "turns": 5,
+      "seconds": 36.2,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 29608,
+      "session_ms": 32387,
+      "nano_aiu": 546808000,
+      "ai_credits_est": 0.546808,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p10",
+      "arm": "with",
+      "run": 2,
+      "score": 1.0,
+      "turns": 8,
+      "seconds": 59.1,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 53097,
+      "session_ms": 55953,
+      "nano_aiu": 964576000,
+      "ai_credits_est": 0.964576,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p10",
+      "arm": "with",
+      "run": 3,
+      "score": 1.0,
+      "turns": 5,
+      "seconds": 30.4,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 24077,
+      "session_ms": 26834,
+      "nano_aiu": 452992000,
+      "ai_credits_est": 0.452992,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p10",
+      "arm": "with",
+      "run": 4,
+      "score": 1.0,
+      "turns": 5,
+      "seconds": 41.5,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 35452,
+      "session_ms": 38348,
+      "nano_aiu": 665644000,
+      "ai_credits_est": 0.665644,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p10",
+      "arm": "without",
+      "run": 0,
+      "score": 0.6666666666666666,
+      "turns": 3,
+      "seconds": 26.2,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 20584,
+      "session_ms": 23111,
+      "nano_aiu": 349128000,
+      "ai_credits_est": 0.349128,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p10",
+      "arm": "without",
+      "run": 1,
+      "score": 0.6666666666666666,
+      "turns": 4,
+      "seconds": 35.6,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 29747,
+      "session_ms": 32408,
+      "nano_aiu": 349028000,
+      "ai_credits_est": 0.349028,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p10",
+      "arm": "without",
+      "run": 2,
+      "score": 0.6666666666666666,
+      "turns": 3,
+      "seconds": 40.2,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 34563,
+      "session_ms": 37106,
+      "nano_aiu": 310924000,
+      "ai_credits_est": 0.310924,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p10",
+      "arm": "without",
+      "run": 3,
+      "score": 0.6666666666666666,
+      "turns": 5,
+      "seconds": 42.9,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 37054,
+      "session_ms": 39769,
+      "nano_aiu": 431008000,
+      "ai_credits_est": 0.431008,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p10",
+      "arm": "without",
+      "run": 4,
+      "score": 0.6666666666666666,
+      "turns": 3,
+      "seconds": 38.0,
+      "flags": [],
+      "model_routed": "mai-code-1.1-flash",
+      "models_called": [
+        "mai-code-1.1-flash"
+      ],
+      "premium_requests": 1,
+      "api_ms": 32404,
+      "session_ms": 34913,
+      "nano_aiu": 440672000,
+      "ai_credits_est": 0.440672,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p11",
+      "arm": "with",
+      "run": 0,
+      "score": 0.6666666666666666,
+      "turns": 8,
+      "seconds": 58.6,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 52669,
+      "session_ms": 55455,
+      "nano_aiu": 370028000,
+      "ai_credits_est": 0.370028,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p11",
+      "arm": "with",
+      "run": 1,
+      "score": 0.6666666666666666,
+      "turns": 9,
+      "seconds": 79.5,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 72947,
+      "session_ms": 75996,
+      "nano_aiu": 506313500,
+      "ai_credits_est": 0.5063135,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p11",
+      "arm": "with",
+      "run": 2,
+      "score": 0.6666666666666666,
+      "turns": 7,
+      "seconds": 50.2,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 44294,
+      "session_ms": 47085,
+      "nano_aiu": 319285500,
+      "ai_credits_est": 0.3192855,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p11",
+      "arm": "with",
+      "run": 3,
+      "score": 1.0,
+      "turns": 10,
+      "seconds": 76.4,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 69818,
+      "session_ms": 72838,
+      "nano_aiu": 486093500,
+      "ai_credits_est": 0.4860935,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p11",
+      "arm": "with",
+      "run": 4,
+      "score": 0.6666666666666666,
+      "turns": 10,
+      "seconds": 71.7,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 64983,
+      "session_ms": 68068,
+      "nano_aiu": 479946000,
+      "ai_credits_est": 0.479946,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p11",
+      "arm": "without",
+      "run": 0,
+      "score": 0.3333333333333333,
+      "turns": 5,
+      "seconds": 38.3,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 32524,
+      "session_ms": 35105,
+      "nano_aiu": 158029000,
+      "ai_credits_est": 0.158029,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p11",
+      "arm": "without",
+      "run": 1,
+      "score": 0.3333333333333333,
+      "turns": 4,
+      "seconds": 36.4,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 30661,
+      "session_ms": 33322,
+      "nano_aiu": 155439000,
+      "ai_credits_est": 0.155439,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p11",
+      "arm": "without",
+      "run": 2,
+      "score": 0.3333333333333333,
+      "turns": 3,
+      "seconds": 39.4,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 33081,
+      "session_ms": 35620,
+      "nano_aiu": 131626500,
+      "ai_credits_est": 0.1316265,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p11",
+      "arm": "without",
+      "run": 3,
+      "score": 0.3333333333333333,
+      "turns": 5,
+      "seconds": 53.7,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 47273,
+      "session_ms": 49944,
+      "nano_aiu": 200122500,
+      "ai_credits_est": 0.2001225,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p11",
+      "arm": "without",
+      "run": 4,
+      "score": 0.3333333333333333,
+      "turns": 4,
+      "seconds": 49.1,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 43446,
+      "session_ms": 45988,
+      "nano_aiu": 150029000,
+      "ai_credits_est": 0.150029,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p12",
+      "arm": "with",
+      "run": 0,
+      "score": 1.0,
+      "turns": 6,
+      "seconds": 60.1,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 53007,
+      "session_ms": 55862,
+      "nano_aiu": 379010000,
+      "ai_credits_est": 0.37901,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p12",
+      "arm": "with",
+      "run": 1,
+      "score": 1.0,
+      "turns": 8,
+      "seconds": 68.5,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 62425,
+      "session_ms": 65415,
+      "nano_aiu": 436670000,
+      "ai_credits_est": 0.43667,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p12",
+      "arm": "with",
+      "run": 2,
+      "score": 1.0,
+      "turns": 6,
+      "seconds": 47.3,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 41358,
+      "session_ms": 44113,
+      "nano_aiu": 289249000,
+      "ai_credits_est": 0.289249,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p12",
+      "arm": "with",
+      "run": 3,
+      "score": 1.0,
+      "turns": 7,
+      "seconds": 97.5,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 91418,
+      "session_ms": 94253,
+      "nano_aiu": 560244500,
+      "ai_credits_est": 0.5602445,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p12",
+      "arm": "with",
+      "run": 4,
+      "score": 0.6666666666666666,
+      "turns": 10,
+      "seconds": 62.0,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 55887,
+      "session_ms": 58859,
+      "nano_aiu": 452052500,
+      "ai_credits_est": 0.4520525,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p12",
+      "arm": "without",
+      "run": 0,
+      "score": 0.6666666666666666,
+      "turns": 5,
+      "seconds": 47.2,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 40251,
+      "session_ms": 44014,
+      "nano_aiu": 201225000,
+      "ai_credits_est": 0.201225,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p12",
+      "arm": "without",
+      "run": 1,
+      "score": 0.6666666666666666,
+      "turns": 3,
+      "seconds": 37.1,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 28625,
+      "session_ms": 32968,
+      "nano_aiu": 152756500,
+      "ai_credits_est": 0.1527565,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p12",
+      "arm": "without",
+      "run": 2,
+      "score": 1.0,
+      "turns": 3,
+      "seconds": 23.1,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 17633,
+      "session_ms": 20074,
+      "nano_aiu": 95660500,
+      "ai_credits_est": 0.0956605,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p12",
+      "arm": "without",
+      "run": 3,
+      "score": 0.6666666666666666,
+      "turns": 4,
+      "seconds": 42.2,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 36399,
+      "session_ms": 39037,
+      "nano_aiu": 184878000,
+      "ai_credits_est": 0.184878,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p12",
+      "arm": "without",
+      "run": 4,
+      "score": 0.6666666666666666,
+      "turns": 4,
+      "seconds": 39.3,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 33255,
+      "session_ms": 35962,
+      "nano_aiu": 192875500,
+      "ai_credits_est": 0.1928755,
+      "unmapped_tools": []
+    }
+  ],
+  "flag_counts": {
+    "over_12_turns": 0
+  }
+}

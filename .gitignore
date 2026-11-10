@@ -1,2 +1,15 @@
 __pycache__/
 *.pyc
+
+# 2026-11-09/10 rounds: tallies and JSON only
+benchmarks/results/2026-11-09-*/**/traces/
+benchmarks/results/2026-11-09-*/**/files/
+benchmarks/results/2026-11-10-*/**/traces/
+benchmarks/results/2026-11-10-*/**/files/
+benchmarks/results/excluded-*/**/traces/
+benchmarks/results/**/share.md
+benchmarks/results/**/*.log
+benchmarks/results/**/report.html
+benchmarks/results/calibration-*/
+benchmarks/results/2026-11-10-audit/items.json
+benchmarks/results/2026-11-10-audit/blind-judge-audit.md

@@ -1,0 +1,27 @@
+{
+  "contracts": {
+    "status": "done",
+    "wraith_sha": "d7e2c3caa203731e030ec63fe273638b9fd92c59",
+    "complete": {
+      "contracts-accounts": "contracts/attempt-1",
+      "contracts-orders": "contracts/attempt-1",
+      "contracts-page_events": "contracts/attempt-1",
+      "contracts-payments": "contracts/attempt-1",
+      "contracts-products": "contracts/attempt-1"
+    },
+    "attempts": [
+      {
+        "n": 1,
+        "dir": "contracts/attempt-1",
+        "complete": [
+          "contracts-accounts",
+          "contracts-orders",
+          "contracts-page_events",
+          "contracts-payments",
+          "contracts-products"
+        ],
+        "failures": []
+      }
+    ]
+  }
+}

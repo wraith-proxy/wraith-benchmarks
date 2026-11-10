@@ -1,0 +1,532 @@
+{
+  "plan-review": {
+    "status": "error",
+    "wraith_sha": "d7e2c3caa203731e030ec63fe273638b9fd92c59",
+    "complete": {
+      "plan-review-p01": "plan-review/attempt-1",
+      "plan-review-p02": "plan-review/attempt-1",
+      "plan-review-p03": "plan-review/attempt-2",
+      "plan-review-p04": "plan-review/attempt-2",
+      "plan-review-p05": "plan-review/attempt-2",
+      "plan-review-p06": "plan-review/attempt-2",
+      "plan-review-p07": "plan-review/attempt-2",
+      "plan-review-p08": "plan-review/attempt-2",
+      "plan-review-p09": "plan-review/attempt-2",
+      "plan-review-p10": "plan-review/attempt-2",
+      "plan-review-p11": "plan-review/attempt-2",
+      "plan-review-p12": "plan-review/attempt-2"
+    },
+    "incomplete": [],
+    "models_seen": {
+      "plan-review-p01/with-0": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p01/without-0": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p01/without-1": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p01/with-1": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p01/with-2": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p01/without-2": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p01/without-3": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p01/with-3": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p01/with-4": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p01/without-4": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p02/with-0": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p02/without-0": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p02/without-1": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p02/with-1": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p02/with-2": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p02/without-2": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p02/without-3": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p02/with-3": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p02/with-4": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p02/without-4": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p03/with-0": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p03/without-0": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p03/without-1": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p03/with-1": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p03/with-2": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p03/without-2": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p03/without-3": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p03/with-3": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p03/with-4": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p03/without-4": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p04/with-0": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p04/without-0": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p04/without-1": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p04/with-1": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p04/with-2": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p04/without-2": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p04/without-3": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p04/with-3": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p04/with-4": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p04/without-4": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p05/with-0": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p05/without-0": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p05/without-1": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p05/with-1": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p05/with-2": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p05/without-2": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p05/without-3": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p05/with-3": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p05/with-4": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p05/without-4": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p06/with-0": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p06/without-0": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p06/without-1": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p06/with-1": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p06/with-2": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p06/without-2": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p06/without-3": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p06/with-3": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p06/with-4": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p06/without-4": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p07/with-0": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p07/without-0": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p07/without-1": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p07/with-1": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p07/with-2": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p07/without-2": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p07/without-3": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p07/with-3": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p07/with-4": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p07/without-4": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p08/with-0": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p08/without-0": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p08/without-1": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p08/with-1": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p08/with-2": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p08/without-2": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p08/without-3": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p08/with-3": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p08/with-4": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p08/without-4": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p09/with-0": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p09/without-0": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p09/without-1": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p09/with-1": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p09/with-2": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p09/without-2": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p09/without-3": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p09/with-3": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p09/with-4": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p09/without-4": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p10/with-0": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p10/without-0": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p10/without-1": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p10/with-1": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p10/with-2": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p10/without-2": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p10/without-3": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p10/with-3": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p10/with-4": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p10/without-4": [
+        "mai-code-1.1-flash"
+      ],
+      "plan-review-p11/with-0": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p11/without-0": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p11/without-1": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p11/with-1": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p11/with-2": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p11/without-2": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p11/without-3": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p11/with-3": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p11/with-4": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p11/without-4": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p12/with-0": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p12/without-0": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p12/without-1": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p12/with-1": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p12/with-2": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p12/without-2": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p12/without-3": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p12/with-3": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p12/with-4": [
+        "gpt-6-luna"
+      ],
+      "plan-review-p12/without-4": [
+        "gpt-6-luna"
+      ]
+    },
+    "credits_est": {
+      "plan-review-p01/with-0": 0.3659885,
+      "plan-review-p01/without-0": 0.117618,
+      "plan-review-p01/without-1": 0.1557555,
+      "plan-review-p01/with-1": 0.4557385,
+      "plan-review-p01/with-2": 0.4308445,
+      "plan-review-p01/without-2": 0.14816,
+      "plan-review-p01/without-3": 0.158409,
+      "plan-review-p01/with-3": 0.4370405,
+      "plan-review-p01/with-4": 0.286701,
+      "plan-review-p01/without-4": 0.16883,
+      "plan-review-p02/with-0": 0.418192,
+      "plan-review-p02/without-0": 0.1707975,
+      "plan-review-p02/without-1": 0.1438035,
+      "plan-review-p02/with-1": 0.4476645,
+      "plan-review-p02/with-2": 0.452381,
+      "plan-review-p02/without-2": 0.1485865,
+      "plan-review-p02/without-3": 0.1873275,
+      "plan-review-p02/with-3": 0.282463,
+      "plan-review-p02/with-4": 0.3988905,
+      "plan-review-p02/without-4": 0.141755,
+      "plan-review-p03/with-0": 0.296172,
+      "plan-review-p03/without-0": 0.402188,
+      "plan-review-p03/without-1": 0.429636,
+      "plan-review-p03/with-1": 0.743112,
+      "plan-review-p03/with-2": 0.493788,
+      "plan-review-p03/without-2": 0.309416,
+      "plan-review-p03/without-3": 0.37162,
+      "plan-review-p03/with-3": 0.58124,
+      "plan-review-p03/with-4": 0.618936,
+      "plan-review-p03/without-4": 0.383248,
+      "plan-review-p04/with-0": 0.679732,
+      "plan-review-p04/without-0": 0.363688,
+      "plan-review-p04/without-1": 0.373368,
+      "plan-review-p04/with-1": 0.618452,
+      "plan-review-p04/with-2": 0.372876,
+      "plan-review-p04/without-2": 0.396624,
+      "plan-review-p04/without-3": 0.320356,
+      "plan-review-p04/with-3": 0.663712,
+      "plan-review-p04/with-4": 0.889692,
+      "plan-review-p04/without-4": 0.442664,
+      "plan-review-p05/with-0": 0.735004,
+      "plan-review-p05/without-0": 0.390116,
+      "plan-review-p05/without-1": 0.351656,
+      "plan-review-p05/with-1": 0.632572,
+      "plan-review-p05/with-2": 0.667124,
+      "plan-review-p05/without-2": 0.323244,
+      "plan-review-p05/without-3": 0.265656,
+      "plan-review-p05/with-3": 0.627628,
+      "plan-review-p05/with-4": 0.58238,
+      "plan-review-p05/without-4": 0.295956,
+      "plan-review-p06/with-0": 0.695352,
+      "plan-review-p06/without-0": 0.341284,
+      "plan-review-p06/without-1": 0.348812,
+      "plan-review-p06/with-1": 0.705164,
+      "plan-review-p06/with-2": 0.61092,
+      "plan-review-p06/without-2": 0.54784,
+      "plan-review-p06/without-3": 0.35066,
+      "plan-review-p06/with-3": 0.724392,
+      "plan-review-p06/with-4": 0.600056,
+      "plan-review-p06/without-4": 0.327112,
+      "plan-review-p07/with-0": 0.602844,
+      "plan-review-p07/without-0": 0.1874815,
+      "plan-review-p07/without-1": 0.113653,
+      "plan-review-p07/with-1": 0.5333525,
+      "plan-review-p07/with-2": 0.713724,
+      "plan-review-p07/without-2": 0.44994,
+      "plan-review-p07/without-3": 0.301404,
+      "plan-review-p07/with-3": 0.362168,
+      "plan-review-p07/with-4": 0.402293,
+      "plan-review-p07/without-4": 0.405672,
+      "plan-review-p08/with-0": 0.3777135,
+      "plan-review-p08/without-0": 0.1538835,
+      "plan-review-p08/without-1": 0.134747,
+      "plan-review-p08/with-1": 0.4228945,
+      "plan-review-p08/with-2": 0.5110015,
+      "plan-review-p08/without-2": 0.1910095,
+      "plan-review-p08/without-3": 0.133309,
+      "plan-review-p08/with-3": 0.377314,
+      "plan-review-p08/with-4": 0.4921925,
+      "plan-review-p08/without-4": 0.1493555,
+      "plan-review-p09/with-0": 0.564701,
+      "plan-review-p09/without-0": 0.1210945,
+      "plan-review-p09/without-1": 0.149322,
+      "plan-review-p09/with-1": 0.4200815,
+      "plan-review-p09/with-2": 0.4474095,
+      "plan-review-p09/without-2": 0.1305445,
+      "plan-review-p09/without-3": 0.156743,
+      "plan-review-p09/with-3": 0.3700115,
+      "plan-review-p09/with-4": 0.450467,
+      "plan-review-p09/without-4": 0.1423055,
+      "plan-review-p10/with-0": 0.629828,
+      "plan-review-p10/without-0": 0.349128,
+      "plan-review-p10/without-1": 0.349028,
+      "plan-review-p10/with-1": 0.546808,
+      "plan-review-p10/with-2": 0.964576,
+      "plan-review-p10/without-2": 0.310924,
+      "plan-review-p10/without-3": 0.431008,
+      "plan-review-p10/with-3": 0.452992,
+      "plan-review-p10/with-4": 0.665644,
+      "plan-review-p10/without-4": 0.440672,
+      "plan-review-p11/with-0": 0.370028,
+      "plan-review-p11/without-0": 0.158029,
+      "plan-review-p11/without-1": 0.155439,
+      "plan-review-p11/with-1": 0.5063135,
+      "plan-review-p11/with-2": 0.3192855,
+      "plan-review-p11/without-2": 0.1316265,
+      "plan-review-p11/without-3": 0.2001225,
+      "plan-review-p11/with-3": 0.4860935,
+      "plan-review-p11/with-4": 0.479946,
+      "plan-review-p11/without-4": 0.150029,
+      "plan-review-p12/with-0": 0.37901,
+      "plan-review-p12/without-0": 0.201225,
+      "plan-review-p12/without-1": 0.1527565,
+      "plan-review-p12/with-1": 0.43667,
+      "plan-review-p12/with-2": 0.289249,
+      "plan-review-p12/without-2": 0.0956605,
+      "plan-review-p12/without-3": 0.184878,
+      "plan-review-p12/with-3": 0.5602445,
+      "plan-review-p12/with-4": 0.4520525,
+      "plan-review-p12/without-4": 0.1928755
+    },
+    "attempts": [
+      {
+        "n": 1,
+        "dir": "plan-review/attempt-1",
+        "complete": [
+          "plan-review-p01",
+          "plan-review-p02"
+        ]
+      },
+      {
+        "n": 2,
+        "dir": "plan-review/attempt-2",
+        "complete": [
+          "plan-review-p03",
+          "plan-review-p04",
+          "plan-review-p05",
+          "plan-review-p06",
+          "plan-review-p07",
+          "plan-review-p08",
+          "plan-review-p09",
+          "plan-review-p10",
+          "plan-review-p11",
+          "plan-review-p12"
+        ]
+      }
+    ],
+    "error": "judge vote not PASS or FAIL: 'FAIL: The review mentions the TRUNCATE + INSERT rollout step, but only to ask fo'"
+  }
+}

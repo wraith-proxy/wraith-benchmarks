@@ -1,0 +1,387 @@
+{
+  "runs": [
+    {
+      "case": "plan-review-p01",
+      "arm": "with",
+      "run": 0,
+      "score": 0.6666666666666666,
+      "turns": 7,
+      "seconds": 67.8,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 60939,
+      "session_ms": 64224,
+      "nano_aiu": 508618000,
+      "ai_credits_est": 0.508618,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p01",
+      "arm": "with",
+      "run": 1,
+      "score": 0.6666666666666666,
+      "turns": 7,
+      "seconds": 59.0,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 50920,
+      "session_ms": 55709,
+      "nano_aiu": 441532000,
+      "ai_credits_est": 0.441532,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p01",
+      "arm": "with",
+      "run": 2,
+      "score": 0.3333333333333333,
+      "turns": 9,
+      "seconds": 60.7,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 54547,
+      "session_ms": 57444,
+      "nano_aiu": 431662500,
+      "ai_credits_est": 0.4316625,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p01",
+      "arm": "with",
+      "run": 3,
+      "score": 0.6666666666666666,
+      "turns": 7,
+      "seconds": 50.9,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 44995,
+      "session_ms": 47828,
+      "nano_aiu": 403449500,
+      "ai_credits_est": 0.4034495,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p01",
+      "arm": "with",
+      "run": 4,
+      "score": 0.6666666666666666,
+      "turns": 8,
+      "seconds": 67.4,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 53030,
+      "session_ms": 64298,
+      "nano_aiu": 425877000,
+      "ai_credits_est": 0.425877,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p01",
+      "arm": "without",
+      "run": 0,
+      "score": 0.6666666666666666,
+      "turns": 5,
+      "seconds": 162.6,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 154366,
+      "session_ms": 159491,
+      "nano_aiu": 164418000,
+      "ai_credits_est": 0.164418,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p01",
+      "arm": "without",
+      "run": 1,
+      "score": 0.6666666666666666,
+      "turns": 4,
+      "seconds": 46.5,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 37845,
+      "session_ms": 41758,
+      "nano_aiu": 197798500,
+      "ai_credits_est": 0.1977985,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p01",
+      "arm": "without",
+      "run": 2,
+      "score": 0.6666666666666666,
+      "turns": 5,
+      "seconds": 37.0,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 28144,
+      "session_ms": 33396,
+      "nano_aiu": 168121000,
+      "ai_credits_est": 0.168121,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p01",
+      "arm": "without",
+      "run": 3,
+      "score": 0.3333333333333333,
+      "turns": 6,
+      "seconds": 37.6,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 29812,
+      "session_ms": 34343,
+      "nano_aiu": 179073500,
+      "ai_credits_est": 0.1790735,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p01",
+      "arm": "without",
+      "run": 4,
+      "score": 0.6666666666666666,
+      "turns": 5,
+      "seconds": 45.1,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 39090,
+      "session_ms": 41805,
+      "nano_aiu": 215025500,
+      "ai_credits_est": 0.2150255,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p02",
+      "arm": "with",
+      "run": 0,
+      "score": 0.6666666666666666,
+      "turns": 7,
+      "seconds": 51.7,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 43940,
+      "session_ms": 48358,
+      "nano_aiu": 429266500,
+      "ai_credits_est": 0.4292665,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p02",
+      "arm": "with",
+      "run": 1,
+      "score": 1.0,
+      "turns": 10,
+      "seconds": 153.1,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 144940,
+      "session_ms": 150055,
+      "nano_aiu": 435961000,
+      "ai_credits_est": 0.435961,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p02",
+      "arm": "with",
+      "run": 2,
+      "score": 1.0,
+      "turns": 11,
+      "seconds": 63.8,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 57153,
+      "session_ms": 60225,
+      "nano_aiu": 552067500,
+      "ai_credits_est": 0.5520675,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p02",
+      "arm": "with",
+      "run": 3,
+      "score": 1.0,
+      "turns": 7,
+      "seconds": 146.9,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 136657,
+      "session_ms": 143697,
+      "nano_aiu": 384252500,
+      "ai_credits_est": 0.3842525,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p02",
+      "arm": "with",
+      "run": 4,
+      "score": 0.6666666666666666,
+      "turns": 7,
+      "seconds": 65.5,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 55330,
+      "session_ms": 62276,
+      "nano_aiu": 430228000,
+      "ai_credits_est": 0.430228,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p02",
+      "arm": "without",
+      "run": 0,
+      "score": 0.6666666666666666,
+      "turns": 4,
+      "seconds": 36.6,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 30514,
+      "session_ms": 33334,
+      "nano_aiu": 160688500,
+      "ai_credits_est": 0.1606885,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p02",
+      "arm": "without",
+      "run": 1,
+      "score": 0.3333333333333333,
+      "turns": 3,
+      "seconds": 31.3,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 23293,
+      "session_ms": 27758,
+      "nano_aiu": 121838000,
+      "ai_credits_est": 0.121838,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p02",
+      "arm": "without",
+      "run": 2,
+      "score": 0.6666666666666666,
+      "turns": 3,
+      "seconds": 31.2,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 21084,
+      "session_ms": 27489,
+      "nano_aiu": 137814500,
+      "ai_credits_est": 0.1378145,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p02",
+      "arm": "without",
+      "run": 3,
+      "score": 0.6666666666666666,
+      "turns": 5,
+      "seconds": 40.4,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 31294,
+      "session_ms": 37357,
+      "nano_aiu": 173884500,
+      "ai_credits_est": 0.1738845,
+      "unmapped_tools": []
+    },
+    {
+      "case": "plan-review-p02",
+      "arm": "without",
+      "run": 4,
+      "score": 0.3333333333333333,
+      "turns": 3,
+      "seconds": 23.0,
+      "flags": [],
+      "model_routed": "gpt-6-luna",
+      "models_called": [
+        "gpt-6-luna"
+      ],
+      "premium_requests": 1,
+      "api_ms": 16658,
+      "session_ms": 19879,
+      "nano_aiu": 110435000,
+      "ai_credits_est": 0.110435,
+      "unmapped_tools": []
+    }
+  ],
+  "flag_counts": {
+    "over_12_turns": 0
+  }
+}

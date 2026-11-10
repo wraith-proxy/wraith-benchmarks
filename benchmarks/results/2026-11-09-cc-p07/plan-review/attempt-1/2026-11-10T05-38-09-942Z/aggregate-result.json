@@ -1,0 +1,647 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.316",
+  "startedAt": "2026-11-10T05:38:09.942Z",
+  "durationSeconds": 503,
+  "costUsd": 0.7440838999999999,
+  "partial": false,
+  "suite": {
+    "root": "/work",
+    "ablation": "with-without",
+    "modelOverride": "claude-sonnet-5-5",
+    "judgeModel": "claude-haiku-5-5",
+    "caseFilter": "plan-review-p07",
+    "threshold": 1,
+    "concurrency": 1,
+    "plugins": [
+      {
+        "name": "wraith",
+        "version": "0.8.3",
+        "path": "/work"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "plan-review-p07",
+      "dir": "bench-plan-review/p07",
+      "source": "mixed",
+      "promptMarkdown": "The plan for the subscription MRR model is at docs/wraith/2026-10-12-subscription-mrr/plan.md. Review it before we build it.",
+      "runsPerCase": 5,
+      "timeoutSeconds": 600,
+      "maxTurns": 12,
+      "graders": [
+        {
+          "name": "1-grain",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category grain. Planted defect: the Model SQL declares one row per subscription per ds but groups by only ds, customer_id, month, so rows of the same grain are merged. Location: the GROUP BY in the Model section SQL of `fct_mrr`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category grain. Planted defect: the Model SQL declares one row per subscription per ds but groups by only ds, customer_id, month, so rows of the same grain are merged. Location: the GROUP BY in the Model section SQL of `fct_mrr`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "2-dedup",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category dedup. Planted defect: the source delivers at least once (CDC stream, one row per change, replays after restarts) and the Load section uses a plain INSERT with no MERGE or dedup on subscription_id, month, so redelivered rows are duplicated. Location: the Load section, INSERT INTO ... SELECT of `fct_mrr`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category dedup. Planted defect: the source delivers at least once (CDC stream, one row per change, replays after restarts) and the Load section uses a plain INSERT with no MERGE or dedup on subscription_id, month, so redelivered rows are duplicated. Location: the Load section, INSERT INTO ... SELECT of `fct_mrr`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "3-scan",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category scan. Planted defect: raw_billing.subscription_changes (about 3 TB) is created without PARTITION BY or CLUSTER BY and the query filters on DATE(changed_at), so every run scans the whole table. Location: the Source section DDL and query of `fct_mrr`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category scan. Planted defect: raw_billing.subscription_changes (about 3 TB) is created without PARTITION BY or CLUSTER BY and the query filters on DATE(changed_at), so every run scans the whole table. Location: the Source section DDL and query of `fct_mrr`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 0.10593799999999999,
+            "judgeCostUsd": 0.0026658999999999997,
+            "durationSeconds": 63,
+            "startedAt": "2026-11-10T05:38:09.973Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-3z9m7E/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to `plan.md`. The verdict is **NOT READY**, with six blockers. I didn't edit anything else in the plan. I made no dry runs, because the source table isn't in the repo. The cost figure is estimated from the stated 3 TB.\n\nNothing in `dbt/` or `contracts/` already answers this, so the plan's premise stands.\n\nBlockers:\n1. **Grain and columns:** the Model query groups by `customer_id` and `month`. Neither is in the source table, and the Load query uses `subscription_id` instead.\n2. **MRR definition:** summing one day's change rows gives that day's delta, not MRR as of that `ds`.\n3. **Idempotency:** `INSERT INTO` with no delete or merge duplicates rows when a `ds` is rerun. No backfill path is written.\n4. **CDC replays:** the stream replays after restarts and the source has no change id, so `SUM` will double count.\n5. **Cost and partitioning:** there is no partitioning or `require_partition_filter`. The `DATE(changed_at)` filter doesn't prune a `ds` partition. An unpruned run scans about 3 TB, roughly $19 a run and about 300 times `dev_max_bytes_billed`.\n6. **Contract:** it has no schema or quality rules. Its `primary_key` of `subscription_id, month` leaves out `ds`, which the grain needs.\n\nShould-fix items:\n- **Consumer:** no consumer or decision is named.\n- **Personal data:** an unsalted SHA256 of the identifiers is reversible, and there's no crypto-shred path. The classification of `internal` doesn't fit that.\n- **Quality:** there are no tests and no source freshness check.\n- **Late data:** late-arriving rows aren't handled.\n- **Lineage:** no downstream consumers are listed.\n\nThere's also one nit on the rollback step. The fixed snapshot name `fct_mrr_bak` fails if it already exists, and a snapshot is pointless on the first build.\n\nThe MRR definition (blocker 2) is the decision most worth settling first. It determines the query, the grain, and what the dedup and late-data rules have to protect."
+              },
+              {
+                "name": "2-dedup",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  true,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to `plan.md`. The verdict is **NOT READY**, with six blockers. I didn't edit anything else in the plan. I made no dry runs, because the source table isn't in the repo. The cost figure is estimated from the stated 3 TB.\n\nNothing in `dbt/` or `contracts/` already answers this, so the plan's premise stands.\n\nBlockers:\n1. **Grain and columns:** the Model query groups by `customer_id` and `month`. Neither is in the source table, and the Load query uses `subscription_id` instead.\n2. **MRR definition:** summing one day's change rows gives that day's delta, not MRR as of that `ds`.\n3. **Idempotency:** `INSERT INTO` with no delete or merge duplicates rows when a `ds` is rerun. No backfill path is written.\n4. **CDC replays:** the stream replays after restarts and the source has no change id, so `SUM` will double count.\n5. **Cost and partitioning:** there is no partitioning or `require_partition_filter`. The `DATE(changed_at)` filter doesn't prune a `ds` partition. An unpruned run scans about 3 TB, roughly $19 a run and about 300 times `dev_max_bytes_billed`.\n6. **Contract:** it has no schema or quality rules. Its `primary_key` of `subscription_id, month` leaves out `ds`, which the grain needs.\n\nShould-fix items:\n- **Consumer:** no consumer or decision is named.\n- **Personal data:** an unsalted SHA256 of the identifiers is reversible, and there's no crypto-shred path. The classification of `internal` doesn't fit that.\n- **Quality:** there are no tests and no source freshness check.\n- **Late data:** late-arriving rows aren't handled.\n- **Lineage:** no downstream consumers are listed.\n\nThere's also one nit on the rollback step. The fixed snapshot name `fct_mrr_bak` fails if it already exists, and a snapshot is pointless on the first build.\n\nThe MRR definition (blocker 2) is the decision most worth settling first. It determines the query, the grain, and what the dedup and late-data rules have to protect."
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to `plan.md`. The verdict is **NOT READY**, with six blockers. I didn't edit anything else in the plan. I made no dry runs, because the source table isn't in the repo. The cost figure is estimated from the stated 3 TB.\n\nNothing in `dbt/` or `contracts/` already answers this, so the plan's premise stands.\n\nBlockers:\n1. **Grain and columns:** the Model query groups by `customer_id` and `month`. Neither is in the source table, and the Load query uses `subscription_id` instead.\n2. **MRR definition:** summing one day's change rows gives that day's delta, not MRR as of that `ds`.\n3. **Idempotency:** `INSERT INTO` with no delete or merge duplicates rows when a `ds` is rerun. No backfill path is written.\n4. **CDC replays:** the stream replays after restarts and the source has no change id, so `SUM` will double count.\n5. **Cost and partitioning:** there is no partitioning or `require_partition_filter`. The `DATE(changed_at)` filter doesn't prune a `ds` partition. An unpruned run scans about 3 TB, roughly $19 a run and about 300 times `dev_max_bytes_billed`.\n6. **Contract:** it has no schema or quality rules. Its `primary_key` of `subscription_id, month` leaves out `ds`, which the grain needs.\n\nShould-fix items:\n- **Consumer:** no consumer or decision is named.\n- **Personal data:** an unsalted SHA256 of the identifiers is reversible, and there's no crypto-shred path. The classification of `internal` doesn't fit that.\n- **Quality:** there are no tests and no source freshness check.\n- **Late data:** late-arriving rows aren't handled.\n- **Lineage:** no downstream consumers are listed.\n\nThere's also one nit on the rollback step. The fixed snapshot name `fct_mrr_bak` fails if it already exists, and a snapshot is pointless on the first build.\n\nThe MRR definition (blocker 2) is the decision most worth settling first. It determines the query, the grain, and what the dedup and late-data rules have to protect."
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.0984026,
+            "judgeCostUsd": 0.0022131,
+            "durationSeconds": 56,
+            "startedAt": "2026-11-10T05:39:13.462Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-H70xTP/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. The verdict is **NOT READY**, with five blockers.\n\nI didn't dry-run any queries. `raw_billing.subscription_changes` isn't reachable from here, so the cost figure rests on the plan's 3 TB number. The vendor second pass wasn't run either, since those skills aren't installed.\n\nNothing in the repo already covers MRR, so the plan's premise holds.\n\n**Blockers**\n1. **Columns and grain:** The Model query uses `customer_id` and `month`, which aren't in the source DDL. The Model and Load queries also disagree, and the stated grain doesn't match either.\n2. **Duplicates and reruns:** The CDC stream replays, so `SUM(amount)` double-counts, and `INSERT` appends again on every rerun. The plan has no dedupe key, no idempotent load and no backfill path.\n3. **What MRR means:** The source holds changes, so a daily sum is a delta, not MRR. The plan never defines the metric or says whether each `ds` holds end-of-day state.\n4. **Cost:** The 3 TB table has no partitioning, clustering or `require_partition_filter`, so each run scans about 3 TB against the 10 GB dev cap. The source and model also filter on different columns (`DATE(changed_at)` vs `ds`).\n5. **Consumer and contract:** The plan names no consumer, decision or cost of being wrong or late. There is no contract file in `contracts/`.\n\n**Should-fix** (also in the section)\n- The contract key omits `ds`.\n- Unsalted SHA256 on ids is weak pseudonymisation and gives no crypto-shred path. The `internal` classification also conflicts with the `fct_private` dataset.\n- There are no tests and no late-data handling.\n- Downstream consumers aren't listed.\n- Rollback step 1 clones a table that doesn't exist on the first build.\n\nPer the skill, I left the rest of the plan alone for the author to resolve. I can draft the fixes (the corrected query, the contract YAML) if you want."
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. The verdict is **NOT READY**, with five blockers.\n\nI didn't dry-run any queries. `raw_billing.subscription_changes` isn't reachable from here, so the cost figure rests on the plan's 3 TB number. The vendor second pass wasn't run either, since those skills aren't installed.\n\nNothing in the repo already covers MRR, so the plan's premise holds.\n\n**Blockers**\n1. **Columns and grain:** The Model query uses `customer_id` and `month`, which aren't in the source DDL. The Model and Load queries also disagree, and the stated grain doesn't match either.\n2. **Duplicates and reruns:** The CDC stream replays, so `SUM(amount)` double-counts, and `INSERT` appends again on every rerun. The plan has no dedupe key, no idempotent load and no backfill path.\n3. **What MRR means:** The source holds changes, so a daily sum is a delta, not MRR. The plan never defines the metric or says whether each `ds` holds end-of-day state.\n4. **Cost:** The 3 TB table has no partitioning, clustering or `require_partition_filter`, so each run scans about 3 TB against the 10 GB dev cap. The source and model also filter on different columns (`DATE(changed_at)` vs `ds`).\n5. **Consumer and contract:** The plan names no consumer, decision or cost of being wrong or late. There is no contract file in `contracts/`.\n\n**Should-fix** (also in the section)\n- The contract key omits `ds`.\n- Unsalted SHA256 on ids is weak pseudonymisation and gives no crypto-shred path. The `internal` classification also conflicts with the `fct_private` dataset.\n- There are no tests and no late-data handling.\n- Downstream consumers aren't listed.\n- Rollback step 1 clones a table that doesn't exist on the first build.\n\nPer the skill, I left the rest of the plan alone for the author to resolve. I can draft the fixes (the corrected query, the contract YAML) if you want."
+              },
+              {
+                "name": "3-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. The verdict is **NOT READY**, with five blockers.\n\nI didn't dry-run any queries. `raw_billing.subscription_changes` isn't reachable from here, so the cost figure rests on the plan's 3 TB number. The vendor second pass wasn't run either, since those skills aren't installed.\n\nNothing in the repo already covers MRR, so the plan's premise holds.\n\n**Blockers**\n1. **Columns and grain:** The Model query uses `customer_id` and `month`, which aren't in the source DDL. The Model and Load queries also disagree, and the stated grain doesn't match either.\n2. **Duplicates and reruns:** The CDC stream replays, so `SUM(amount)` double-counts, and `INSERT` appends again on every rerun. The plan has no dedupe key, no idempotent load and no backfill path.\n3. **What MRR means:** The source holds changes, so a daily sum is a delta, not MRR. The plan never defines the metric or says whether each `ds` holds end-of-day state.\n4. **Cost:** The 3 TB table has no partitioning, clustering or `require_partition_filter`, so each run scans about 3 TB against the 10 GB dev cap. The source and model also filter on different columns (`DATE(changed_at)` vs `ds`).\n5. **Consumer and contract:** The plan names no consumer, decision or cost of being wrong or late. There is no contract file in `contracts/`.\n\n**Should-fix** (also in the section)\n- The contract key omits `ds`.\n- Unsalted SHA256 on ids is weak pseudonymisation and gives no crypto-shred path. The `internal` classification also conflicts with the `fct_private` dataset.\n- There are no tests and no late-data handling.\n- Downstream consumers aren't listed.\n- Rollback step 1 clones a table that doesn't exist on the first build.\n\nPer the skill, I left the rest of the plan alone for the author to resolve. I can draft the fixes (the corrected query, the contract YAML) if you want."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.1026815,
+            "judgeCostUsd": 0.0024755000000000003,
+            "durationSeconds": 59,
+            "startedAt": "2026-11-10T05:40:09.757Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-RTtbSq/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to `plan.md`. The verdict is **NOT READY**, with five blockers.\n\nI didn't run any dry-runs, so the cost figure is an estimate from the stated 3 TB. I also didn't check whether the vendor skills are installed. The table in the plan says they aren't, which I didn't verify. I found no existing MRR model or contract in the repo, so the plan has no duplicate to defer to.\n\n**Blockers**\n1. **The queries don't match the source.** The Model query uses `customer_id` and `month`, which aren't in the source table. Its grain also differs from the Load query. `month` is never defined, and the plan needs one query with one stated grain.\n2. **Reruns and CDC replays double-count.** Replays mean duplicate rows, and `SUM(amount)` has no dedupe. Because `INSERT INTO` has no delete or overwrite, every rerun of a ds adds the rows again. The plan also has no backfill path.\n3. **The metric isn't MRR.** Summing the changes that land on one ds gives a sum of deltas, not the revenue active on that ds. The plan doesn't say whether `amount` is a delta or a price. It also names no consumer or decision.\n4. **The personal-data handling is weak.** SHA256 hashing is pseudonymisation, not a crypto-shred path. The `internal` classification also conflicts with a dataset named `fct_private`.\n5. **Cost is unbounded.** The 3 TB table has no partitioning, clustering or `require_partition_filter`. The extract and model also filter on different columns (`DATE(changed_at)` and `ds`). A daily full scan would cost roughly $19 a run, about $560 a month. That is far above the 10 GB dev limit.\n\n**Should-fix**\n- **Contract:** There is no contract file, and the primary key leaves out `ds`.\n- **Tests:** There are no tests.\n- **Late data:** Late-arriving rows aren't handled.\n- **Rollback:** The step 1 snapshot fails on the first build because `fct_mrr` doesn't exist yet.\n- **Lineage:** Downstream consumers aren't listed.\n\nI only appended the review and left the rest of the plan unchanged, so the authors can resolve the findings. Once they've edited the plan, I can re-review it."
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to `plan.md`. The verdict is **NOT READY**, with five blockers.\n\nI didn't run any dry-runs, so the cost figure is an estimate from the stated 3 TB. I also didn't check whether the vendor skills are installed. The table in the plan says they aren't, which I didn't verify. I found no existing MRR model or contract in the repo, so the plan has no duplicate to defer to.\n\n**Blockers**\n1. **The queries don't match the source.** The Model query uses `customer_id` and `month`, which aren't in the source table. Its grain also differs from the Load query. `month` is never defined, and the plan needs one query with one stated grain.\n2. **Reruns and CDC replays double-count.** Replays mean duplicate rows, and `SUM(amount)` has no dedupe. Because `INSERT INTO` has no delete or overwrite, every rerun of a ds adds the rows again. The plan also has no backfill path.\n3. **The metric isn't MRR.** Summing the changes that land on one ds gives a sum of deltas, not the revenue active on that ds. The plan doesn't say whether `amount` is a delta or a price. It also names no consumer or decision.\n4. **The personal-data handling is weak.** SHA256 hashing is pseudonymisation, not a crypto-shred path. The `internal` classification also conflicts with a dataset named `fct_private`.\n5. **Cost is unbounded.** The 3 TB table has no partitioning, clustering or `require_partition_filter`. The extract and model also filter on different columns (`DATE(changed_at)` and `ds`). A daily full scan would cost roughly $19 a run, about $560 a month. That is far above the 10 GB dev limit.\n\n**Should-fix**\n- **Contract:** There is no contract file, and the primary key leaves out `ds`.\n- **Tests:** There are no tests.\n- **Late data:** Late-arriving rows aren't handled.\n- **Rollback:** The step 1 snapshot fails on the first build because `fct_mrr` doesn't exist yet.\n- **Lineage:** Downstream consumers aren't listed.\n\nI only appended the review and left the rest of the plan unchanged, so the authors can resolve the findings. Once they've edited the plan, I can re-review it."
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to `plan.md`. The verdict is **NOT READY**, with five blockers.\n\nI didn't run any dry-runs, so the cost figure is an estimate from the stated 3 TB. I also didn't check whether the vendor skills are installed. The table in the plan says they aren't, which I didn't verify. I found no existing MRR model or contract in the repo, so the plan has no duplicate to defer to.\n\n**Blockers**\n1. **The queries don't match the source.** The Model query uses `customer_id` and `month`, which aren't in the source table. Its grain also differs from the Load query. `month` is never defined, and the plan needs one query with one stated grain.\n2. **Reruns and CDC replays double-count.** Replays mean duplicate rows, and `SUM(amount)` has no dedupe. Because `INSERT INTO` has no delete or overwrite, every rerun of a ds adds the rows again. The plan also has no backfill path.\n3. **The metric isn't MRR.** Summing the changes that land on one ds gives a sum of deltas, not the revenue active on that ds. The plan doesn't say whether `amount` is a delta or a price. It also names no consumer or decision.\n4. **The personal-data handling is weak.** SHA256 hashing is pseudonymisation, not a crypto-shred path. The `internal` classification also conflicts with a dataset named `fct_private`.\n5. **Cost is unbounded.** The 3 TB table has no partitioning, clustering or `require_partition_filter`. The extract and model also filter on different columns (`DATE(changed_at)` and `ds`). A daily full scan would cost roughly $19 a run, about $560 a month. That is far above the 10 GB dev limit.\n\n**Should-fix**\n- **Contract:** There is no contract file, and the primary key leaves out `ds`.\n- **Tests:** There are no tests.\n- **Late data:** Late-arriving rows aren't handled.\n- **Rollback:** The step 1 snapshot fails on the first build because `fct_mrr` doesn't exist yet.\n- **Lineage:** Downstream consumers aren't listed.\n\nI only appended the review and left the rest of the plan unchanged, so the authors can resolve the findings. Once they've edited the plan, I can re-review it."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.104876,
+            "judgeCostUsd": 0.0028328999999999993,
+            "durationSeconds": 63,
+            "startedAt": "2026-11-10T05:41:08.547Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-gEkZjF/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. **Verdict: NOT READY.** It has seven blockers. I didn't edit the rest of the plan.\n\nThe premise check found no existing MRR model, table or contract to reuse. I didn't run dry runs, because `fct_mrr` and the source aren't in the dev project. The cost figure uses the plan's 3 TB number.\n\n**Blockers**\n1. **Grain mismatch:** the Model query groups by `customer_id` and `month`, and the source has neither column. The Load query groups by `subscription_id`.\n2. **MRR definition:** summing one day of change rows is not MRR. A `ds` snapshot needs each subscription's amount as of that day, carried forward on days with no change.\n3. **Replays:** the CDC stream replays after restarts, and the plan has no dedupe, so `SUM` double-counts.\n4. **Idempotency:** `INSERT INTO` duplicates rows on a rerun, and no backfill path is written.\n5. **Cost:** the source has no partitioning or clustering, so each run scans about 3 TB. That is roughly $18 per run, about 300 times the 10 GB dev limit.\n6. **Personal data:** plain SHA256 on identifiers is reversible by enumeration. The plan also labels the data `internal` and gives no crypto-shred path.\n7. **Rollback:** step 1 clones `fct_mrr`, which doesn't exist on the first build.\n\nThe report also lists five \"should\" items and two nits. They cover the missing consumer and decision, the missing contract file and the key conflicting with the `ds` grain, tests and freshness, late-arriving rows, and downstream consumers.\n\nI skipped the optional second pass with the Google companion skills, because they set an attribution tag that reports usage to Google. Tell me if you want them run.\n\nDo you want me to draft the fixes for the blockers in the plan?"
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. **Verdict: NOT READY.** It has seven blockers. I didn't edit the rest of the plan.\n\nThe premise check found no existing MRR model, table or contract to reuse. I didn't run dry runs, because `fct_mrr` and the source aren't in the dev project. The cost figure uses the plan's 3 TB number.\n\n**Blockers**\n1. **Grain mismatch:** the Model query groups by `customer_id` and `month`, and the source has neither column. The Load query groups by `subscription_id`.\n2. **MRR definition:** summing one day of change rows is not MRR. A `ds` snapshot needs each subscription's amount as of that day, carried forward on days with no change.\n3. **Replays:** the CDC stream replays after restarts, and the plan has no dedupe, so `SUM` double-counts.\n4. **Idempotency:** `INSERT INTO` duplicates rows on a rerun, and no backfill path is written.\n5. **Cost:** the source has no partitioning or clustering, so each run scans about 3 TB. That is roughly $18 per run, about 300 times the 10 GB dev limit.\n6. **Personal data:** plain SHA256 on identifiers is reversible by enumeration. The plan also labels the data `internal` and gives no crypto-shred path.\n7. **Rollback:** step 1 clones `fct_mrr`, which doesn't exist on the first build.\n\nThe report also lists five \"should\" items and two nits. They cover the missing consumer and decision, the missing contract file and the key conflicting with the `ds` grain, tests and freshness, late-arriving rows, and downstream consumers.\n\nI skipped the optional second pass with the Google companion skills, because they set an attribution tag that reports usage to Google. Tell me if you want them run.\n\nDo you want me to draft the fixes for the blockers in the plan?"
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. **Verdict: NOT READY.** It has seven blockers. I didn't edit the rest of the plan.\n\nThe premise check found no existing MRR model, table or contract to reuse. I didn't run dry runs, because `fct_mrr` and the source aren't in the dev project. The cost figure uses the plan's 3 TB number.\n\n**Blockers**\n1. **Grain mismatch:** the Model query groups by `customer_id` and `month`, and the source has neither column. The Load query groups by `subscription_id`.\n2. **MRR definition:** summing one day of change rows is not MRR. A `ds` snapshot needs each subscription's amount as of that day, carried forward on days with no change.\n3. **Replays:** the CDC stream replays after restarts, and the plan has no dedupe, so `SUM` double-counts.\n4. **Idempotency:** `INSERT INTO` duplicates rows on a rerun, and no backfill path is written.\n5. **Cost:** the source has no partitioning or clustering, so each run scans about 3 TB. That is roughly $18 per run, about 300 times the 10 GB dev limit.\n6. **Personal data:** plain SHA256 on identifiers is reversible by enumeration. The plan also labels the data `internal` and gives no crypto-shred path.\n7. **Rollback:** step 1 clones `fct_mrr`, which doesn't exist on the first build.\n\nThe report also lists five \"should\" items and two nits. They cover the missing consumer and decision, the missing contract file and the key conflicting with the `ds` grain, tests and freshness, late-arriving rows, and downstream consumers.\n\nI skipped the optional second pass with the Google companion skills, because they set an attribution tag that reports usage to Google. Tell me if you want them run.\n\nDo you want me to draft the fixes for the blockers in the plan?"
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 7,
+            "costUsd": 0.09540030000000001,
+            "judgeCostUsd": 0.0023770000000000006,
+            "durationSeconds": 50,
+            "startedAt": "2026-11-10T05:42:11.511Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-S0wHQ5/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I've appended a data review to the plan, and the verdict is **NOT READY**. I didn't change the rest of the plan. I made no dry runs, because the source table isn't in the repo and I didn't query the dev project. I also found no existing MRR model or contract that already does this job.\n\n**Blockers**\n- **Grain (item 3):** The Model query groups by `customer_id` and `month`, and neither column is in the source table. The Load query groups by `subscription_id`, so the two queries disagree. The contract key `subscription_id, month` also leaves out `ds`.\n- **MRR meaning (item 4):** `SUM(amount)` over one day's changes gives that day's net change, not MRR. The plan never says whether `amount` is a delta or a new absolute value. It also doesn't say how subscriptions with no change that day are carried forward.\n- **Idempotency (item 5):**\n  - The CDC stream replays, and there's no dedupe key, so replayed rows get double-counted.\n  - `INSERT INTO` appends on every rerun.\n  - The backfill command isn't written.\n- **Cost and partitioning (item 6):** The source is about 3 TB, and the plan states no partitioning, clustering or `require_partition_filter`. The source query filters on `DATE(changed_at)` while the model filters on `ds`, and the first form may defeat pruning. There's no bytes-times-runs estimate.\n- **Personal data (item 7):** The plan says identifiers are \"hashed with SHA256\", but no SQL does the hashing. Unsalted hashes are still personal data. The `internal` classification is wrong, and there's no deletion or crypto-shred path.\n\n**Should-fix**\n- No consumer or decision is named.\n- The contract is thin, with no schema or rules.\n- There are no tests, and no source freshness check behind the 07:00 UTC SLA.\n- No downstream consumers are listed.\n- Rollout step 1 clones `fct_mrr`, which doesn't exist on the first build.\n- Late-arriving rows aren't handled.\n\nThere's one nit about the single reader group. The full table with the required edits is at the end of `plan.md`, under \"Data review (2026-11-10)\".\n\nThe Google vendor skills (lineage and BigQuery optimization) weren't used. They ask the agent to set an attribution tag that reports usage to Google. Tell me if you want that second pass."
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I've appended a data review to the plan, and the verdict is **NOT READY**. I didn't change the rest of the plan. I made no dry runs, because the source table isn't in the repo and I didn't query the dev project. I also found no existing MRR model or contract that already does this job.\n\n**Blockers**\n- **Grain (item 3):** The Model query groups by `customer_id` and `month`, and neither column is in the source table. The Load query groups by `subscription_id`, so the two queries disagree. The contract key `subscription_id, month` also leaves out `ds`.\n- **MRR meaning (item 4):** `SUM(amount)` over one day's changes gives that day's net change, not MRR. The plan never says whether `amount` is a delta or a new absolute value. It also doesn't say how subscriptions with no change that day are carried forward.\n- **Idempotency (item 5):**\n  - The CDC stream replays, and there's no dedupe key, so replayed rows get double-counted.\n  - `INSERT INTO` appends on every rerun.\n  - The backfill command isn't written.\n- **Cost and partitioning (item 6):** The source is about 3 TB, and the plan states no partitioning, clustering or `require_partition_filter`. The source query filters on `DATE(changed_at)` while the model filters on `ds`, and the first form may defeat pruning. There's no bytes-times-runs estimate.\n- **Personal data (item 7):** The plan says identifiers are \"hashed with SHA256\", but no SQL does the hashing. Unsalted hashes are still personal data. The `internal` classification is wrong, and there's no deletion or crypto-shred path.\n\n**Should-fix**\n- No consumer or decision is named.\n- The contract is thin, with no schema or rules.\n- There are no tests, and no source freshness check behind the 07:00 UTC SLA.\n- No downstream consumers are listed.\n- Rollout step 1 clones `fct_mrr`, which doesn't exist on the first build.\n- Late-arriving rows aren't handled.\n\nThere's one nit about the single reader group. The full table with the required edits is at the end of `plan.md`, under \"Data review (2026-11-10)\".\n\nThe Google vendor skills (lineage and BigQuery optimization) weren't used. They ask the agent to set an attribution tag that reports usage to Google. Tell me if you want that second pass."
+              },
+              {
+                "name": "3-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  false
+                ],
+                "evidence": "I've appended a data review to the plan, and the verdict is **NOT READY**. I didn't change the rest of the plan. I made no dry runs, because the source table isn't in the repo and I didn't query the dev project. I also found no existing MRR model or contract that already does this job.\n\n**Blockers**\n- **Grain (item 3):** The Model query groups by `customer_id` and `month`, and neither column is in the source table. The Load query groups by `subscription_id`, so the two queries disagree. The contract key `subscription_id, month` also leaves out `ds`.\n- **MRR meaning (item 4):** `SUM(amount)` over one day's changes gives that day's net change, not MRR. The plan never says whether `amount` is a delta or a new absolute value. It also doesn't say how subscriptions with no change that day are carried forward.\n- **Idempotency (item 5):**\n  - The CDC stream replays, and there's no dedupe key, so replayed rows get double-counted.\n  - `INSERT INTO` appends on every rerun.\n  - The backfill command isn't written.\n- **Cost and partitioning (item 6):** The source is about 3 TB, and the plan states no partitioning, clustering or `require_partition_filter`. The source query filters on `DATE(changed_at)` while the model filters on `ds`, and the first form may defeat pruning. There's no bytes-times-runs estimate.\n- **Personal data (item 7):** The plan says identifiers are \"hashed with SHA256\", but no SQL does the hashing. Unsalted hashes are still personal data. The `internal` classification is wrong, and there's no deletion or crypto-shred path.\n\n**Should-fix**\n- No consumer or decision is named.\n- The contract is thin, with no schema or rules.\n- There are no tests, and no source freshness check behind the 07:00 UTC SLA.\n- No downstream consumers are listed.\n- Rollout step 1 clones `fct_mrr`, which doesn't exist on the first build.\n- Late-arriving rows aren't handled.\n\nThere's one nit about the single reader group. The full table with the required edits is at the end of `plan.md`, under \"Data review (2026-11-10)\".\n\nThe Google vendor skills (lineage and BigQuery optimization) weren't used. They ask the agent to set an attribution tag that reports usage to Google. Tell me if you want that second pass."
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0479595,
+            "judgeCostUsd": 0.003634000000000002,
+            "durationSeconds": 47,
+            "startedAt": "2026-11-10T05:43:01.120Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-NTMZcr/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  false
+                ],
+                "evidence": "I reviewed the plan. It isn't ready to build. The first three problems below would produce wrong numbers, and the rest are smaller.\n\n**Blocking**\n\n1. **Replays will double-count.** The source is a CDC stream that \"replays after restarts\", but both queries use `SUM(amount)` with no dedupe. The source has no change ID or sequence column to dedupe on. Either add one (for example an LSN or event ID) and dedupe with `QUALIFY ROW_NUMBER() ...`, or confirm that an upstream layer already does this.\n2. **The model SQL and the source schema don't match.**\n   - The DDL has no `customer_id` or `month` columns, but both queries use them.\n   - The Model query groups by `customer_id`. The Load query and the stated grain use `subscription_id`.\n3. **The grain and the primary key disagree.** The grain is subscription × ds, but the contract's `primary_key` is `subscription_id, month`. The key should include `ds`, or the grain should change. Also, `month` is never defined. It could be the change month, the billing month, or the month the revenue applies to.\n4. **The metric may not be MRR.** Summing the changes within one day gives that day's net delta, not the MRR balance. You'd need a running total or the latest state per subscription. You'd also need to normalize annual and other non-monthly plans to a monthly amount. The plan doesn't say whether `amount` is a delta or a level.\n5. **The load can't be re-run safely.** A plain `INSERT` duplicates rows whenever a ds is re-run, and the rollout rebuilds a ds range. Use `MERGE` on the key, or delete the ds and then insert (or overwrite the partition).\n\n**Should fix**\n\n6. **Partition pruning and cost.** The source is about 3 TB. The example query filters on `DATE(changed_at)`, while the model filters on `ds`. If the table is partitioned on `ds`, the first filter scans everything. If `ds` and `DATE(changed_at)` can differ, as they can with late-arriving CDC rows, the two queries return different results. Say which column is the partition key, and use it in both queries. Also decide how to handle late-arriving data.\n7. **The access section is inconsistent.**\n   - It says identifiers are hashed with SHA256, but no SQL does this.\n   - An unsalted hash of a sequential or guessable ID is trivially reversible. Use a salted or keyed hash, or drop the identifier.\n   - `fct_private` conflicts with `classification: internal`. Settle which one it is.\n8. **Rollout gaps.**\n   - `CREATE SNAPSHOT TABLE fct_mrr_bak` fails if `fct_mrr` doesn't exist yet (the first build) or if the backup already exists. Add an expiration to the snapshot.\n   - \"Check row counts\" is weak. Reconcile total `amount` against the source, and check for duplicate keys and nulls.\n   - The restore step isn't written out.\n9. **The freshness SLA has no basis.** 07:00 UTC is stated with no upstream arrival time or CDC lag. Add a dependency on the source's freshness and an alert if it misses.\n\nI can draft a revised plan that fixes these. First I need answers to two questions: is `amount` a delta or a level, and what does `month` mean?"
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan. It isn't ready to build. The first three problems below would produce wrong numbers, and the rest are smaller.\n\n**Blocking**\n\n1. **Replays will double-count.** The source is a CDC stream that \"replays after restarts\", but both queries use `SUM(amount)` with no dedupe. The source has no change ID or sequence column to dedupe on. Either add one (for example an LSN or event ID) and dedupe with `QUALIFY ROW_NUMBER() ...`, or confirm that an upstream layer already does this.\n2. **The model SQL and the source schema don't match.**\n   - The DDL has no `customer_id` or `month` columns, but both queries use them.\n   - The Model query groups by `customer_id`. The Load query and the stated grain use `subscription_id`.\n3. **The grain and the primary key disagree.** The grain is subscription × ds, but the contract's `primary_key` is `subscription_id, month`. The key should include `ds`, or the grain should change. Also, `month` is never defined. It could be the change month, the billing month, or the month the revenue applies to.\n4. **The metric may not be MRR.** Summing the changes within one day gives that day's net delta, not the MRR balance. You'd need a running total or the latest state per subscription. You'd also need to normalize annual and other non-monthly plans to a monthly amount. The plan doesn't say whether `amount` is a delta or a level.\n5. **The load can't be re-run safely.** A plain `INSERT` duplicates rows whenever a ds is re-run, and the rollout rebuilds a ds range. Use `MERGE` on the key, or delete the ds and then insert (or overwrite the partition).\n\n**Should fix**\n\n6. **Partition pruning and cost.** The source is about 3 TB. The example query filters on `DATE(changed_at)`, while the model filters on `ds`. If the table is partitioned on `ds`, the first filter scans everything. If `ds` and `DATE(changed_at)` can differ, as they can with late-arriving CDC rows, the two queries return different results. Say which column is the partition key, and use it in both queries. Also decide how to handle late-arriving data.\n7. **The access section is inconsistent.**\n   - It says identifiers are hashed with SHA256, but no SQL does this.\n   - An unsalted hash of a sequential or guessable ID is trivially reversible. Use a salted or keyed hash, or drop the identifier.\n   - `fct_private` conflicts with `classification: internal`. Settle which one it is.\n8. **Rollout gaps.**\n   - `CREATE SNAPSHOT TABLE fct_mrr_bak` fails if `fct_mrr` doesn't exist yet (the first build) or if the backup already exists. Add an expiration to the snapshot.\n   - \"Check row counts\" is weak. Reconcile total `amount` against the source, and check for duplicate keys and nulls.\n   - The restore step isn't written out.\n9. **The freshness SLA has no basis.** 07:00 UTC is stated with no upstream arrival time or CDC lag. Add a dependency on the source's freshness and an alert if it misses.\n\nI can draft a revised plan that fixes these. First I need answers to two questions: is `amount` a delta or a level, and what does `month` mean?"
+              },
+              {
+                "name": "3-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan. It isn't ready to build. The first three problems below would produce wrong numbers, and the rest are smaller.\n\n**Blocking**\n\n1. **Replays will double-count.** The source is a CDC stream that \"replays after restarts\", but both queries use `SUM(amount)` with no dedupe. The source has no change ID or sequence column to dedupe on. Either add one (for example an LSN or event ID) and dedupe with `QUALIFY ROW_NUMBER() ...`, or confirm that an upstream layer already does this.\n2. **The model SQL and the source schema don't match.**\n   - The DDL has no `customer_id` or `month` columns, but both queries use them.\n   - The Model query groups by `customer_id`. The Load query and the stated grain use `subscription_id`.\n3. **The grain and the primary key disagree.** The grain is subscription × ds, but the contract's `primary_key` is `subscription_id, month`. The key should include `ds`, or the grain should change. Also, `month` is never defined. It could be the change month, the billing month, or the month the revenue applies to.\n4. **The metric may not be MRR.** Summing the changes within one day gives that day's net delta, not the MRR balance. You'd need a running total or the latest state per subscription. You'd also need to normalize annual and other non-monthly plans to a monthly amount. The plan doesn't say whether `amount` is a delta or a level.\n5. **The load can't be re-run safely.** A plain `INSERT` duplicates rows whenever a ds is re-run, and the rollout rebuilds a ds range. Use `MERGE` on the key, or delete the ds and then insert (or overwrite the partition).\n\n**Should fix**\n\n6. **Partition pruning and cost.** The source is about 3 TB. The example query filters on `DATE(changed_at)`, while the model filters on `ds`. If the table is partitioned on `ds`, the first filter scans everything. If `ds` and `DATE(changed_at)` can differ, as they can with late-arriving CDC rows, the two queries return different results. Say which column is the partition key, and use it in both queries. Also decide how to handle late-arriving data.\n7. **The access section is inconsistent.**\n   - It says identifiers are hashed with SHA256, but no SQL does this.\n   - An unsalted hash of a sequential or guessable ID is trivially reversible. Use a salted or keyed hash, or drop the identifier.\n   - `fct_private` conflicts with `classification: internal`. Settle which one it is.\n8. **Rollout gaps.**\n   - `CREATE SNAPSHOT TABLE fct_mrr_bak` fails if `fct_mrr` doesn't exist yet (the first build) or if the backup already exists. Add an expiration to the snapshot.\n   - \"Check row counts\" is weak. Reconcile total `amount` against the source, and check for duplicate keys and nulls.\n   - The restore step isn't written out.\n9. **The freshness SLA has no basis.** 07:00 UTC is stated with no upstream arrival time or CDC lag. Add a dependency on the source's freshness and an alert if it misses.\n\nI can draft a revised plan that fixes these. First I need answers to two questions: is `amount` a delta or a level, and what does `month` mean?"
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0491748,
+            "judgeCostUsd": 0.0029092999999999966,
+            "durationSeconds": 38,
+            "startedAt": "2026-11-10T05:43:47.746Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-DSA6yb/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. It isn't ready to build. The first four problems would give wrong numbers.\n\n**Blocking**\n\n1. **The model queries columns that don't exist.** The source DDL (`plan.md:14`) has `ds, changed_at, subscription_id, amount`. The Model query (`:24-28`) uses `customer_id` and `month`, and the Load query (`:34-38`) uses `month`. Neither column is in the source, so both queries fail as written. The Model query also groups by `customer_id`, which contradicts the stated grain of one row per subscription per ds. Either the DDL is incomplete or `month` has to be derived, for example with `DATE_TRUNC(changed_at, MONTH)`.\n2. **Replays will double-count.** The source says the CDC stream \"replays after restarts\", but the load runs `SUM(amount)` with no dedup. The table has no change ID or sequence number to dedup on. You need a unique key such as `(subscription_id, changed_at, …)` or a log offset. Otherwise every restart inflates MRR.\n3. **The aggregate isn't MRR.** Summing change rows per day gives the activity for that day, not the recurring revenue at that point. The plan doesn't say whether `amount` is a delta or the new absolute value. MRR needs the latest state per subscription, or a running sum of deltas, carried forward across days with no changes. It also needs a rule for cancellations.\n4. **The load isn't idempotent.** A plain `INSERT` (`:33`) means that rerunning a ds, or rebuilding a range as rollout step 2 does, duplicates rows. Use `MERGE`, or delete then insert per ds partition, or partition overwrite.\n5. **`ds` and `changed_at` may not agree.** The sample read filters `DATE(changed_at) = @ds` (`:16`). The model filters `ds = @ds`. Late or replayed events can land with a different `ds` than their `changed_at` date. The plan should say which one defines the partition. `DATE(changed_at)` probably won't prune partitions on a roughly 3 TB table, so it could scan everything.\n\n**Should fix**\n\n6. **The primary key contradicts the grain.** The contract says `primary_key: subscription_id, month`. The grain is per subscription per ds, so `ds` has to be in the key. Otherwise the key isn't unique.\n7. **The access section is inconsistent.**\n   - It says identifiers are hashed, but the Load query doesn't hash anything.\n   - Unsalted SHA256 of predictable IDs is easy to reverse, and it's only useful for joins if every consumer hashes the same way.\n   - The dataset is `fct_private`, but the classification is `internal`. Revenue data is often classified higher.\n   - Decide whether hashing is needed at all, and use a salted hash or tokenization if it is.\n8. **The rollout and rollback are thin.**\n   - On the first build there's no `fct_mrr` to clone, and `CREATE SNAPSHOT TABLE` fails if `fct_mrr_bak` already exists.\n   - \"Check row counts\" can't detect duplicates or wrong sums. Add checks for key uniqueness, a reconciliation of totals against billing, and no null `month` values.\n   - Restoring the snapshot discards any ds loaded after it was taken.\n   - Set an expiry on the snapshot.\n9. **The 07:00 UTC freshness SLA ignores late CDC data.** The plan has no upstream dependency or lateness handling, and no alert for a missed SLA.\n\n**Questions for the data team**\n- Is `amount` a delta or the new absolute value?\n- Is the intended grain per subscription per day, or a month-end snapshot?\n- Is there a unique event ID in the CDC payload that isn't in the DDL?\n\nI can draft a revised plan with corrected SQL (dedup, idempotent `MERGE`, state-based MRR) once those are answered."
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. It isn't ready to build. The first four problems would give wrong numbers.\n\n**Blocking**\n\n1. **The model queries columns that don't exist.** The source DDL (`plan.md:14`) has `ds, changed_at, subscription_id, amount`. The Model query (`:24-28`) uses `customer_id` and `month`, and the Load query (`:34-38`) uses `month`. Neither column is in the source, so both queries fail as written. The Model query also groups by `customer_id`, which contradicts the stated grain of one row per subscription per ds. Either the DDL is incomplete or `month` has to be derived, for example with `DATE_TRUNC(changed_at, MONTH)`.\n2. **Replays will double-count.** The source says the CDC stream \"replays after restarts\", but the load runs `SUM(amount)` with no dedup. The table has no change ID or sequence number to dedup on. You need a unique key such as `(subscription_id, changed_at, …)` or a log offset. Otherwise every restart inflates MRR.\n3. **The aggregate isn't MRR.** Summing change rows per day gives the activity for that day, not the recurring revenue at that point. The plan doesn't say whether `amount` is a delta or the new absolute value. MRR needs the latest state per subscription, or a running sum of deltas, carried forward across days with no changes. It also needs a rule for cancellations.\n4. **The load isn't idempotent.** A plain `INSERT` (`:33`) means that rerunning a ds, or rebuilding a range as rollout step 2 does, duplicates rows. Use `MERGE`, or delete then insert per ds partition, or partition overwrite.\n5. **`ds` and `changed_at` may not agree.** The sample read filters `DATE(changed_at) = @ds` (`:16`). The model filters `ds = @ds`. Late or replayed events can land with a different `ds` than their `changed_at` date. The plan should say which one defines the partition. `DATE(changed_at)` probably won't prune partitions on a roughly 3 TB table, so it could scan everything.\n\n**Should fix**\n\n6. **The primary key contradicts the grain.** The contract says `primary_key: subscription_id, month`. The grain is per subscription per ds, so `ds` has to be in the key. Otherwise the key isn't unique.\n7. **The access section is inconsistent.**\n   - It says identifiers are hashed, but the Load query doesn't hash anything.\n   - Unsalted SHA256 of predictable IDs is easy to reverse, and it's only useful for joins if every consumer hashes the same way.\n   - The dataset is `fct_private`, but the classification is `internal`. Revenue data is often classified higher.\n   - Decide whether hashing is needed at all, and use a salted hash or tokenization if it is.\n8. **The rollout and rollback are thin.**\n   - On the first build there's no `fct_mrr` to clone, and `CREATE SNAPSHOT TABLE` fails if `fct_mrr_bak` already exists.\n   - \"Check row counts\" can't detect duplicates or wrong sums. Add checks for key uniqueness, a reconciliation of totals against billing, and no null `month` values.\n   - Restoring the snapshot discards any ds loaded after it was taken.\n   - Set an expiry on the snapshot.\n9. **The 07:00 UTC freshness SLA ignores late CDC data.** The plan has no upstream dependency or lateness handling, and no alert for a missed SLA.\n\n**Questions for the data team**\n- Is `amount` a delta or the new absolute value?\n- Is the intended grain per subscription per day, or a month-end snapshot?\n- Is there a unique event ID in the CDC payload that isn't in the DDL?\n\nI can draft a revised plan with corrected SQL (dedup, idempotent `MERGE`, state-based MRR) once those are answered."
+              },
+              {
+                "name": "3-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan. It isn't ready to build. The first four problems would give wrong numbers.\n\n**Blocking**\n\n1. **The model queries columns that don't exist.** The source DDL (`plan.md:14`) has `ds, changed_at, subscription_id, amount`. The Model query (`:24-28`) uses `customer_id` and `month`, and the Load query (`:34-38`) uses `month`. Neither column is in the source, so both queries fail as written. The Model query also groups by `customer_id`, which contradicts the stated grain of one row per subscription per ds. Either the DDL is incomplete or `month` has to be derived, for example with `DATE_TRUNC(changed_at, MONTH)`.\n2. **Replays will double-count.** The source says the CDC stream \"replays after restarts\", but the load runs `SUM(amount)` with no dedup. The table has no change ID or sequence number to dedup on. You need a unique key such as `(subscription_id, changed_at, …)` or a log offset. Otherwise every restart inflates MRR.\n3. **The aggregate isn't MRR.** Summing change rows per day gives the activity for that day, not the recurring revenue at that point. The plan doesn't say whether `amount` is a delta or the new absolute value. MRR needs the latest state per subscription, or a running sum of deltas, carried forward across days with no changes. It also needs a rule for cancellations.\n4. **The load isn't idempotent.** A plain `INSERT` (`:33`) means that rerunning a ds, or rebuilding a range as rollout step 2 does, duplicates rows. Use `MERGE`, or delete then insert per ds partition, or partition overwrite.\n5. **`ds` and `changed_at` may not agree.** The sample read filters `DATE(changed_at) = @ds` (`:16`). The model filters `ds = @ds`. Late or replayed events can land with a different `ds` than their `changed_at` date. The plan should say which one defines the partition. `DATE(changed_at)` probably won't prune partitions on a roughly 3 TB table, so it could scan everything.\n\n**Should fix**\n\n6. **The primary key contradicts the grain.** The contract says `primary_key: subscription_id, month`. The grain is per subscription per ds, so `ds` has to be in the key. Otherwise the key isn't unique.\n7. **The access section is inconsistent.**\n   - It says identifiers are hashed, but the Load query doesn't hash anything.\n   - Unsalted SHA256 of predictable IDs is easy to reverse, and it's only useful for joins if every consumer hashes the same way.\n   - The dataset is `fct_private`, but the classification is `internal`. Revenue data is often classified higher.\n   - Decide whether hashing is needed at all, and use a salted hash or tokenization if it is.\n8. **The rollout and rollback are thin.**\n   - On the first build there's no `fct_mrr` to clone, and `CREATE SNAPSHOT TABLE` fails if `fct_mrr_bak` already exists.\n   - \"Check row counts\" can't detect duplicates or wrong sums. Add checks for key uniqueness, a reconciliation of totals against billing, and no null `month` values.\n   - Restoring the snapshot discards any ds loaded after it was taken.\n   - Set an expiry on the snapshot.\n9. **The 07:00 UTC freshness SLA ignores late CDC data.** The plan has no upstream dependency or lateness handling, and no alert for a missed SLA.\n\n**Questions for the data team**\n- Is `amount` a delta or the new absolute value?\n- Is the intended grain per subscription per day, or a month-end snapshot?\n- Is there a unique event ID in the CDC payload that isn't in the DDL?\n\nI can draft a revised plan with corrected SQL (dedup, idempotent `MERGE`, state-based MRR) once those are answered."
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0495089,
+            "judgeCostUsd": 0.0032896999999999996,
+            "durationSeconds": 46,
+            "startedAt": "2026-11-10T05:44:25.856Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-lL3usC/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The plan isn't ready to build. Several problems would produce wrong numbers or fail outright. I read only the plan, not the repo, so I haven't checked any of this against existing models.\n\n**Blocking**\n\n1. **CDC replays will double-count.** The source says it \"replays after restarts\", but both queries use a bare `SUM(amount)`. Nothing dedups on a change key such as `(subscription_id, changed_at)`, and the table has no unique change ID. Add a dedup step, or get a change ID or offset added to the source.\n2. **The model query uses columns the source doesn't have.** The source DDL has only `ds, changed_at, subscription_id, amount`. The Model query selects `customer_id` and `month`, and the Load query selects `month`. Neither column exists, so either the DDL is incomplete or `month` needs deriving, for example `DATE_TRUNC(changed_at, MONTH)`.\n3. **The Model and Load sections contradict each other.** Model groups by `customer_id` and Load groups by `subscription_id`. The stated grain (subscription × ds) matches neither query, because both also group by `month`. Keep one query.\n4. **The grain and the contract key disagree.** The grain is subscription × ds, but `primary_key` is `(subscription_id, month)`. If `ds` is a load date, the same key repeats across days and violates the key. Decide whether this is a daily snapshot, with `ds` in the key, or one row per month.\n5. **`SUM(amount)` over changes may not be MRR.** The source is change events. If `amount` is a delta, a daily sum gives net movement, not MRR. If it's the new level, summing is wrong. MRR needs a running total or the latest value per subscription, carried forward across days with no change. The plan never says which one `amount` is.\n6. **The load isn't idempotent.** A plain `INSERT` for a `ds` duplicates rows on rerun, and step 2 of the rollout is a rebuild over a range. Use `MERGE`, or delete and insert (or partition overwrite) for that `ds`.\n7. **The source filters are inconsistent.** The source example filters on `DATE(changed_at) = @ds`, but the model filters on `ds = @ds`. If `ds` is the ingestion date, late or replayed rows land in different days than their `changed_at` suggests. On a 3 TB table, the `DATE(changed_at)` filter probably won't prune partitions. Pick one filter and confirm the table is partitioned on it.\n\n**Should fix**\n\n- **Hashing isn't implemented.** The Access section says identifiers are hashed with SHA256, but the Load query selects raw `subscription_id`. Unsalted SHA256 of low-entropy IDs is also easy to reverse. Specify a salt or HMAC, and say whether the primary key is the hashed or the raw ID.\n- **The access settings need a second look.** The `classification: internal` label sits oddly with a dataset called `fct_private` that is limited to one group. Confirm that's intended. Revenue data is often restricted more tightly than \"internal\".\n- **The rollout is thin.**\n  - `CLONE fct_mrr` fails if the table doesn't exist yet (first build), and fails if `fct_mrr_bak` already exists.\n  - \"Check row counts\" doesn't catch wrong sums. Add a reconciliation against the source, plus uniqueness checks on the key.\n  - Time travel lasts 7 days, so the rollback window is short if a bad backfill goes unnoticed. Say how long the snapshot is kept.\n- **The freshness SLA has no late-data plan.** The SLA is 07:00 UTC, but the plan doesn't say what happens when CDC data arrives late or after a replay. Add a lookback window or a restatement policy.\n\nIf you answer questions 2, 4 and 5 (the real source schema, the grain, and the meaning of `amount`), I can rewrite the Model and Load sections into a single consistent query."
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The plan isn't ready to build. Several problems would produce wrong numbers or fail outright. I read only the plan, not the repo, so I haven't checked any of this against existing models.\n\n**Blocking**\n\n1. **CDC replays will double-count.** The source says it \"replays after restarts\", but both queries use a bare `SUM(amount)`. Nothing dedups on a change key such as `(subscription_id, changed_at)`, and the table has no unique change ID. Add a dedup step, or get a change ID or offset added to the source.\n2. **The model query uses columns the source doesn't have.** The source DDL has only `ds, changed_at, subscription_id, amount`. The Model query selects `customer_id` and `month`, and the Load query selects `month`. Neither column exists, so either the DDL is incomplete or `month` needs deriving, for example `DATE_TRUNC(changed_at, MONTH)`.\n3. **The Model and Load sections contradict each other.** Model groups by `customer_id` and Load groups by `subscription_id`. The stated grain (subscription × ds) matches neither query, because both also group by `month`. Keep one query.\n4. **The grain and the contract key disagree.** The grain is subscription × ds, but `primary_key` is `(subscription_id, month)`. If `ds` is a load date, the same key repeats across days and violates the key. Decide whether this is a daily snapshot, with `ds` in the key, or one row per month.\n5. **`SUM(amount)` over changes may not be MRR.** The source is change events. If `amount` is a delta, a daily sum gives net movement, not MRR. If it's the new level, summing is wrong. MRR needs a running total or the latest value per subscription, carried forward across days with no change. The plan never says which one `amount` is.\n6. **The load isn't idempotent.** A plain `INSERT` for a `ds` duplicates rows on rerun, and step 2 of the rollout is a rebuild over a range. Use `MERGE`, or delete and insert (or partition overwrite) for that `ds`.\n7. **The source filters are inconsistent.** The source example filters on `DATE(changed_at) = @ds`, but the model filters on `ds = @ds`. If `ds` is the ingestion date, late or replayed rows land in different days than their `changed_at` suggests. On a 3 TB table, the `DATE(changed_at)` filter probably won't prune partitions. Pick one filter and confirm the table is partitioned on it.\n\n**Should fix**\n\n- **Hashing isn't implemented.** The Access section says identifiers are hashed with SHA256, but the Load query selects raw `subscription_id`. Unsalted SHA256 of low-entropy IDs is also easy to reverse. Specify a salt or HMAC, and say whether the primary key is the hashed or the raw ID.\n- **The access settings need a second look.** The `classification: internal` label sits oddly with a dataset called `fct_private` that is limited to one group. Confirm that's intended. Revenue data is often restricted more tightly than \"internal\".\n- **The rollout is thin.**\n  - `CLONE fct_mrr` fails if the table doesn't exist yet (first build), and fails if `fct_mrr_bak` already exists.\n  - \"Check row counts\" doesn't catch wrong sums. Add a reconciliation against the source, plus uniqueness checks on the key.\n  - Time travel lasts 7 days, so the rollback window is short if a bad backfill goes unnoticed. Say how long the snapshot is kept.\n- **The freshness SLA has no late-data plan.** The SLA is 07:00 UTC, but the plan doesn't say what happens when CDC data arrives late or after a replay. Add a lookback window or a restatement policy.\n\nIf you answer questions 2, 4 and 5 (the real source schema, the grain, and the meaning of `amount`), I can rewrite the Model and Load sections into a single consistent query."
+              },
+              {
+                "name": "3-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The plan isn't ready to build. Several problems would produce wrong numbers or fail outright. I read only the plan, not the repo, so I haven't checked any of this against existing models.\n\n**Blocking**\n\n1. **CDC replays will double-count.** The source says it \"replays after restarts\", but both queries use a bare `SUM(amount)`. Nothing dedups on a change key such as `(subscription_id, changed_at)`, and the table has no unique change ID. Add a dedup step, or get a change ID or offset added to the source.\n2. **The model query uses columns the source doesn't have.** The source DDL has only `ds, changed_at, subscription_id, amount`. The Model query selects `customer_id` and `month`, and the Load query selects `month`. Neither column exists, so either the DDL is incomplete or `month` needs deriving, for example `DATE_TRUNC(changed_at, MONTH)`.\n3. **The Model and Load sections contradict each other.** Model groups by `customer_id` and Load groups by `subscription_id`. The stated grain (subscription × ds) matches neither query, because both also group by `month`. Keep one query.\n4. **The grain and the contract key disagree.** The grain is subscription × ds, but `primary_key` is `(subscription_id, month)`. If `ds` is a load date, the same key repeats across days and violates the key. Decide whether this is a daily snapshot, with `ds` in the key, or one row per month.\n5. **`SUM(amount)` over changes may not be MRR.** The source is change events. If `amount` is a delta, a daily sum gives net movement, not MRR. If it's the new level, summing is wrong. MRR needs a running total or the latest value per subscription, carried forward across days with no change. The plan never says which one `amount` is.\n6. **The load isn't idempotent.** A plain `INSERT` for a `ds` duplicates rows on rerun, and step 2 of the rollout is a rebuild over a range. Use `MERGE`, or delete and insert (or partition overwrite) for that `ds`.\n7. **The source filters are inconsistent.** The source example filters on `DATE(changed_at) = @ds`, but the model filters on `ds = @ds`. If `ds` is the ingestion date, late or replayed rows land in different days than their `changed_at` suggests. On a 3 TB table, the `DATE(changed_at)` filter probably won't prune partitions. Pick one filter and confirm the table is partitioned on it.\n\n**Should fix**\n\n- **Hashing isn't implemented.** The Access section says identifiers are hashed with SHA256, but the Load query selects raw `subscription_id`. Unsalted SHA256 of low-entropy IDs is also easy to reverse. Specify a salt or HMAC, and say whether the primary key is the hashed or the raw ID.\n- **The access settings need a second look.** The `classification: internal` label sits oddly with a dataset called `fct_private` that is limited to one group. Confirm that's intended. Revenue data is often restricted more tightly than \"internal\".\n- **The rollout is thin.**\n  - `CLONE fct_mrr` fails if the table doesn't exist yet (first build), and fails if `fct_mrr_bak` already exists.\n  - \"Check row counts\" doesn't catch wrong sums. Add a reconciliation against the source, plus uniqueness checks on the key.\n  - Time travel lasts 7 days, so the rollback window is short if a bad backfill goes unnoticed. Say how long the snapshot is kept.\n- **The freshness SLA has no late-data plan.** The SLA is 07:00 UTC, but the plan doesn't say what happens when CDC data arrives late or after a replay. Add a lookback window or a restatement policy.\n\nIf you answer questions 2, 4 and 5 (the real source schema, the grain, and the meaning of `amount`), I can rewrite the Model and Load sections into a single consistent query."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0486076,
+            "judgeCostUsd": 0.003952099999999997,
+            "durationSeconds": 47,
+            "startedAt": "2026-11-10T05:45:12.320Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-AMN1PR/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "The plan isn't ready to build. Some of the problems would make the model produce wrong numbers.\n\n**Blocking**\n\n1. **The SQL uses columns the source doesn't have.** `raw_billing.subscription_changes` has `ds, changed_at, subscription_id, amount`. The Model query uses `customer_id` and `month`, and the Load query uses `month`. Neither exists, so both queries fail as written.\n2. **The Model and Load sections disagree.** Model groups by `customer_id`, Load groups by `subscription_id`. The stated grain is \"subscription per ds\", but both queries also group by `month`. The contract's primary key is `(subscription_id, month)`, which leaves out `ds`. The plan needs one grain, and the key has to match it.\n3. **CDC replays will double-count.** The source says it \"replays after restarts\", and the table has no change ID or sequence column to dedupe on. `SUM(amount)` over replayed rows overstates MRR. The plan needs a dedup key, or a different source, before any load runs.\n4. **The load isn't idempotent.** A plain `INSERT INTO` run twice for the same `ds`, including the rollout's \"rebuild for the ds range\", duplicates rows. Use delete-and-insert for the partition, a `MERGE`, or a partition overwrite.\n5. **It may not compute MRR.** Summing change amounts per day gives the net change for that day, not the recurring revenue level. MRR normally needs the latest amount per subscription carried forward, or a running sum. Please confirm which one you intend, because it changes the whole model.\n\n**Should fix**\n\n6. **The access section contradicts the load.** It says identifiers are hashed with SHA256, but the Load query selects raw `subscription_id`. Unsalted SHA256 of guessable IDs is also easy to reverse. Decide whether hashing happens, where, and whether it's salted.\n7. **Classification and dataset don't match.** The dataset is `fct_private` with a single reader group, but the contract says `internal`. One of them is wrong.\n8. **Source filters are inconsistent and may be expensive.** The source query filters on `DATE(changed_at) = @ds`, while the model filters on `ds = @ds`. These can differ for late or replayed events. If the 3 TB table isn't partitioned on the column you filter, every run scans all of it. State which column is the partition key and use only that one.\n9. **The rollout checks are weak.**\n   - Cloning `fct_mrr` fails on first build, when the table doesn't exist.\n   - A fixed `fct_mrr_bak` name collides on re-runs.\n   - \"Check row counts\" wouldn't catch double-counting. Add a reconciliation of summed amounts against the source, and a duplicate-key check.\n10. **The freshness SLA has no support.** There's no schedule, no handling of CDC lag or late data, and no alerting behind the 07:00 UTC commitment.\n\n**Minor**\n- `amount NUMERIC` has no currency, so it's unclear whether MRR can be summed across subscriptions.\n- Time travel gives a 7-day undo window. Say whether that's enough, or whether the snapshot should be kept longer.\n\nIf you tell me the intended grain, and whether MRR is a level or a delta, I can draft a corrected plan."
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The plan isn't ready to build. Some of the problems would make the model produce wrong numbers.\n\n**Blocking**\n\n1. **The SQL uses columns the source doesn't have.** `raw_billing.subscription_changes` has `ds, changed_at, subscription_id, amount`. The Model query uses `customer_id` and `month`, and the Load query uses `month`. Neither exists, so both queries fail as written.\n2. **The Model and Load sections disagree.** Model groups by `customer_id`, Load groups by `subscription_id`. The stated grain is \"subscription per ds\", but both queries also group by `month`. The contract's primary key is `(subscription_id, month)`, which leaves out `ds`. The plan needs one grain, and the key has to match it.\n3. **CDC replays will double-count.** The source says it \"replays after restarts\", and the table has no change ID or sequence column to dedupe on. `SUM(amount)` over replayed rows overstates MRR. The plan needs a dedup key, or a different source, before any load runs.\n4. **The load isn't idempotent.** A plain `INSERT INTO` run twice for the same `ds`, including the rollout's \"rebuild for the ds range\", duplicates rows. Use delete-and-insert for the partition, a `MERGE`, or a partition overwrite.\n5. **It may not compute MRR.** Summing change amounts per day gives the net change for that day, not the recurring revenue level. MRR normally needs the latest amount per subscription carried forward, or a running sum. Please confirm which one you intend, because it changes the whole model.\n\n**Should fix**\n\n6. **The access section contradicts the load.** It says identifiers are hashed with SHA256, but the Load query selects raw `subscription_id`. Unsalted SHA256 of guessable IDs is also easy to reverse. Decide whether hashing happens, where, and whether it's salted.\n7. **Classification and dataset don't match.** The dataset is `fct_private` with a single reader group, but the contract says `internal`. One of them is wrong.\n8. **Source filters are inconsistent and may be expensive.** The source query filters on `DATE(changed_at) = @ds`, while the model filters on `ds = @ds`. These can differ for late or replayed events. If the 3 TB table isn't partitioned on the column you filter, every run scans all of it. State which column is the partition key and use only that one.\n9. **The rollout checks are weak.**\n   - Cloning `fct_mrr` fails on first build, when the table doesn't exist.\n   - A fixed `fct_mrr_bak` name collides on re-runs.\n   - \"Check row counts\" wouldn't catch double-counting. Add a reconciliation of summed amounts against the source, and a duplicate-key check.\n10. **The freshness SLA has no support.** There's no schedule, no handling of CDC lag or late data, and no alerting behind the 07:00 UTC commitment.\n\n**Minor**\n- `amount NUMERIC` has no currency, so it's unclear whether MRR can be summed across subscriptions.\n- Time travel gives a 7-day undo window. Say whether that's enough, or whether the snapshot should be kept longer.\n\nIf you tell me the intended grain, and whether MRR is a level or a delta, I can draft a corrected plan."
+              },
+              {
+                "name": "3-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  false
+                ],
+                "evidence": "The plan isn't ready to build. Some of the problems would make the model produce wrong numbers.\n\n**Blocking**\n\n1. **The SQL uses columns the source doesn't have.** `raw_billing.subscription_changes` has `ds, changed_at, subscription_id, amount`. The Model query uses `customer_id` and `month`, and the Load query uses `month`. Neither exists, so both queries fail as written.\n2. **The Model and Load sections disagree.** Model groups by `customer_id`, Load groups by `subscription_id`. The stated grain is \"subscription per ds\", but both queries also group by `month`. The contract's primary key is `(subscription_id, month)`, which leaves out `ds`. The plan needs one grain, and the key has to match it.\n3. **CDC replays will double-count.** The source says it \"replays after restarts\", and the table has no change ID or sequence column to dedupe on. `SUM(amount)` over replayed rows overstates MRR. The plan needs a dedup key, or a different source, before any load runs.\n4. **The load isn't idempotent.** A plain `INSERT INTO` run twice for the same `ds`, including the rollout's \"rebuild for the ds range\", duplicates rows. Use delete-and-insert for the partition, a `MERGE`, or a partition overwrite.\n5. **It may not compute MRR.** Summing change amounts per day gives the net change for that day, not the recurring revenue level. MRR normally needs the latest amount per subscription carried forward, or a running sum. Please confirm which one you intend, because it changes the whole model.\n\n**Should fix**\n\n6. **The access section contradicts the load.** It says identifiers are hashed with SHA256, but the Load query selects raw `subscription_id`. Unsalted SHA256 of guessable IDs is also easy to reverse. Decide whether hashing happens, where, and whether it's salted.\n7. **Classification and dataset don't match.** The dataset is `fct_private` with a single reader group, but the contract says `internal`. One of them is wrong.\n8. **Source filters are inconsistent and may be expensive.** The source query filters on `DATE(changed_at) = @ds`, while the model filters on `ds = @ds`. These can differ for late or replayed events. If the 3 TB table isn't partitioned on the column you filter, every run scans all of it. State which column is the partition key and use only that one.\n9. **The rollout checks are weak.**\n   - Cloning `fct_mrr` fails on first build, when the table doesn't exist.\n   - A fixed `fct_mrr_bak` name collides on re-runs.\n   - \"Check row counts\" wouldn't catch double-counting. Add a reconciliation of summed amounts against the source, and a duplicate-key check.\n10. **The freshness SLA has no support.** There's no schedule, no handling of CDC lag or late data, and no alerting behind the 07:00 UTC commitment.\n\n**Minor**\n- `amount NUMERIC` has no currency, so it's unclear whether MRR can be summed across subscriptions.\n- Time travel gives a 7-day undo window. Say whether that's enough, or whether the snapshot should be kept longer.\n\nIf you tell me the intended grain, and whether MRR is a level or a delta, I can draft a corrected plan."
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0415347,
+            "judgeCostUsd": 0.0026791999999999996,
+            "durationSeconds": 34,
+            "startedAt": "2026-11-10T05:45:59.713Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-vcmpSP/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and found problems that should be fixed before we build. They're roughly in order of severity.\n\n**Correctness**\n\n1. **The Load isn't idempotent, and the source replays.** The CDC stream \"replays after restarts\", so the same change can arrive twice. `SUM(amount)` then double-counts it. The plain `INSERT` has the same problem: re-running a ds appends duplicates. Fixes: dedupe the source on a change key (there isn't one in the schema, so we need to add one or define it as `subscription_id, changed_at`), and make the load overwrite the partition with `MERGE` or delete-then-insert for that ds.\n\n2. **The Model and Load queries disagree.** The Model query groups by `customer_id`, which isn't in the source table. The Load query uses `subscription_id`. The Model section also doesn't match the stated grain. `month` isn't in the source table either. It needs to be derived, for example `DATE_TRUNC(changed_at, MONTH)`, and the plan should say which.\n\n3. **The filter column is inconsistent.** The source query filters on `DATE(changed_at) = @ds`. The Model and Load queries filter on `ds = @ds`. If `ds` is the ingestion date and not the change date, late or replayed rows land in different partitions. The plan should say which one `ds` means.\n\n4. **The MRR logic is questionable.** `SUM(amount)` over changes only gives MRR if `amount` is a delta. If it's the new absolute amount, summing is wrong, and you'd want the latest value per subscription. The plan doesn't say which. A daily grain also needs a carry-forward of subscriptions with no change that day, or the table isn't a true MRR snapshot.\n\n5. **The grain doesn't match the contract.** The grain is \"per subscription per ds\", but `primary_key` is `(subscription_id, month)`, which omits `ds`. One of them is wrong.\n\n**Rollout**\n\n6. **The backup step has a problem.** `CREATE SNAPSHOT TABLE fct_mrr_bak CLONE fct_mrr` fails if the snapshot already exists, so reruns need a dated name. The plan also presents the 7-day time travel window as a second safety net, but it only covers the table as it was within 7 days. Also, \"check row counts\" is too weak, since it wouldn't catch the duplicate problem in item 1. Add checks for primary-key uniqueness and a reconciliation of totals against the source.\n\n7. **The rebuild step is unbounded.** \"Rebuild for the ds range\" doesn't say which range. The source is about 3 TB. The partition filter needs to be enforced so each run doesn't scan the whole table. The `DATE(changed_at)` filter in the source query can defeat partition pruning if `ds` is the partition column.\n\n**Access and contract**\n\n8. **The access statement contradicts itself.** It says identifiers are hashed with SHA256, but nothing in the Load query hashes `subscription_id`. If hashing is intended, add it to the query. Also note that unsalted SHA256 of low-entropy IDs is reversible by brute force. The dataset is named `fct_private` but classified `internal`. Please confirm which is right.\n\n9. **The ownership and SLA details are thin.** The contract has no alert or on-call contact. The 07:00 UTC SLA isn't tied to the CDC lag, and there's no handling for late-arriving data.\n\n**Suggested next step:** I'd fix items 1–5 in the plan first, since they change the SQL. Items 6–9 are smaller edits. I can draft a revised plan.md if you'd like. Questions I need you to answer first: Is `amount` a delta or an absolute value? What does `ds` represent? Is the grain daily or monthly?"
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and found problems that should be fixed before we build. They're roughly in order of severity.\n\n**Correctness**\n\n1. **The Load isn't idempotent, and the source replays.** The CDC stream \"replays after restarts\", so the same change can arrive twice. `SUM(amount)` then double-counts it. The plain `INSERT` has the same problem: re-running a ds appends duplicates. Fixes: dedupe the source on a change key (there isn't one in the schema, so we need to add one or define it as `subscription_id, changed_at`), and make the load overwrite the partition with `MERGE` or delete-then-insert for that ds.\n\n2. **The Model and Load queries disagree.** The Model query groups by `customer_id`, which isn't in the source table. The Load query uses `subscription_id`. The Model section also doesn't match the stated grain. `month` isn't in the source table either. It needs to be derived, for example `DATE_TRUNC(changed_at, MONTH)`, and the plan should say which.\n\n3. **The filter column is inconsistent.** The source query filters on `DATE(changed_at) = @ds`. The Model and Load queries filter on `ds = @ds`. If `ds` is the ingestion date and not the change date, late or replayed rows land in different partitions. The plan should say which one `ds` means.\n\n4. **The MRR logic is questionable.** `SUM(amount)` over changes only gives MRR if `amount` is a delta. If it's the new absolute amount, summing is wrong, and you'd want the latest value per subscription. The plan doesn't say which. A daily grain also needs a carry-forward of subscriptions with no change that day, or the table isn't a true MRR snapshot.\n\n5. **The grain doesn't match the contract.** The grain is \"per subscription per ds\", but `primary_key` is `(subscription_id, month)`, which omits `ds`. One of them is wrong.\n\n**Rollout**\n\n6. **The backup step has a problem.** `CREATE SNAPSHOT TABLE fct_mrr_bak CLONE fct_mrr` fails if the snapshot already exists, so reruns need a dated name. The plan also presents the 7-day time travel window as a second safety net, but it only covers the table as it was within 7 days. Also, \"check row counts\" is too weak, since it wouldn't catch the duplicate problem in item 1. Add checks for primary-key uniqueness and a reconciliation of totals against the source.\n\n7. **The rebuild step is unbounded.** \"Rebuild for the ds range\" doesn't say which range. The source is about 3 TB. The partition filter needs to be enforced so each run doesn't scan the whole table. The `DATE(changed_at)` filter in the source query can defeat partition pruning if `ds` is the partition column.\n\n**Access and contract**\n\n8. **The access statement contradicts itself.** It says identifiers are hashed with SHA256, but nothing in the Load query hashes `subscription_id`. If hashing is intended, add it to the query. Also note that unsalted SHA256 of low-entropy IDs is reversible by brute force. The dataset is named `fct_private` but classified `internal`. Please confirm which is right.\n\n9. **The ownership and SLA details are thin.** The contract has no alert or on-call contact. The 07:00 UTC SLA isn't tied to the CDC lag, and there's no handling for late-arriving data.\n\n**Suggested next step:** I'd fix items 1–5 in the plan first, since they change the SQL. Items 6–9 are smaller edits. I can draft a revised plan.md if you'd like. Questions I need you to answer first: Is `amount` a delta or an absolute value? What does `ds` represent? Is the grain daily or monthly?"
+              },
+              {
+                "name": "3-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and found problems that should be fixed before we build. They're roughly in order of severity.\n\n**Correctness**\n\n1. **The Load isn't idempotent, and the source replays.** The CDC stream \"replays after restarts\", so the same change can arrive twice. `SUM(amount)` then double-counts it. The plain `INSERT` has the same problem: re-running a ds appends duplicates. Fixes: dedupe the source on a change key (there isn't one in the schema, so we need to add one or define it as `subscription_id, changed_at`), and make the load overwrite the partition with `MERGE` or delete-then-insert for that ds.\n\n2. **The Model and Load queries disagree.** The Model query groups by `customer_id`, which isn't in the source table. The Load query uses `subscription_id`. The Model section also doesn't match the stated grain. `month` isn't in the source table either. It needs to be derived, for example `DATE_TRUNC(changed_at, MONTH)`, and the plan should say which.\n\n3. **The filter column is inconsistent.** The source query filters on `DATE(changed_at) = @ds`. The Model and Load queries filter on `ds = @ds`. If `ds` is the ingestion date and not the change date, late or replayed rows land in different partitions. The plan should say which one `ds` means.\n\n4. **The MRR logic is questionable.** `SUM(amount)` over changes only gives MRR if `amount` is a delta. If it's the new absolute amount, summing is wrong, and you'd want the latest value per subscription. The plan doesn't say which. A daily grain also needs a carry-forward of subscriptions with no change that day, or the table isn't a true MRR snapshot.\n\n5. **The grain doesn't match the contract.** The grain is \"per subscription per ds\", but `primary_key` is `(subscription_id, month)`, which omits `ds`. One of them is wrong.\n\n**Rollout**\n\n6. **The backup step has a problem.** `CREATE SNAPSHOT TABLE fct_mrr_bak CLONE fct_mrr` fails if the snapshot already exists, so reruns need a dated name. The plan also presents the 7-day time travel window as a second safety net, but it only covers the table as it was within 7 days. Also, \"check row counts\" is too weak, since it wouldn't catch the duplicate problem in item 1. Add checks for primary-key uniqueness and a reconciliation of totals against the source.\n\n7. **The rebuild step is unbounded.** \"Rebuild for the ds range\" doesn't say which range. The source is about 3 TB. The partition filter needs to be enforced so each run doesn't scan the whole table. The `DATE(changed_at)` filter in the source query can defeat partition pruning if `ds` is the partition column.\n\n**Access and contract**\n\n8. **The access statement contradicts itself.** It says identifiers are hashed with SHA256, but nothing in the Load query hashes `subscription_id`. If hashing is intended, add it to the query. Also note that unsalted SHA256 of low-entropy IDs is reversible by brute force. The dataset is named `fct_private` but classified `internal`. Please confirm which is right.\n\n9. **The ownership and SLA details are thin.** The contract has no alert or on-call contact. The 07:00 UTC SLA isn't tied to the CDC lag, and there's no handling for late-arriving data.\n\n**Suggested next step:** I'd fix items 1–5 in the plan first, since they change the SQL. Items 6–9 are smaller edits. I can draft a revised plan.md if you'd like. Questions I need you to answer first: Is `amount` a delta or an absolute value? What does `ds` represent? Is the grain daily or monthly?"
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.4666666666666667,
+        "passRate": 0,
+        "scoreWithout": 0.5333333333333333,
+        "passRateWithout": 0,
+        "delta": -0.06666666666666665
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 0,
+    "overallScore": 0.4666666666666667,
+    "overallPassRate": 0,
+    "meanDelta": -0.06666666666666665
+  }
+}
