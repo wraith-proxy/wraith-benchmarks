@@ -1,0 +1,256 @@
+{
+  "cases": {
+    "plan-review-p01": {
+      "1-grain": [
+        {
+          "arm": "with",
+          "run": 0,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "with",
+          "run": 1,
+          "judge": true,
+          "eval": false,
+          "agree": false,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "with",
+          "run": 2,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "with",
+          "run": 3,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "with",
+          "run": 4,
+          "judge": true,
+          "eval": false,
+          "agree": false,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "without",
+          "run": 0,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "without",
+          "run": 1,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "without",
+          "run": 2,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "without",
+          "run": 3,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "without",
+          "run": 4,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        }
+      ],
+      "2-dedup": [
+        {
+          "arm": "with",
+          "run": 0,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "with",
+          "run": 1,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "with",
+          "run": 2,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "with",
+          "run": 3,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "with",
+          "run": 4,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "without",
+          "run": 0,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "without",
+          "run": 1,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "without",
+          "run": 2,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "without",
+          "run": 3,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "without",
+          "run": 4,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        }
+      ],
+      "3-scan": [
+        {
+          "arm": "with",
+          "run": 0,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "with",
+          "run": 1,
+          "judge": true,
+          "eval": false,
+          "agree": false,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "with",
+          "run": 2,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "with",
+          "run": 3,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "with",
+          "run": 4,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "without",
+          "run": 0,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "without",
+          "run": 1,
+          "judge": true,
+          "eval": false,
+          "agree": false,
+          "explanation": "judge votes: PASS PASS PASS"
+        },
+        {
+          "arm": "without",
+          "run": 2,
+          "judge": false,
+          "eval": false,
+          "agree": true,
+          "explanation": "judge votes: FAIL FAIL FAIL"
+        },
+        {
+          "arm": "without",
+          "run": 3,
+          "judge": false,
+          "eval": false,
+          "agree": true,
+          "explanation": "judge votes: FAIL FAIL FAIL"
+        },
+        {
+          "arm": "without",
+          "run": 4,
+          "judge": true,
+          "eval": true,
+          "agree": true,
+          "explanation": "judge votes: PASS PASS PASS"
+        }
+      ]
+    }
+  },
+  "compared": 30,
+  "agreed": 26,
+  "agreement_rate": 0.8666666666666667,
+  "judge_sensitive": false
+}

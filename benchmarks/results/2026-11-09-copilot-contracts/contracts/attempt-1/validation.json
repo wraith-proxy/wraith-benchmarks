@@ -1,0 +1,547 @@
+{
+  "schema_sha256": "edb41f33ec46e84780e99872ab2bd67f074959d2bf3e9c9fc54e61f8982b0d93",
+  "summary": {
+    "with": {
+      "runs": 25,
+      "first_write_valid": 16,
+      "delivered_valid": 21
+    },
+    "without": {
+      "runs": 25,
+      "first_write_valid": 1,
+      "delivered_valid": 1
+    }
+  },
+  "cases": {
+    "contracts-accounts": {
+      "with": [
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        }
+      ],
+      "without": [
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpvncjte79/contract.yaml::$: 'version' is a required property\n  /tmp/tmpvncjte79/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmpvncjte79/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp05qe84s0/contract.yaml::$: 'version' is a required property\n  /tmp/tmp05qe84s0/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmp05qe84s0/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpzwiuzty_/contract.yaml::$.description: 'One row per account. Dataset example_shop.' is not of type 'object'"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp0259hylb/contract.yaml::$.description: 'One row per account. Dataset example_shop.' is not of type 'object'"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmppj2yv8um/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('datasetLocation' was unexpected)\n  /tmp/tmppj2yv8um/contract.yaml::$.description: 'One row per account.' is not of type 'object'"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpqsdzcl33/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('datasetLocation' was unexpected)\n  /tmp/tmpqsdzcl33/contract.yaml::$.description: 'One row per account.' is not of type 'object'"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpddgmzz4z/contract.yaml::$: 'version' is a required property\n  /tmp/tmpddgmzz4z/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmpddgmzz4z/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpp4_rpipi/contract.yaml::$: 'version' is a required property\n  /tmp/tmpp4_rpipi/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmpp4_rpipi/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp52siamkq/contract.yaml::$.description: 'One row per account in the example_shop dataset.' is not of type 'object'\n  /tmp/tmp52siamkq/contract.yaml::$.schema[0]: Unevaluated properties are not allowed ('type' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpbg7f8ujh/contract.yaml::$.description: 'One row per account in the example_shop dataset.' is not of type 'object'\n  /tmp/tmpbg7f8ujh/contract.yaml::$.schema[0]: Unevaluated properties are not allowed ('type' was unexpected)"
+          }
+        }
+      ]
+    },
+    "contracts-orders": {
+      "with": [
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        }
+      ],
+      "without": [
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp57fkw_5s/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)\n  /tmp/tmp57fkw_5s/contract.yaml::$: 'version' is a required property\n  /tmp/tmp57fkw_5s/contract.yaml::$: Additional properties are not allowed ('info' was unexpected)\n  /tmp/tmp57fkw_5s/contract.yaml::$: Unevaluated properties are not allowed ('info' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp_49mzwib/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)\n  /tmp/tmp_49mzwib/contract.yaml::$: 'version' is a required property\n  /tmp/tmp_49mzwib/contract.yaml::$: Additional properties are not allowed ('info' was unexpected)\n  /tmp/tmp_49mzwib/contract.yaml::$: Unevaluated properties are not allowed ('info' was unexpected)"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpt7b_1oum/contract.yaml::$.servers[0]: 'project' is a required property\n  /tmp/tmpt7b_1oum/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('account', 'dataset' were unexpected)\n  /tmp/tmpt7b_1oum/contract.yaml::$: 'version' is a required property\n  /tmp/tmpt7b_1oum/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmpt7b_1oum/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpvfvel2or/contract.yaml::$.servers[0]: 'project' is a required property\n  /tmp/tmpvfvel2or/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('account', 'dataset' were unexpected)\n  /tmp/tmpvfvel2or/contract.yaml::$: 'version' is a required property\n  /tmp/tmpvfvel2or/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmpvfvel2or/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpvpkgf2_7/contract.yaml::$.servers: {'development': {'type': 'bigquery', 'environment': 'development', 'dataset': 'example_shop'}} is not of type 'array'\n  /tmp/tmpvpkgf2_7/contract.yaml::$.schema[0].properties[4].logicalType: 'decimal' is not one of ['string', 'date', 'timestamp', 'time', 'number', 'integer', 'object', 'array', 'boolean', 'map', 'vector']\n  /tmp/tmpvpkgf2_7/contract.yaml::$.schema[0]: Unevaluated properties are not allowed ('type' was unexpected)\n  /tmp/tmpvpkgf2_7/contract.yaml::$: 'version' is a required property\n  /tmp/tmpvpkgf2_7/contract.yaml::$: Additional properties are not allowed ('info' was unexpected)\n  /tmp/tmpvpkgf2_7/contract.yaml::$: Unevaluated properties are not allowed ('info' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpmip65bc6/contract.yaml::$.servers: {'development': {'type': 'bigquery', 'environment': 'development', 'dataset': 'example_shop'}} is not of type 'array'\n  /tmp/tmpmip65bc6/contract.yaml::$.schema[0].properties[4].logicalType: 'decimal' is not one of ['string', 'date', 'timestamp', 'time', 'number', 'integer', 'object', 'array', 'boolean', 'map', 'vector']\n  /tmp/tmpmip65bc6/contract.yaml::$.schema[0]: Unevaluated properties are not allowed ('type' was unexpected)\n  /tmp/tmpmip65bc6/contract.yaml::$: 'version' is a required property\n  /tmp/tmpmip65bc6/contract.yaml::$: Additional properties are not allowed ('info' was unexpected)\n  /tmp/tmpmip65bc6/contract.yaml::$: Unevaluated properties are not allowed ('info' was unexpected)"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp7542660p/contract.yaml::$: 'version' is a required property\n  /tmp/tmp7542660p/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmp7542660p/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpf42w6axe/contract.yaml::$: 'version' is a required property\n  /tmp/tmpf42w6axe/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmpf42w6axe/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpvchnvyyg/contract.yaml::$.servers[0]: 'project' is a required property\n  /tmp/tmpvchnvyyg/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('dataset' was unexpected)\n  /tmp/tmpvchnvyyg/contract.yaml::$.description: 'One row per order line. An order has several lines.' is not of type 'object'\n  /tmp/tmpvchnvyyg/contract.yaml::$: Additional properties are not allowed ('models' was unexpected)\n  /tmp/tmpvchnvyyg/contract.yaml::$: Unevaluated properties are not allowed ('models' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpejfcuaio/contract.yaml::$.servers[0]: 'project' is a required property\n  /tmp/tmpejfcuaio/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('dataset' was unexpected)\n  /tmp/tmpejfcuaio/contract.yaml::$.description: 'One row per order line. An order has several lines.' is not of type 'object'\n  /tmp/tmpejfcuaio/contract.yaml::$: Additional properties are not allowed ('models' was unexpected)\n  /tmp/tmpejfcuaio/contract.yaml::$: Unevaluated properties are not allowed ('models' was unexpected)"
+          }
+        }
+      ]
+    },
+    "contracts-page_events": {
+      "with": [
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpaxh18lu6/contract.yaml::$.schema[0].properties[4].logicalType: 'json' is not one of ['string', 'date', 'timestamp', 'time', 'number', 'integer', 'object', 'array', 'boolean', 'map', 'vector']"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp942kjmia/contract.yaml::$.schema[0].properties[4].logicalType: 'json' is not one of ['string', 'date', 'timestamp', 'time', 'number', 'integer', 'object', 'array', 'boolean', 'map', 'vector']"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpgfxqpu3h/contract.yaml::$.schema[0].properties[4].logicalType: 'json' is not one of ['string', 'date', 'timestamp', 'time', 'number', 'integer', 'object', 'array', 'boolean', 'map', 'vector']"
+          }
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmplzhxx204/contract.yaml::$.schema[0].properties[4].logicalType: 'json' is not one of ['string', 'date', 'timestamp', 'time', 'number', 'integer', 'object', 'array', 'boolean', 'map', 'vector']"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp3lld1r3o/contract.yaml::$.schema[0].properties[4].logicalType: 'json' is not one of ['string', 'date', 'timestamp', 'time', 'number', 'integer', 'object', 'array', 'boolean', 'map', 'vector']"
+          }
+        }
+      ],
+      "without": [
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp9f4fes5e/contract.yaml::$: 'version' is a required property\n  /tmp/tmp9f4fes5e/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmp9f4fes5e/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp4mqre9ys/contract.yaml::$: 'version' is a required property\n  /tmp/tmp4mqre9ys/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmp4mqre9ys/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmph6egohfq/contract.yaml::$.servers[0]: 'project' is a required property\n  /tmp/tmph6egohfq/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('dataset' was unexpected)\n  /tmp/tmph6egohfq/contract.yaml::$: 'version' is a required property\n  /tmp/tmph6egohfq/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmph6egohfq/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpmmcmdtf5/contract.yaml::$.servers[0]: 'project' is a required property\n  /tmp/tmpmmcmdtf5/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('dataset' was unexpected)\n  /tmp/tmpmmcmdtf5/contract.yaml::$: 'version' is a required property\n  /tmp/tmpmmcmdtf5/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmpmmcmdtf5/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp6ow_7kua/contract.yaml::$.servers[0]: 'project' is a required property\n  /tmp/tmp6ow_7kua/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('dataset' was unexpected)\n  /tmp/tmp6ow_7kua/contract.yaml::$: Additional properties are not allowed ('models' was unexpected)\n  /tmp/tmp6ow_7kua/contract.yaml::$: Unevaluated properties are not allowed ('models' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp0b4r4u3j/contract.yaml::$.servers[0]: 'project' is a required property\n  /tmp/tmp0b4r4u3j/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('dataset' was unexpected)\n  /tmp/tmp0b4r4u3j/contract.yaml::$: Additional properties are not allowed ('models' was unexpected)\n  /tmp/tmp0b4r4u3j/contract.yaml::$: Unevaluated properties are not allowed ('models' was unexpected)"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp4v6i7p6r/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)\n  /tmp/tmp4v6i7p6r/contract.yaml::$.description: 'Page event records with free-form event data.' is not of type 'object'"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpt_budswf/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)\n  /tmp/tmpt_budswf/contract.yaml::$.description: 'Page event records with free-form event data.' is not of type 'object'"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpygawndhw/contract.yaml::$: 'version' is a required property\n  /tmp/tmpygawndhw/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmpygawndhw/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpk65zeip1/contract.yaml::$: 'version' is a required property\n  /tmp/tmpk65zeip1/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmpk65zeip1/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          }
+        }
+      ]
+    },
+    "contracts-payments": {
+      "with": [
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp69z8yhst/contract.yaml::$.schema[0].properties[3].logicalType: 'decimal' is not one of ['string', 'date', 'timestamp', 'time', 'number', 'integer', 'object', 'array', 'boolean', 'map', 'vector']"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpyy2wv73d/contract.yaml::$.schema[0].properties[3].logicalType: 'decimal' is not one of ['string', 'date', 'timestamp', 'time', 'number', 'integer', 'object', 'array', 'boolean', 'map', 'vector']"
+          }
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpvrhde7zk/contract.yaml::$.schema[0].properties[3].logicalType: 'decimal' is not one of ['string', 'date', 'timestamp', 'time', 'number', 'integer', 'object', 'array', 'boolean', 'map', 'vector']"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp_05rnxj9/contract.yaml::$.schema[0].properties[3].logicalType: 'decimal' is not one of ['string', 'date', 'timestamp', 'time', 'number', 'integer', 'object', 'array', 'boolean', 'map', 'vector']"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpbyrx17qk/contract.yaml::$.schema[0].properties[3].logicalType: 'decimal' is not one of ['string', 'date', 'timestamp', 'time', 'number', 'integer', 'object', 'array', 'boolean', 'map', 'vector']"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        }
+      ],
+      "without": [
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp934m22ry/contract.yaml::$: 'version' is a required property\n  /tmp/tmp934m22ry/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmp934m22ry/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp9o1varzb/contract.yaml::$.servers: {'production': {'type': 'bigquery', 'project': 'example-project-dev', 'dataset': 'example_pay', 'location': 'europe-west2'}} is not of type 'array'\n  /tmp/tmp9o1varzb/contract.yaml::$: 'version' is a required property\n  /tmp/tmp9o1varzb/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmp9o1varzb/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmppgrqt0mn/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)\n  /tmp/tmppgrqt0mn/contract.yaml::$.description: 'One row per payment.' is not of type 'object'\n  /tmp/tmppgrqt0mn/contract.yaml::$.schema[0]: Unevaluated properties are not allowed ('type' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpefyqeob9/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)\n  /tmp/tmpefyqeob9/contract.yaml::$.description: 'One row per payment.' is not of type 'object'\n  /tmp/tmpefyqeob9/contract.yaml::$.schema[0]: Unevaluated properties are not allowed ('type' was unexpected)"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpq6t2eif7/contract.yaml::$.description: 'One row per payment.' is not of type 'object'\n  /tmp/tmpq6t2eif7/contract.yaml::$.schema[0].properties[3].logicalType: 'decimal' is not one of ['string', 'date', 'timestamp', 'time', 'number', 'integer', 'object', 'array', 'boolean', 'map', 'vector']"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpikmxv3az/contract.yaml::$.description: 'One row per payment.' is not of type 'object'\n  /tmp/tmpikmxv3az/contract.yaml::$.schema[0].properties[3].logicalType: 'decimal' is not one of ['string', 'date', 'timestamp', 'time', 'number', 'integer', 'object', 'array', 'boolean', 'map', 'vector']"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpo8cwqyzc/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('location' was unexpected)\n  /tmp/tmpo8cwqyzc/contract.yaml::$.description: 'One row per payment.' is not of type 'object'\n  /tmp/tmpo8cwqyzc/contract.yaml::$: 'apiVersion' is a required property"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp98ght1w6/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('region' was unexpected)\n  /tmp/tmp98ght1w6/contract.yaml::$.description: 'One row per payment.' is not of type 'object'\n  /tmp/tmp98ght1w6/contract.yaml::$: 'apiVersion' is a required property"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpkz0hvbq6/contract.yaml::$: 'version' is a required property\n  /tmp/tmpkz0hvbq6/contract.yaml::$: 'apiVersion' is a required property\n  /tmp/tmpkz0hvbq6/contract.yaml::$: 'kind' is a required property\n  /tmp/tmpkz0hvbq6/contract.yaml::$: Additional properties are not allowed ('dataContractSpecification', 'info', 'models' were unexpected)\n  /tmp/tmpkz0hvbq6/contract.yaml::$: Unevaluated properties are not allowed ('dataContractSpecification', 'info', 'models' were unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpatxcfafm/contract.yaml::$: 'version' is a required property\n  /tmp/tmpatxcfafm/contract.yaml::$: 'apiVersion' is a required property\n  /tmp/tmpatxcfafm/contract.yaml::$: 'kind' is a required property\n  /tmp/tmpatxcfafm/contract.yaml::$: Additional properties are not allowed ('dataContractSpecification', 'info', 'models' were unexpected)\n  /tmp/tmpatxcfafm/contract.yaml::$: Unevaluated properties are not allowed ('dataContractSpecification', 'info', 'models' were unexpected)"
+          }
+        }
+      ]
+    },
+    "contracts-products": {
+      "with": [
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmppp692yjw/contract.yaml::$.schema[0].properties[3].logicalType: 'decimal' is not one of ['string', 'date', 'timestamp', 'time', 'number', 'integer', 'object', 'array', 'boolean', 'map', 'vector']"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpat4h_exg/contract.yaml::$.schema[0].properties[3].logicalType: 'decimal' is not one of ['string', 'date', 'timestamp', 'time', 'number', 'integer', 'object', 'array', 'boolean', 'map', 'vector']"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpp0patynk/contract.yaml::$.schema[0].properties[3].logicalType: 'decimal' is not one of ['string', 'date', 'timestamp', 'time', 'number', 'integer', 'object', 'array', 'boolean', 'map', 'vector']"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        }
+      ],
+      "without": [
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpdsdgzgdh/contract.yaml::$: 'version' is a required property\n  /tmp/tmpdsdgzgdh/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmpdsdgzgdh/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmprougyaua/contract.yaml::$: 'version' is a required property\n  /tmp/tmprougyaua/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmprougyaua/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpn7ea3lyh/contract.yaml::$: 'version' is a required property\n  /tmp/tmpn7ea3lyh/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmpn7ea3lyh/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmp0h3cbmzw/contract.yaml::$: 'version' is a required property\n  /tmp/tmp0h3cbmzw/contract.yaml::$: Additional properties are not allowed ('info', 'models' were unexpected)\n  /tmp/tmp0h3cbmzw/contract.yaml::$: Unevaluated properties are not allowed ('info', 'models' were unexpected)"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpxn3rgn9t/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('datasetLocation' was unexpected)\n  /tmp/tmpxn3rgn9t/contract.yaml::$: 'version' is a required property\n  /tmp/tmpxn3rgn9t/contract.yaml::$: Additional properties are not allowed ('info' was unexpected)\n  /tmp/tmpxn3rgn9t/contract.yaml::$: Unevaluated properties are not allowed ('info' was unexpected)"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpfcshnrdp/contract.yaml::$.servers[0]: Unevaluated properties are not allowed ('datasetLocation' was unexpected)\n  /tmp/tmpfcshnrdp/contract.yaml::$: 'version' is a required property\n  /tmp/tmpfcshnrdp/contract.yaml::$: Additional properties are not allowed ('info' was unexpected)\n  /tmp/tmpfcshnrdp/contract.yaml::$: Unevaluated properties are not allowed ('info' was unexpected)"
+          }
+        },
+        {
+          "first_write": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmphbz7sico/contract.yaml::$.description: 'One row per product in the example_shop dataset.' is not of type 'object'"
+          },
+          "delivered": {
+            "valid": false,
+            "output": "Schema validation errors were encountered.\n  /tmp/tmpjy0k1g8g/contract.yaml::$.description: 'One row per product in the example_shop dataset.' is not of type 'object'"
+          }
+        },
+        {
+          "first_write": {
+            "valid": true,
+            "output": "ok -- validation done"
+          },
+          "delivered": {
+            "valid": true,
+            "output": "ok -- validation done"
+          }
+        }
+      ]
+    }
+  }
+}

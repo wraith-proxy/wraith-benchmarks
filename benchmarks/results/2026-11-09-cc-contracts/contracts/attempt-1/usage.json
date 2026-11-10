@@ -1,0 +1,902 @@
+[
+  {
+    "case": "contracts-accounts",
+    "arm": "with",
+    "run": 0,
+    "score": 0.5,
+    "turns": 11,
+    "seconds": 32,
+    "cost_usd": 0.1067471,
+    "judge_cost_usd": 0.0010284,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 16729,
+      "cache_read_input_tokens": 117747,
+      "output_tokens": 2700,
+      "duration_ms": 21942,
+      "cost_usd": 0.1057187
+    }
+  },
+  {
+    "case": "contracts-accounts",
+    "arm": "with",
+    "run": 1,
+    "score": 0.5,
+    "turns": 12,
+    "seconds": 31,
+    "cost_usd": 0.10818370000000001,
+    "judge_cost_usd": 0.0009643,
+    "tokens": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 16790,
+      "cache_read_input_tokens": 141674,
+      "output_tokens": 2586,
+      "duration_ms": 21495,
+      "cost_usd": 0.1072194
+    }
+  },
+  {
+    "case": "contracts-accounts",
+    "arm": "with",
+    "run": 2,
+    "score": 1,
+    "turns": 9,
+    "seconds": 29,
+    "cost_usd": 0.10546729999999999,
+    "judge_cost_usd": 0.0005287,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 16623,
+      "cache_read_input_tokens": 115586,
+      "output_tokens": 2686,
+      "duration_ms": 24051,
+      "cost_usd": 0.10493859999999999
+    }
+  },
+  {
+    "case": "contracts-accounts",
+    "arm": "with",
+    "run": 3,
+    "score": 1,
+    "turns": 9,
+    "seconds": 38,
+    "cost_usd": 0.1026178,
+    "judge_cost_usd": 0.0007978000000000004,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 16412,
+      "cache_read_input_tokens": 116040,
+      "output_tokens": 2454,
+      "duration_ms": 29998,
+      "cost_usd": 0.10182
+    }
+  },
+  {
+    "case": "contracts-accounts",
+    "arm": "with",
+    "run": 4,
+    "score": 1,
+    "turns": 9,
+    "seconds": 28,
+    "cost_usd": 0.10398779999999999,
+    "judge_cost_usd": 0.0007397000000000003,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 16498,
+      "cache_read_input_tokens": 116881,
+      "output_tokens": 2554,
+      "duration_ms": 20941,
+      "cost_usd": 0.1032481
+    }
+  },
+  {
+    "case": "contracts-accounts",
+    "arm": "without",
+    "run": 0,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 18,
+    "cost_usd": 0.0535924,
+    "judge_cost_usd": 0.0004783000000000001,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9355,
+      "cache_read_input_tokens": 58181,
+      "output_tokens": 986,
+      "duration_ms": 12055,
+      "cost_usd": 0.0531141
+    }
+  },
+  {
+    "case": "contracts-accounts",
+    "arm": "without",
+    "run": 1,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 19,
+    "cost_usd": 0.0545626,
+    "judge_cost_usd": 0.0004425999999999996,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9419,
+      "cache_read_input_tokens": 57980,
+      "output_tokens": 1063,
+      "duration_ms": 12643,
+      "cost_usd": 0.05412
+    }
+  },
+  {
+    "case": "contracts-accounts",
+    "arm": "without",
+    "run": 2,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 22,
+    "cost_usd": 0.05659879999999999,
+    "judge_cost_usd": 0.0004666999999999996,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9547,
+      "cache_read_input_tokens": 58181,
+      "output_tokens": 1211,
+      "duration_ms": 14514,
+      "cost_usd": 0.05613209999999999
+    }
+  },
+  {
+    "case": "contracts-accounts",
+    "arm": "without",
+    "run": 3,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 16,
+    "cost_usd": 0.0546684,
+    "judge_cost_usd": 0.0005247999999999997,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9432,
+      "cache_read_input_tokens": 58196,
+      "output_tokens": 1058,
+      "duration_ms": 10032,
+      "cost_usd": 0.0541436
+    }
+  },
+  {
+    "case": "contracts-accounts",
+    "arm": "without",
+    "run": 4,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 16,
+    "cost_usd": 0.055322600000000006,
+    "judge_cost_usd": 0.0005186000000000001,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9425,
+      "cache_read_input_tokens": 57980,
+      "output_tokens": 1129,
+      "duration_ms": 10030,
+      "cost_usd": 0.054804000000000005
+    }
+  },
+  {
+    "case": "contracts-orders",
+    "arm": "with",
+    "run": 0,
+    "score": 0.5,
+    "turns": 12,
+    "seconds": 46,
+    "cost_usd": 0.1368026,
+    "judge_cost_usd": 0.0010324999999999996,
+    "tokens": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 18722,
+      "cache_read_input_tokens": 168961,
+      "output_tokens": 4395,
+      "duration_ms": 35780,
+      "cost_usd": 0.1357701
+    }
+  },
+  {
+    "case": "contracts-orders",
+    "arm": "with",
+    "run": 1,
+    "score": 1,
+    "turns": 11,
+    "seconds": 32,
+    "cost_usd": 0.10763390000000002,
+    "judge_cost_usd": 0.0006699999999999996,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 16846,
+      "cache_read_input_tokens": 117019,
+      "output_tokens": 2785,
+      "duration_ms": 24771,
+      "cost_usd": 0.10696390000000001
+    }
+  },
+  {
+    "case": "contracts-orders",
+    "arm": "with",
+    "run": 2,
+    "score": 1,
+    "turns": 9,
+    "seconds": 32,
+    "cost_usd": 0.10532939999999999,
+    "judge_cost_usd": 0.000973700000000001,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 16602,
+      "cache_read_input_tokens": 117497,
+      "output_tokens": 2617,
+      "duration_ms": 23307,
+      "cost_usd": 0.1043557
+    }
+  },
+  {
+    "case": "contracts-orders",
+    "arm": "with",
+    "run": 3,
+    "score": 1,
+    "turns": 11,
+    "seconds": 33,
+    "cost_usd": 0.10763980000000001,
+    "judge_cost_usd": 0.000600100000000001,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 17007,
+      "cache_read_input_tokens": 119237,
+      "output_tokens": 2706,
+      "duration_ms": 26982,
+      "cost_usd": 0.1070397
+    }
+  },
+  {
+    "case": "contracts-orders",
+    "arm": "with",
+    "run": 4,
+    "score": 0.5,
+    "turns": 8,
+    "seconds": 34,
+    "cost_usd": 0.097536,
+    "judge_cost_usd": 0.0009665000000000003,
+    "tokens": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 15184,
+      "cache_read_input_tokens": 90995,
+      "output_tokens": 2671,
+      "duration_ms": 24411,
+      "cost_usd": 0.0965695
+    }
+  },
+  {
+    "case": "contracts-orders",
+    "arm": "without",
+    "run": 0,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 22,
+    "cost_usd": 0.05940470000000001,
+    "judge_cost_usd": 0.0007752000000000019,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9775,
+      "cache_read_input_tokens": 58235,
+      "output_tokens": 1369,
+      "duration_ms": 13779,
+      "cost_usd": 0.05862950000000001
+    }
+  },
+  {
+    "case": "contracts-orders",
+    "arm": "without",
+    "run": 1,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 18,
+    "cost_usd": 0.0568268,
+    "judge_cost_usd": 0.0007301000000000009,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9584,
+      "cache_read_input_tokens": 58247,
+      "output_tokens": 1192,
+      "duration_ms": 10133,
+      "cost_usd": 0.0560967
+    }
+  },
+  {
+    "case": "contracts-orders",
+    "arm": "without",
+    "run": 2,
+    "score": 1,
+    "turns": 5,
+    "seconds": 18,
+    "cost_usd": 0.0616033,
+    "judge_cost_usd": 0.0006058999999999995,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9849,
+      "cache_read_input_tokens": 58454,
+      "output_tokens": 1574,
+      "duration_ms": 12670,
+      "cost_usd": 0.0609974
+    }
+  },
+  {
+    "case": "contracts-orders",
+    "arm": "without",
+    "run": 3,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 26,
+    "cost_usd": 0.056174600000000005,
+    "judge_cost_usd": 0.0006579000000000012,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9599,
+      "cache_read_input_tokens": 58247,
+      "output_tokens": 1128,
+      "duration_ms": 18943,
+      "cost_usd": 0.0555167
+    }
+  },
+  {
+    "case": "contracts-orders",
+    "arm": "without",
+    "run": 4,
+    "score": 1,
+    "turns": 5,
+    "seconds": 21,
+    "cost_usd": 0.0597104,
+    "judge_cost_usd": 0.0006513999999999999,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9692,
+      "cache_read_input_tokens": 58250,
+      "output_tokens": 1445,
+      "duration_ms": 14519,
+      "cost_usd": 0.059059
+    }
+  },
+  {
+    "case": "contracts-page_events",
+    "arm": "with",
+    "run": 0,
+    "score": 1,
+    "turns": 11,
+    "seconds": 36,
+    "cost_usd": 0.11135350000000001,
+    "judge_cost_usd": 0.0010143999999999986,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 17193,
+      "cache_read_input_tokens": 119191,
+      "output_tokens": 2962,
+      "duration_ms": 26230,
+      "cost_usd": 0.11033910000000001
+    }
+  },
+  {
+    "case": "contracts-page_events",
+    "arm": "with",
+    "run": 1,
+    "score": 1,
+    "turns": 8,
+    "seconds": 31,
+    "cost_usd": 0.1007756,
+    "judge_cost_usd": 0.0008531999999999984,
+    "tokens": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 16209,
+      "cache_read_input_tokens": 92924,
+      "output_tokens": 2577,
+      "duration_ms": 23136,
+      "cost_usd": 0.09992240000000001
+    }
+  },
+  {
+    "case": "contracts-page_events",
+    "arm": "with",
+    "run": 2,
+    "score": 1,
+    "turns": 11,
+    "seconds": 35,
+    "cost_usd": 0.1102266,
+    "judge_cost_usd": 0.0009296000000000026,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 16954,
+      "cache_read_input_tokens": 118830,
+      "output_tokens": 2957,
+      "duration_ms": 25707,
+      "cost_usd": 0.10929699999999999
+    }
+  },
+  {
+    "case": "contracts-page_events",
+    "arm": "with",
+    "run": 3,
+    "score": 1,
+    "turns": 10,
+    "seconds": 30,
+    "cost_usd": 0.1042508,
+    "judge_cost_usd": 0.0008316000000000018,
+    "tokens": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 16700,
+      "cache_read_input_tokens": 94152,
+      "output_tokens": 2718,
+      "duration_ms": 22173,
+      "cost_usd": 0.1034192
+    }
+  },
+  {
+    "case": "contracts-page_events",
+    "arm": "with",
+    "run": 4,
+    "score": 1,
+    "turns": 11,
+    "seconds": 37,
+    "cost_usd": 0.10947739999999999,
+    "judge_cost_usd": 0.0008768000000000005,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 16892,
+      "cache_read_input_tokens": 118546,
+      "output_tokens": 2915,
+      "duration_ms": 27884,
+      "cost_usd": 0.10860059999999999
+    }
+  },
+  {
+    "case": "contracts-page_events",
+    "arm": "without",
+    "run": 0,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 13,
+    "cost_usd": 0.055377100000000005,
+    "judge_cost_usd": 0.00016290000000000054,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9524,
+      "cache_read_input_tokens": 58222,
+      "output_tokens": 1128,
+      "duration_ms": 9814,
+      "cost_usd": 0.055214200000000005
+    }
+  },
+  {
+    "case": "contracts-page_events",
+    "arm": "without",
+    "run": 1,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 15,
+    "cost_usd": 0.055182300000000004,
+    "judge_cost_usd": 0.00020649999999999835,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9462,
+      "cache_read_input_tokens": 58018,
+      "output_tokens": 1131,
+      "duration_ms": 11100,
+      "cost_usd": 0.054975800000000005
+    }
+  },
+  {
+    "case": "contracts-page_events",
+    "arm": "without",
+    "run": 2,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 16,
+    "cost_usd": 0.054635500000000004,
+    "judge_cost_usd": 0.0003472999999999983,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9495,
+      "cache_read_input_tokens": 58222,
+      "output_tokens": 1047,
+      "duration_ms": 11297,
+      "cost_usd": 0.0542882
+    }
+  },
+  {
+    "case": "contracts-page_events",
+    "arm": "without",
+    "run": 3,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 22,
+    "cost_usd": 0.0572713,
+    "judge_cost_usd": 0.0002979000000000037,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9656,
+      "cache_read_input_tokens": 58234,
+      "output_tokens": 1251,
+      "duration_ms": 18263,
+      "cost_usd": 0.056973399999999993
+    }
+  },
+  {
+    "case": "contracts-page_events",
+    "arm": "without",
+    "run": 4,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 16,
+    "cost_usd": 0.054808300000000004,
+    "judge_cost_usd": 0.0003045999999999986,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9456,
+      "cache_read_input_tokens": 58237,
+      "output_tokens": 1084,
+      "duration_ms": 11242,
+      "cost_usd": 0.0545037
+    }
+  },
+  {
+    "case": "contracts-payments",
+    "arm": "with",
+    "run": 0,
+    "score": 1,
+    "turns": 11,
+    "seconds": 44,
+    "cost_usd": 0.10856810000000001,
+    "judge_cost_usd": 0.0009280999999999977,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 16992,
+      "cache_read_input_tokens": 117840,
+      "output_tokens": 2786,
+      "duration_ms": 35156,
+      "cost_usd": 0.10764000000000001
+    }
+  },
+  {
+    "case": "contracts-payments",
+    "arm": "with",
+    "run": 1,
+    "score": 1,
+    "turns": 8,
+    "seconds": 28,
+    "cost_usd": 0.0976354,
+    "judge_cost_usd": 0.0005585,
+    "tokens": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 16101,
+      "cache_read_input_tokens": 93089,
+      "output_tokens": 2334,
+      "duration_ms": 22022,
+      "cost_usd": 0.0970769
+    }
+  },
+  {
+    "case": "contracts-payments",
+    "arm": "with",
+    "run": 2,
+    "score": 1,
+    "turns": 11,
+    "seconds": 36,
+    "cost_usd": 0.1126994,
+    "judge_cost_usd": 0.0007806999999999988,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 17322,
+      "cache_read_input_tokens": 116827,
+      "output_tokens": 3092,
+      "duration_ms": 28180,
+      "cost_usd": 0.11191870000000001
+    }
+  },
+  {
+    "case": "contracts-payments",
+    "arm": "with",
+    "run": 3,
+    "score": 1,
+    "turns": 11,
+    "seconds": 41,
+    "cost_usd": 0.106734,
+    "judge_cost_usd": 0.0010278000000000023,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 16698,
+      "cache_read_input_tokens": 117962,
+      "output_tokens": 2709,
+      "duration_ms": 31482,
+      "cost_usd": 0.10570619999999999
+    }
+  },
+  {
+    "case": "contracts-payments",
+    "arm": "with",
+    "run": 4,
+    "score": 1,
+    "turns": 10,
+    "seconds": 28,
+    "cost_usd": 0.0990307,
+    "judge_cost_usd": 0.0003776999999999982,
+    "tokens": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 16385,
+      "cache_read_input_tokens": 93490,
+      "output_tokens": 2374,
+      "duration_ms": 23266,
+      "cost_usd": 0.098653
+    }
+  },
+  {
+    "case": "contracts-payments",
+    "arm": "without",
+    "run": 0,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 19,
+    "cost_usd": 0.0567458,
+    "judge_cost_usd": 0.00047589999999999785,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9465,
+      "cache_read_input_tokens": 58039,
+      "output_tokens": 1259,
+      "duration_ms": 13547,
+      "cost_usd": 0.0562699
+    }
+  },
+  {
+    "case": "contracts-payments",
+    "arm": "without",
+    "run": 1,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 28,
+    "cost_usd": 0.058037000000000005,
+    "judge_cost_usd": 0.0004160999999999991,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9650,
+      "cache_read_input_tokens": 58249,
+      "output_tokens": 1318,
+      "duration_ms": 23441,
+      "cost_usd": 0.0576209
+    }
+  },
+  {
+    "case": "contracts-payments",
+    "arm": "without",
+    "run": 2,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 17,
+    "cost_usd": 0.055774599999999994,
+    "judge_cost_usd": 0.000471700000000002,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9533,
+      "cache_read_input_tokens": 58249,
+      "output_tokens": 1133,
+      "duration_ms": 11043,
+      "cost_usd": 0.055302899999999995
+    }
+  },
+  {
+    "case": "contracts-payments",
+    "arm": "without",
+    "run": 3,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 26,
+    "cost_usd": 0.0580532,
+    "judge_cost_usd": 0.0004820999999999992,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9628,
+      "cache_read_input_tokens": 58231,
+      "output_tokens": 1322,
+      "duration_ms": 19681,
+      "cost_usd": 0.0575711
+    }
+  },
+  {
+    "case": "contracts-payments",
+    "arm": "without",
+    "run": 4,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 23,
+    "cost_usd": 0.056551699999999996,
+    "judge_cost_usd": 0.000963000000000002,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9505,
+      "cache_read_input_tokens": 58027,
+      "output_tokens": 1175,
+      "duration_ms": 13257,
+      "cost_usd": 0.0555887
+    }
+  },
+  {
+    "case": "contracts-products",
+    "arm": "with",
+    "run": 0,
+    "score": 0.5,
+    "turns": 11,
+    "seconds": 34,
+    "cost_usd": 0.11598060000000002,
+    "judge_cost_usd": 0.0007627000000000016,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 17329,
+      "cache_read_input_tokens": 118839,
+      "output_tokens": 3399,
+      "duration_ms": 27157,
+      "cost_usd": 0.11521790000000001
+    }
+  },
+  {
+    "case": "contracts-products",
+    "arm": "with",
+    "run": 1,
+    "score": 1,
+    "turns": 11,
+    "seconds": 48,
+    "cost_usd": 0.1240689,
+    "judge_cost_usd": 0.000825300000000001,
+    "tokens": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 17913,
+      "cache_read_input_tokens": 143696,
+      "output_tokens": 3719,
+      "duration_ms": 39882,
+      "cost_usd": 0.1232436
+    }
+  },
+  {
+    "case": "contracts-products",
+    "arm": "with",
+    "run": 2,
+    "score": 1,
+    "turns": 8,
+    "seconds": 25,
+    "cost_usd": 0.09507170000000001,
+    "judge_cost_usd": 0.0004281000000000007,
+    "tokens": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 15950,
+      "cache_read_input_tokens": 92996,
+      "output_tokens": 2152,
+      "duration_ms": 20080,
+      "cost_usd": 0.09464360000000001
+    }
+  },
+  {
+    "case": "contracts-products",
+    "arm": "with",
+    "run": 3,
+    "score": 0.5,
+    "turns": 11,
+    "seconds": 38,
+    "cost_usd": 0.10587709999999999,
+    "judge_cost_usd": 0.0009139999999999981,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 16777,
+      "cache_read_input_tokens": 118171,
+      "output_tokens": 2601,
+      "duration_ms": 29975,
+      "cost_usd": 0.10496309999999999
+    }
+  },
+  {
+    "case": "contracts-products",
+    "arm": "with",
+    "run": 4,
+    "score": 0.5,
+    "turns": 9,
+    "seconds": 31,
+    "cost_usd": 0.10216540000000002,
+    "judge_cost_usd": 0.0009649999999999971,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 16307,
+      "cache_read_input_tokens": 113944,
+      "output_tokens": 2455,
+      "duration_ms": 22016,
+      "cost_usd": 0.10120040000000002
+    }
+  },
+  {
+    "case": "contracts-products",
+    "arm": "without",
+    "run": 0,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 16,
+    "cost_usd": 0.05349229999999999,
+    "judge_cost_usd": 0.0005185999999999975,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9333,
+      "cache_read_input_tokens": 58157,
+      "output_tokens": 981,
+      "duration_ms": 9464,
+      "cost_usd": 0.0529737
+    }
+  },
+  {
+    "case": "contracts-products",
+    "arm": "without",
+    "run": 1,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 18,
+    "cost_usd": 0.053004100000000005,
+    "judge_cost_usd": 0.0004998000000000016,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9323,
+      "cache_read_input_tokens": 58163,
+      "output_tokens": 938,
+      "duration_ms": 12527,
+      "cost_usd": 0.052504300000000004
+    }
+  },
+  {
+    "case": "contracts-products",
+    "arm": "without",
+    "run": 2,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 17,
+    "cost_usd": 0.0536105,
+    "judge_cost_usd": 0.0005370999999999987,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9393,
+      "cache_read_input_tokens": 58154,
+      "output_tokens": 967,
+      "duration_ms": 10581,
+      "cost_usd": 0.0530734
+    }
+  },
+  {
+    "case": "contracts-products",
+    "arm": "without",
+    "run": 3,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 20,
+    "cost_usd": 0.053861700000000005,
+    "judge_cost_usd": 0.0005577000000000082,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9388,
+      "cache_read_input_tokens": 58160,
+      "output_tokens": 992,
+      "duration_ms": 12971,
+      "cost_usd": 0.053304
+    }
+  },
+  {
+    "case": "contracts-products",
+    "arm": "without",
+    "run": 4,
+    "score": 0.5,
+    "turns": 5,
+    "seconds": 22,
+    "cost_usd": 0.0532469,
+    "judge_cost_usd": 0.0005554000000000045,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9390,
+      "cache_read_input_tokens": 58355,
+      "output_tokens": 928,
+      "duration_ms": 15826,
+      "cost_usd": 0.052691499999999995
+    }
+  }
+]

@@ -1,0 +1,182 @@
+[
+  {
+    "case": "plan-review-p07",
+    "arm": "with",
+    "run": 0,
+    "score": 0.3333333333333333,
+    "turns": 9,
+    "seconds": 63,
+    "cost_usd": 0.10593799999999999,
+    "judge_cost_usd": 0.0026658999999999997,
+    "tokens": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 13431,
+      "cache_read_input_tokens": 69641,
+      "output_tokens": 4256,
+      "duration_ms": 41535,
+      "cost_usd": 0.10327209999999999
+    }
+  },
+  {
+    "case": "plan-review-p07",
+    "arm": "with",
+    "run": 1,
+    "score": 0.3333333333333333,
+    "turns": 8,
+    "seconds": 56,
+    "cost_usd": 0.0984026,
+    "judge_cost_usd": 0.0022131,
+    "tokens": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 12844,
+      "cache_read_input_tokens": 68795,
+      "output_tokens": 3791,
+      "duration_ms": 37664,
+      "cost_usd": 0.09618950000000001
+    }
+  },
+  {
+    "case": "plan-review-p07",
+    "arm": "with",
+    "run": 2,
+    "score": 0.6666666666666666,
+    "turns": 8,
+    "seconds": 59,
+    "cost_usd": 0.1026815,
+    "judge_cost_usd": 0.0024755000000000003,
+    "tokens": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 13125,
+      "cache_read_input_tokens": 67220,
+      "output_tokens": 4096,
+      "duration_ms": 38966,
+      "cost_usd": 0.10020599999999999
+    }
+  },
+  {
+    "case": "plan-review-p07",
+    "arm": "with",
+    "run": 3,
+    "score": 0.6666666666666666,
+    "turns": 8,
+    "seconds": 63,
+    "cost_usd": 0.104876,
+    "judge_cost_usd": 0.0028328999999999993,
+    "tokens": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 13314,
+      "cache_read_input_tokens": 69031,
+      "output_tokens": 4186,
+      "duration_ms": 36609,
+      "cost_usd": 0.1020431
+    }
+  },
+  {
+    "case": "plan-review-p07",
+    "arm": "with",
+    "run": 4,
+    "score": 0.3333333333333333,
+    "turns": 7,
+    "seconds": 50,
+    "cost_usd": 0.09540030000000001,
+    "judge_cost_usd": 0.0023770000000000006,
+    "tokens": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 12695,
+      "cache_read_input_tokens": 52533,
+      "output_tokens": 3697,
+      "duration_ms": 31035,
+      "cost_usd": 0.0930233
+    }
+  },
+  {
+    "case": "plan-review-p07",
+    "arm": "without",
+    "run": 0,
+    "score": 0.6666666666666666,
+    "turns": 2,
+    "seconds": 47,
+    "cost_usd": 0.0479595,
+    "judge_cost_usd": 0.003634000000000002,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5910,
+      "cache_read_input_tokens": 17975,
+      "output_tokens": 1888,
+      "duration_ms": 18475,
+      "cost_usd": 0.044325500000000004
+    }
+  },
+  {
+    "case": "plan-review-p07",
+    "arm": "without",
+    "run": 1,
+    "score": 0.6666666666666666,
+    "turns": 2,
+    "seconds": 38,
+    "cost_usd": 0.0491748,
+    "judge_cost_usd": 0.0029092999999999966,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5910,
+      "cache_read_input_tokens": 17975,
+      "output_tokens": 2082,
+      "duration_ms": 18251,
+      "cost_usd": 0.0462655
+    }
+  },
+  {
+    "case": "plan-review-p07",
+    "arm": "without",
+    "run": 2,
+    "score": 0.3333333333333333,
+    "turns": 2,
+    "seconds": 46,
+    "cost_usd": 0.0495089,
+    "judge_cost_usd": 0.0032896999999999996,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5906,
+      "cache_read_input_tokens": 17972,
+      "output_tokens": 2079,
+      "duration_ms": 20766,
+      "cost_usd": 0.0462192
+    }
+  },
+  {
+    "case": "plan-review-p07",
+    "arm": "without",
+    "run": 3,
+    "score": 0.6666666666666666,
+    "turns": 2,
+    "seconds": 47,
+    "cost_usd": 0.0486076,
+    "judge_cost_usd": 0.003952099999999997,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5910,
+      "cache_read_input_tokens": 17975,
+      "output_tokens": 1921,
+      "duration_ms": 16943,
+      "cost_usd": 0.0446555
+    }
+  },
+  {
+    "case": "plan-review-p07",
+    "arm": "without",
+    "run": 4,
+    "score": 0.3333333333333333,
+    "turns": 2,
+    "seconds": 34,
+    "cost_usd": 0.0415347,
+    "judge_cost_usd": 0.0026791999999999996,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5910,
+      "cache_read_input_tokens": 17975,
+      "output_tokens": 1341,
+      "duration_ms": 13937,
+      "cost_usd": 0.0388555
+    }
+  }
+]

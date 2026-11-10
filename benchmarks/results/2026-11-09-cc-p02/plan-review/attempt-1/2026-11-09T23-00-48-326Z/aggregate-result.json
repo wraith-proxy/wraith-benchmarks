@@ -1,0 +1,282 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.316",
+  "startedAt": "2026-11-09T23:00:48.326Z",
+  "durationSeconds": 118,
+  "costUsd": 0.20288629999999996,
+  "partial": false,
+  "suite": {
+    "root": "/work",
+    "ablation": "with-without",
+    "modelOverride": "claude-sonnet-5-5",
+    "judgeModel": "claude-haiku-5-5",
+    "caseFilter": "plan-review-p02",
+    "threshold": 1,
+    "concurrency": 1,
+    "plugins": [
+      {
+        "name": "wraith",
+        "version": "0.8.3",
+        "path": "/work"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "plan-review-p02",
+      "dir": "bench-plan-review/p02",
+      "source": "mixed",
+      "promptMarkdown": "The plan for the web sessions model is at docs/wraith/2026-10-12-web-sessions/plan.md. Review it before we build it.",
+      "runsPerCase": 5,
+      "timeoutSeconds": 600,
+      "maxTurns": 12,
+      "graders": [
+        {
+          "name": "1-dedup",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category dedup. Planted defect: the source delivers at least once (tracker beacons, resent on network failure) and the Load section uses a plain INSERT with no MERGE or dedup on session_id, so redelivered rows are duplicated. Location: the Load section, INSERT INTO ... SELECT of `fct_web_sessions`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category dedup. Planted defect: the source delivers at least once (tracker beacons, resent on network failure) and the Load section uses a plain INSERT with no MERGE or dedup on session_id, so redelivered rows are duplicated. Location: the Load section, INSERT INTO ... SELECT of `fct_web_sessions`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "2-scan",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category scan. Planted defect: raw_web.page_views (about 2.5 TB) is created without PARTITION BY or CLUSTER BY and the query filters on DATE(viewed_at), so every run scans the whole table. Location: the Source section DDL and query of `fct_web_sessions`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category scan. Planted defect: raw_web.page_views (about 2.5 TB) is created without PARTITION BY or CLUSTER BY and the query filters on DATE(viewed_at), so every run scans the whole table. Location: the Source section DDL and query of `fct_web_sessions`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "3-pii",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category pii. Planted defect: columns visitor_email, ip_address are personal data and the dataset public_web_metrics is readable by allAuthenticatedUsers. Location: the Access section of `fct_web_sessions`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category pii. Planted defect: columns visitor_email, ip_address are personal data and the dataset public_web_metrics is readable by allAuthenticatedUsers. Location: the Access section of `fct_web_sessions`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.10061779999999998,
+            "judgeCostUsd": 0.0025889999999999993,
+            "durationSeconds": 58,
+            "startedAt": "2026-11-09T23:00:48.356Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-cQopdA/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-09)` section to `plan.md`. **Verdict: NOT READY**, because of four blockers. I didn't change the rest of the plan.\n\n**Blockers**\n1. **Access:** `public_web_metrics` is readable by `allAuthenticatedUsers`, which means any Google account. It exposes `visitor_email` and `ip_address`, and the plan classifies the data as `internal`. Remove the public grant and classify those two columns as personal data. Better still, drop them from the dataset.\n2. **Idempotency:** the load is a plain `INSERT`, so rerunning a `ds` duplicates every row for that day. Use a `MERGE` or a partition overwrite instead.\n3. **Duplicates:** beacons are resent on network failure, and there is no event key or dedupe step. `SUM(amount)` will double count.\n4. **Consumer:** the plan doesn't name who uses this or what they decide with it.\n\n**Should-fix**\n- **Key and grain:** the contract key is `session_id` alone, but the grain is per session per `ds`. The key should be (`ds`, `session_id`). The source filter uses `DATE(viewed_at)` while the model filters on `ds`, and the plan doesn't say which meaning of `ds` applies.\n- **Cost:** there is no partitioning, clustering or partition filter, so a run could scan the full 2.5 TB. The dev cap is 10 GB. The plan doesn't say how many runs happen per day.\n- **Contract:** the contract is just four fields, with no schema or quality rules, and no file is planned under `contracts/`.\n- **Late data and tests:** nothing covers late-arriving rows. There are no tests and no check on the 07:00 UTC SLA.\n- **Rollback:** the fixed snapshot name collides on a rerun, and a row count won't catch double counting.\n- **Downstream and columns:** no downstream consumers are listed. The Model and Access sections disagree on the column list.\n\nI also added two nits, on the `ds` snapshot wording and what `amount` means.\n\n**Not done**\n- **Dry-run:** I didn't run one because the source table isn't in the dev project. The cost finding uses the plan's 2.5 TB figure.\n- **Existing model (Step 0):** nothing in the repo mentions `fct_web_sessions`, `page_views` or `public_web_metrics`, so I found no existing model that already serves this.\n- **Vendor second pass:** I didn't run it and didn't check whether those skills are installed. They set an attribution tag that reports usage to Google, so that's your call.\n\nDo you want me to draft the plan edits for the blockers?"
+              },
+              {
+                "name": "2-scan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-09)` section to `plan.md`. **Verdict: NOT READY**, because of four blockers. I didn't change the rest of the plan.\n\n**Blockers**\n1. **Access:** `public_web_metrics` is readable by `allAuthenticatedUsers`, which means any Google account. It exposes `visitor_email` and `ip_address`, and the plan classifies the data as `internal`. Remove the public grant and classify those two columns as personal data. Better still, drop them from the dataset.\n2. **Idempotency:** the load is a plain `INSERT`, so rerunning a `ds` duplicates every row for that day. Use a `MERGE` or a partition overwrite instead.\n3. **Duplicates:** beacons are resent on network failure, and there is no event key or dedupe step. `SUM(amount)` will double count.\n4. **Consumer:** the plan doesn't name who uses this or what they decide with it.\n\n**Should-fix**\n- **Key and grain:** the contract key is `session_id` alone, but the grain is per session per `ds`. The key should be (`ds`, `session_id`). The source filter uses `DATE(viewed_at)` while the model filters on `ds`, and the plan doesn't say which meaning of `ds` applies.\n- **Cost:** there is no partitioning, clustering or partition filter, so a run could scan the full 2.5 TB. The dev cap is 10 GB. The plan doesn't say how many runs happen per day.\n- **Contract:** the contract is just four fields, with no schema or quality rules, and no file is planned under `contracts/`.\n- **Late data and tests:** nothing covers late-arriving rows. There are no tests and no check on the 07:00 UTC SLA.\n- **Rollback:** the fixed snapshot name collides on a rerun, and a row count won't catch double counting.\n- **Downstream and columns:** no downstream consumers are listed. The Model and Access sections disagree on the column list.\n\nI also added two nits, on the `ds` snapshot wording and what `amount` means.\n\n**Not done**\n- **Dry-run:** I didn't run one because the source table isn't in the dev project. The cost finding uses the plan's 2.5 TB figure.\n- **Existing model (Step 0):** nothing in the repo mentions `fct_web_sessions`, `page_views` or `public_web_metrics`, so I found no existing model that already serves this.\n- **Vendor second pass:** I didn't run it and didn't check whether those skills are installed. They set an attribution tag that reports usage to Google, so that's your call.\n\nDo you want me to draft the plan edits for the blockers?"
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-09)` section to `plan.md`. **Verdict: NOT READY**, because of four blockers. I didn't change the rest of the plan.\n\n**Blockers**\n1. **Access:** `public_web_metrics` is readable by `allAuthenticatedUsers`, which means any Google account. It exposes `visitor_email` and `ip_address`, and the plan classifies the data as `internal`. Remove the public grant and classify those two columns as personal data. Better still, drop them from the dataset.\n2. **Idempotency:** the load is a plain `INSERT`, so rerunning a `ds` duplicates every row for that day. Use a `MERGE` or a partition overwrite instead.\n3. **Duplicates:** beacons are resent on network failure, and there is no event key or dedupe step. `SUM(amount)` will double count.\n4. **Consumer:** the plan doesn't name who uses this or what they decide with it.\n\n**Should-fix**\n- **Key and grain:** the contract key is `session_id` alone, but the grain is per session per `ds`. The key should be (`ds`, `session_id`). The source filter uses `DATE(viewed_at)` while the model filters on `ds`, and the plan doesn't say which meaning of `ds` applies.\n- **Cost:** there is no partitioning, clustering or partition filter, so a run could scan the full 2.5 TB. The dev cap is 10 GB. The plan doesn't say how many runs happen per day.\n- **Contract:** the contract is just four fields, with no schema or quality rules, and no file is planned under `contracts/`.\n- **Late data and tests:** nothing covers late-arriving rows. There are no tests and no check on the 07:00 UTC SLA.\n- **Rollback:** the fixed snapshot name collides on a rerun, and a row count won't catch double counting.\n- **Downstream and columns:** no downstream consumers are listed. The Model and Access sections disagree on the column list.\n\nI also added two nits, on the `ds` snapshot wording and what `amount` means.\n\n**Not done**\n- **Dry-run:** I didn't run one because the source table isn't in the dev project. The cost finding uses the plan's 2.5 TB figure.\n- **Existing model (Step 0):** nothing in the repo mentions `fct_web_sessions`, `page_views` or `public_web_metrics`, so I found no existing model that already serves this.\n- **Vendor second pass:** I didn't run it and didn't check whether those skills are installed. They set an attribution tag that reports usage to Google, so that's your call.\n\nDo you want me to draft the plan edits for the blockers?"
+              }
+            ]
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.1022685,
+            "judgeCostUsd": 0.0009117000000000001,
+            "durationSeconds": 52,
+            "startedAt": "2026-11-09T23:01:45.963Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-OvMhQG/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your 5-hour limit · resets 2:50am (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "2-scan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your 5-hour limit · resets 2:50am (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "3-pii",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your 5-hour limit · resets 2:50am (UTC)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-09T23:02:37.534Z",
+            "error": "exit 1: You've hit your 5-hour limit · resets 2:50am (UTC)",
+            "tracePath": "/tmp/claude-eval-MLyuRC/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-09T23:02:38.641Z",
+            "error": "exit 1: You've hit your 5-hour limit · resets 2:50am (UTC)",
+            "tracePath": "/tmp/claude-eval-WuZdIq/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-09T23:02:39.774Z",
+            "error": "exit 1: You've hit your 5-hour limit · resets 2:50am (UTC)",
+            "tracePath": "/tmp/claude-eval-rkbafW/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          }
+        ],
+        "without": [
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-09T23:02:40.879Z",
+            "error": "exit 1: You've hit your 5-hour limit · resets 2:50am (UTC)",
+            "tracePath": "/tmp/claude-eval-jOEryg/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-09T23:02:41.929Z",
+            "error": "exit 1: You've hit your 5-hour limit · resets 2:50am (UTC)",
+            "tracePath": "/tmp/claude-eval-SfXXop/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-09T23:02:42.981Z",
+            "error": "exit 1: You've hit your 5-hour limit · resets 2:50am (UTC)",
+            "tracePath": "/tmp/claude-eval-b1mHUc/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-09T23:02:44.073Z",
+            "error": "exit 1: You've hit your 5-hour limit · resets 2:50am (UTC)",
+            "tracePath": "/tmp/claude-eval-hDNFOL/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-09T23:02:45.186Z",
+            "error": "exit 1: You've hit your 5-hour limit · resets 2:50am (UTC)",
+            "tracePath": "/tmp/claude-eval-neWKgs/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.2,
+        "passRate": 0.2,
+        "passRateWithout": 0
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 0,
+    "overallScore": 0.2,
+    "overallPassRate": 0.2
+  }
+}

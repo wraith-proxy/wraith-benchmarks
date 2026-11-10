@@ -1,0 +1,647 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.316",
+  "startedAt": "2026-11-10T05:18:31.984Z",
+  "durationSeconds": 339,
+  "costUsd": 0.722868,
+  "partial": false,
+  "suite": {
+    "root": "/work",
+    "ablation": "with-without",
+    "modelOverride": "claude-sonnet-5-5",
+    "judgeModel": "claude-haiku-5-5",
+    "caseFilter": "plan-review-p04",
+    "threshold": 1,
+    "concurrency": 1,
+    "plugins": [
+      {
+        "name": "wraith",
+        "version": "0.8.3",
+        "path": "/work"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "plan-review-p04",
+      "dir": "bench-plan-review/p04",
+      "source": "mixed",
+      "promptMarkdown": "The plan for the newsletter segments table is at docs/wraith/2026-10-12-newsletter-segments/plan.md. Review it before we build it.",
+      "runsPerCase": 5,
+      "timeoutSeconds": 600,
+      "maxTurns": 12,
+      "graders": [
+        {
+          "name": "1-pii",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category pii. Planted defect: columns email, full_name, date_of_birth are personal data and the dataset public_marketing is readable by allUsers. Location: the Access section of `dim_newsletter_segments`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category pii. Planted defect: columns email, full_name, date_of_birth are personal data and the dataset public_marketing is readable by allUsers. Location: the Access section of `dim_newsletter_segments`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "2-rollback",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category rollback. Planted defect: the Rollout changes the live table (DROP TABLE before CREATE) with no snapshot, clone or restore step, so there is no way back. Location: the Rollout section (DROP TABLE before CREATE) of `dim_newsletter_segments`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category rollback. Planted defect: the Rollout changes the live table (DROP TABLE before CREATE) with no snapshot, clone or restore step, so there is no way back. Location: the Rollout section (DROP TABLE before CREATE) of `dim_newsletter_segments`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "3-contract",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category contract. Planted defect: in the Contract section primary_key is missing, although AGENTS.md requires owner, primary_key, classification and freshness_sla. Location: the Contract section of `dim_newsletter_segments`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category contract. Planted defect: in the Contract section primary_key is missing, although AGENTS.md requires owner, primary_key, classification and freshness_sla. Location: the Contract section of `dim_newsletter_segments`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.0998975,
+            "judgeCostUsd": 0.0007925,
+            "durationSeconds": 40,
+            "startedAt": "2026-11-10T05:18:32.016Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-RRiz2j/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I appended a data review to the plan, and the verdict is **NOT READY**. There are five blockers.\n\n**Blockers**\n- **Public personal data:** The plan puts `email`, `full_name` and `date_of_birth` in `public_marketing`, readable by `allUsers`. The classification is also `internal`, and there is no erasure path.\n- **Destructive rollout:** `DROP TABLE` followed by `CREATE TABLE AS SELECT` has no rollback, and a failed create leaves no table.\n- **Model mismatch:** The model has no segment column, so it doesn't produce segments. The access list also names columns that the source and the model don't have.\n- **Double counting:** `SUM(amount)` over a re-delivered file doubles the amount, and `updated_at` is never used to dedupe.\n\n**Should-fix**\n- There is no contract file, and `primary_key` is missing from the plan's Contract section.\n- The target table has no partitioning, and the MERGE on `ds` won't prune target partitions.\n- The MERGE never removes subscribers that disappear from a re-delivered `ds`.\n- There are no tests, no stated source arrival time for the 07:00 UTC freshness SLA, and no late-arriving data handling.\n- The plan names no consumer and no downstream models.\n\n**Not done**\n- **No dry-run:** I didn't run one because the plan gives no per-`ds` size. The cost estimate is flagged as missing rather than computed.\n- **Existing model check:** I found no existing model or table for this in the repo.\n- **Vendor skills:** I didn't run the vendor second pass (the Google lineage and optimization skills). They set an attribution tag that reports usage to Google. Say if you want them run.\n\nI didn't change anything else in the plan. The author needs to resolve the blockers before anyone builds it."
+              },
+              {
+                "name": "2-rollback",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I appended a data review to the plan, and the verdict is **NOT READY**. There are five blockers.\n\n**Blockers**\n- **Public personal data:** The plan puts `email`, `full_name` and `date_of_birth` in `public_marketing`, readable by `allUsers`. The classification is also `internal`, and there is no erasure path.\n- **Destructive rollout:** `DROP TABLE` followed by `CREATE TABLE AS SELECT` has no rollback, and a failed create leaves no table.\n- **Model mismatch:** The model has no segment column, so it doesn't produce segments. The access list also names columns that the source and the model don't have.\n- **Double counting:** `SUM(amount)` over a re-delivered file doubles the amount, and `updated_at` is never used to dedupe.\n\n**Should-fix**\n- There is no contract file, and `primary_key` is missing from the plan's Contract section.\n- The target table has no partitioning, and the MERGE on `ds` won't prune target partitions.\n- The MERGE never removes subscribers that disappear from a re-delivered `ds`.\n- There are no tests, no stated source arrival time for the 07:00 UTC freshness SLA, and no late-arriving data handling.\n- The plan names no consumer and no downstream models.\n\n**Not done**\n- **No dry-run:** I didn't run one because the plan gives no per-`ds` size. The cost estimate is flagged as missing rather than computed.\n- **Existing model check:** I found no existing model or table for this in the repo.\n- **Vendor skills:** I didn't run the vendor second pass (the Google lineage and optimization skills). They set an attribution tag that reports usage to Google. Say if you want them run.\n\nI didn't change anything else in the plan. The author needs to resolve the blockers before anyone builds it."
+              },
+              {
+                "name": "3-contract",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "I appended a data review to the plan, and the verdict is **NOT READY**. There are five blockers.\n\n**Blockers**\n- **Public personal data:** The plan puts `email`, `full_name` and `date_of_birth` in `public_marketing`, readable by `allUsers`. The classification is also `internal`, and there is no erasure path.\n- **Destructive rollout:** `DROP TABLE` followed by `CREATE TABLE AS SELECT` has no rollback, and a failed create leaves no table.\n- **Model mismatch:** The model has no segment column, so it doesn't produce segments. The access list also names columns that the source and the model don't have.\n- **Double counting:** `SUM(amount)` over a re-delivered file doubles the amount, and `updated_at` is never used to dedupe.\n\n**Should-fix**\n- There is no contract file, and `primary_key` is missing from the plan's Contract section.\n- The target table has no partitioning, and the MERGE on `ds` won't prune target partitions.\n- The MERGE never removes subscribers that disappear from a re-delivered `ds`.\n- There are no tests, no stated source arrival time for the 07:00 UTC freshness SLA, and no late-arriving data handling.\n- The plan names no consumer and no downstream models.\n\n**Not done**\n- **No dry-run:** I didn't run one because the plan gives no per-`ds` size. The cost estimate is flagged as missing rather than computed.\n- **Existing model check:** I found no existing model or table for this in the repo.\n- **Vendor skills:** I didn't run the vendor second pass (the Google lineage and optimization skills). They set an attribution tag that reports usage to Google. Say if you want them run.\n\nI didn't change anything else in the plan. The author needs to resolve the blockers before anyone builds it."
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 0.09844729999999999,
+            "judgeCostUsd": 0.0011150999999999997,
+            "durationSeconds": 42,
+            "startedAt": "2026-11-10T05:19:11.813Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-wu9VYM/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. The verdict is **NOT READY**, with three blockers.\n\n**Blockers**\n1. **Personal data is public.** `public_marketing` is readable by `allUsers`, and the columns include `email`, `full_name` and `date_of_birth`. The contract also classifies the table as `internal`. Remove `allUsers`, classify the table as personal data, tag the PII columns, and write a deletion or crypto-shred path.\n2. **The rollout can leave consumers with no table.** It runs `DROP TABLE` and then `CREATE TABLE AS SELECT`, with no backup and no rollback. That also contradicts the incremental MERGE load. Create the table once with DDL and load by `ds`.\n3. **The load isn't safe to rerun.**\n   - The source is appended one file per run, so `SUM(amount)` double-counts re-delivered rows.\n   - The MERGE never deletes subscribers who disappear from a `ds`.\n   - No backfill path is written.\n\n**Should-fix**\n- No consumer or decision is named.\n- The contract has no schema or `primary_key`, which your AGENTS.md requires, and it doesn't say whether the change is additive or breaking.\n- The model outputs three columns, but the Access section lists six.\n- The target table has no partitioning, clustering or `require_partition_filter`. The MERGE has no `d.ds = @ds` filter, so it scans the whole target. There is no cost estimate.\n- There are no tests and no source freshness check.\n- Late-arriving rows are not handled.\n\n**Nits**\n- Downstream consumers aren't listed.\n- The plan doesn't say it uses a `ds` snapshot rather than SCD2.\n\nI found no existing model or table in the repo that already serves this need. I didn't run dry-runs because the plan gives no per-`ds` byte count and the target table doesn't exist yet. I didn't run the vendor second-pass skills either.\n\nI left the rest of the plan untouched, so the author resolves the findings. I can draft the revised plan or the ODCS contract if you want."
+              },
+              {
+                "name": "2-rollback",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. The verdict is **NOT READY**, with three blockers.\n\n**Blockers**\n1. **Personal data is public.** `public_marketing` is readable by `allUsers`, and the columns include `email`, `full_name` and `date_of_birth`. The contract also classifies the table as `internal`. Remove `allUsers`, classify the table as personal data, tag the PII columns, and write a deletion or crypto-shred path.\n2. **The rollout can leave consumers with no table.** It runs `DROP TABLE` and then `CREATE TABLE AS SELECT`, with no backup and no rollback. That also contradicts the incremental MERGE load. Create the table once with DDL and load by `ds`.\n3. **The load isn't safe to rerun.**\n   - The source is appended one file per run, so `SUM(amount)` double-counts re-delivered rows.\n   - The MERGE never deletes subscribers who disappear from a `ds`.\n   - No backfill path is written.\n\n**Should-fix**\n- No consumer or decision is named.\n- The contract has no schema or `primary_key`, which your AGENTS.md requires, and it doesn't say whether the change is additive or breaking.\n- The model outputs three columns, but the Access section lists six.\n- The target table has no partitioning, clustering or `require_partition_filter`. The MERGE has no `d.ds = @ds` filter, so it scans the whole target. There is no cost estimate.\n- There are no tests and no source freshness check.\n- Late-arriving rows are not handled.\n\n**Nits**\n- Downstream consumers aren't listed.\n- The plan doesn't say it uses a `ds` snapshot rather than SCD2.\n\nI found no existing model or table in the repo that already serves this need. I didn't run dry-runs because the plan gives no per-`ds` byte count and the target table doesn't exist yet. I didn't run the vendor second-pass skills either.\n\nI left the rest of the plan untouched, so the author resolves the findings. I can draft the revised plan or the ODCS contract if you want."
+              },
+              {
+                "name": "3-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. The verdict is **NOT READY**, with three blockers.\n\n**Blockers**\n1. **Personal data is public.** `public_marketing` is readable by `allUsers`, and the columns include `email`, `full_name` and `date_of_birth`. The contract also classifies the table as `internal`. Remove `allUsers`, classify the table as personal data, tag the PII columns, and write a deletion or crypto-shred path.\n2. **The rollout can leave consumers with no table.** It runs `DROP TABLE` and then `CREATE TABLE AS SELECT`, with no backup and no rollback. That also contradicts the incremental MERGE load. Create the table once with DDL and load by `ds`.\n3. **The load isn't safe to rerun.**\n   - The source is appended one file per run, so `SUM(amount)` double-counts re-delivered rows.\n   - The MERGE never deletes subscribers who disappear from a `ds`.\n   - No backfill path is written.\n\n**Should-fix**\n- No consumer or decision is named.\n- The contract has no schema or `primary_key`, which your AGENTS.md requires, and it doesn't say whether the change is additive or breaking.\n- The model outputs three columns, but the Access section lists six.\n- The target table has no partitioning, clustering or `require_partition_filter`. The MERGE has no `d.ds = @ds` filter, so it scans the whole target. There is no cost estimate.\n- There are no tests and no source freshness check.\n- Late-arriving rows are not handled.\n\n**Nits**\n- Downstream consumers aren't listed.\n- The plan doesn't say it uses a `ds` snapshot rather than SCD2.\n\nI found no existing model or table in the repo that already serves this need. I didn't run dry-runs because the plan gives no per-`ds` byte count and the target table doesn't exist yet. I didn't run the vendor second-pass skills either.\n\nI left the rest of the plan untouched, so the author resolves the findings. I can draft the revised plan or the ODCS contract if you want."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.1018168,
+            "judgeCostUsd": 0.0011076000000000003,
+            "durationSeconds": 42,
+            "startedAt": "2026-11-10T05:19:53.921Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-CJrvy0/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to `plan.md`. **The verdict is NOT READY**, with four blockers.\n\nI didn't change the rest of the plan. I also didn't run `bq show` or a dry run, because the source table isn't reachable from here. The cost finding is reasoned from the plan, not measured. Nothing in the repo already covers newsletter segments, so the review didn't stop at the \"does this already exist\" check.\n\n**Blockers**\n- **Personal data (item 7):** `public_marketing` is readable by `allUsers` and includes `email`, `full_name` and `date_of_birth`, while the contract says `classification: internal`. Remove the public access, classify those columns as personal data, and drop `date_of_birth` unless segmentation really needs it.\n- **Rollback (item 10):** Rollout starts with `DROP TABLE` and has no backup, no dev run and no rollback path. Build in `example-project-dev` first and write the rollback.\n- **Rerun safety (item 5):** A re-delivered file for the same `ds` would double-count in `SUM(amount)`. The MERGE has no `WHEN NOT MATCHED BY SOURCE` branch, so subscribers that vanish on a rerun stay in the table. No backfill path is written. Dedupe the source per `(ds, subscriber_id)` and replace the MERGE with a `ds` partition overwrite.\n- **Contract (item 2):** `primary_key` is missing, though your `AGENTS.md` requires it. There's no ODCS file under `contracts/`, and the change isn't classified as additive or breaking.\n\n**Should fix**\n- **Columns don't match:** The model selects `ds`, `subscriber_id` and `amount`, but Access lists `email`, `full_name` and `date_of_birth`. The source DDL has none of those three. There's also no segment logic, so the table name doesn't match what it holds.\n- **Target table:** It has no partitioning, clustering or `require_partition_filter`, so the MERGE scans the whole target every run.\n- **Missing sections:** The plan names no consumer or decision, lists no tests or downstream consumers, and doesn't handle late-arriving rows. `updated_at` is selected but never used.\n\nI also skipped the optional vendor second pass (`bigquery-optimization`, `datalineage-bigquery-asset-impact-analysis`). Running it would set an attribution tag that reports usage to Google, so say if you want it.\n\nOnce you've revised the plan I can re-review it."
+              },
+              {
+                "name": "2-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to `plan.md`. **The verdict is NOT READY**, with four blockers.\n\nI didn't change the rest of the plan. I also didn't run `bq show` or a dry run, because the source table isn't reachable from here. The cost finding is reasoned from the plan, not measured. Nothing in the repo already covers newsletter segments, so the review didn't stop at the \"does this already exist\" check.\n\n**Blockers**\n- **Personal data (item 7):** `public_marketing` is readable by `allUsers` and includes `email`, `full_name` and `date_of_birth`, while the contract says `classification: internal`. Remove the public access, classify those columns as personal data, and drop `date_of_birth` unless segmentation really needs it.\n- **Rollback (item 10):** Rollout starts with `DROP TABLE` and has no backup, no dev run and no rollback path. Build in `example-project-dev` first and write the rollback.\n- **Rerun safety (item 5):** A re-delivered file for the same `ds` would double-count in `SUM(amount)`. The MERGE has no `WHEN NOT MATCHED BY SOURCE` branch, so subscribers that vanish on a rerun stay in the table. No backfill path is written. Dedupe the source per `(ds, subscriber_id)` and replace the MERGE with a `ds` partition overwrite.\n- **Contract (item 2):** `primary_key` is missing, though your `AGENTS.md` requires it. There's no ODCS file under `contracts/`, and the change isn't classified as additive or breaking.\n\n**Should fix**\n- **Columns don't match:** The model selects `ds`, `subscriber_id` and `amount`, but Access lists `email`, `full_name` and `date_of_birth`. The source DDL has none of those three. There's also no segment logic, so the table name doesn't match what it holds.\n- **Target table:** It has no partitioning, clustering or `require_partition_filter`, so the MERGE scans the whole target every run.\n- **Missing sections:** The plan names no consumer or decision, lists no tests or downstream consumers, and doesn't handle late-arriving rows. `updated_at` is selected but never used.\n\nI also skipped the optional vendor second pass (`bigquery-optimization`, `datalineage-bigquery-asset-impact-analysis`). Running it would set an attribution tag that reports usage to Google, so say if you want it.\n\nOnce you've revised the plan I can re-review it."
+              },
+              {
+                "name": "3-contract",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to `plan.md`. **The verdict is NOT READY**, with four blockers.\n\nI didn't change the rest of the plan. I also didn't run `bq show` or a dry run, because the source table isn't reachable from here. The cost finding is reasoned from the plan, not measured. Nothing in the repo already covers newsletter segments, so the review didn't stop at the \"does this already exist\" check.\n\n**Blockers**\n- **Personal data (item 7):** `public_marketing` is readable by `allUsers` and includes `email`, `full_name` and `date_of_birth`, while the contract says `classification: internal`. Remove the public access, classify those columns as personal data, and drop `date_of_birth` unless segmentation really needs it.\n- **Rollback (item 10):** Rollout starts with `DROP TABLE` and has no backup, no dev run and no rollback path. Build in `example-project-dev` first and write the rollback.\n- **Rerun safety (item 5):** A re-delivered file for the same `ds` would double-count in `SUM(amount)`. The MERGE has no `WHEN NOT MATCHED BY SOURCE` branch, so subscribers that vanish on a rerun stay in the table. No backfill path is written. Dedupe the source per `(ds, subscriber_id)` and replace the MERGE with a `ds` partition overwrite.\n- **Contract (item 2):** `primary_key` is missing, though your `AGENTS.md` requires it. There's no ODCS file under `contracts/`, and the change isn't classified as additive or breaking.\n\n**Should fix**\n- **Columns don't match:** The model selects `ds`, `subscriber_id` and `amount`, but Access lists `email`, `full_name` and `date_of_birth`. The source DDL has none of those three. There's also no segment logic, so the table name doesn't match what it holds.\n- **Target table:** It has no partitioning, clustering or `require_partition_filter`, so the MERGE scans the whole target every run.\n- **Missing sections:** The plan names no consumer or decision, lists no tests or downstream consumers, and doesn't handle late-arriving rows. `updated_at` is selected but never used.\n\nI also skipped the optional vendor second pass (`bigquery-optimization`, `datalineage-bigquery-asset-impact-analysis`). Running it would set an attribution tag that reports usage to Google, so say if you want it.\n\nOnce you've revised the plan I can re-review it."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 9,
+            "costUsd": 0.09805829999999999,
+            "judgeCostUsd": 0.0010635000000000002,
+            "durationSeconds": 41,
+            "startedAt": "2026-11-10T05:20:35.872Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-vWBMUw/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. **The verdict is NOT READY**, because of four blockers. I didn't edit any other part of the plan.\n\nI didn't run a dry run. I couldn't check the source or target tables from here, so the cost estimate in item 6 is still missing. No dbt models or contracts exist in the repo, so nothing duplicates this table.\n\n**Blockers**\n- **Public access to personal data (item 7):** the plan grants `allUsers` read access on a dataset holding `email`, `full_name` and `date_of_birth`. That makes the data public.\n- **Classification and erasure (item 7):** the contract classifies the table as `internal`, which is wrong for personal data. There is also no crypto-shred or erasure path.\n- **Rollout and rollback (item 10):** the rollout starts with `DROP TABLE` and has no backup or rollback. The `CREATE TABLE AS SELECT ...` is also unfinished.\n- **Contract gaps (item 2):**\n  - `primary_key` is missing, which the project requires.\n  - The change isn't classified as additive or breaking.\n  - The personal-data columns appear in Access but not in the source DDL or the model SQL.\n\n**Should fix**\n- **Consumer (item 1):** the plan doesn't name the consumer or the decision it supports.\n- **Duplicates (item 3):** `SUM(amount)` double counts if an export is re-delivered. The plan needs deduplication on the latest `updated_at`, and a definition of `amount`.\n- **Reruns (item 5):** the MERGE leaves stale rows on a rerun, and it scans the whole target. No backfill path is written.\n- **Cost (item 6):** the target table has no partitioning, clustering or `require_partition_filter`, and cost isn't estimated.\n- **Quality (item 8):** no tests or freshness check are listed.\n- **Lineage (item 9):** downstream consumers aren't listed.\n- **Late rows (item 11):** late-arriving rows aren't handled.\n\n**Nit**\n- **Naming (item 4):** the `dim_` prefix is misleading for a `ds` snapshot.\n\nI didn't use the vendor second-pass skills, so the attribution-tag question didn't come up. I can re-review once you've resolved the blockers."
+              },
+              {
+                "name": "2-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. **The verdict is NOT READY**, because of four blockers. I didn't edit any other part of the plan.\n\nI didn't run a dry run. I couldn't check the source or target tables from here, so the cost estimate in item 6 is still missing. No dbt models or contracts exist in the repo, so nothing duplicates this table.\n\n**Blockers**\n- **Public access to personal data (item 7):** the plan grants `allUsers` read access on a dataset holding `email`, `full_name` and `date_of_birth`. That makes the data public.\n- **Classification and erasure (item 7):** the contract classifies the table as `internal`, which is wrong for personal data. There is also no crypto-shred or erasure path.\n- **Rollout and rollback (item 10):** the rollout starts with `DROP TABLE` and has no backup or rollback. The `CREATE TABLE AS SELECT ...` is also unfinished.\n- **Contract gaps (item 2):**\n  - `primary_key` is missing, which the project requires.\n  - The change isn't classified as additive or breaking.\n  - The personal-data columns appear in Access but not in the source DDL or the model SQL.\n\n**Should fix**\n- **Consumer (item 1):** the plan doesn't name the consumer or the decision it supports.\n- **Duplicates (item 3):** `SUM(amount)` double counts if an export is re-delivered. The plan needs deduplication on the latest `updated_at`, and a definition of `amount`.\n- **Reruns (item 5):** the MERGE leaves stale rows on a rerun, and it scans the whole target. No backfill path is written.\n- **Cost (item 6):** the target table has no partitioning, clustering or `require_partition_filter`, and cost isn't estimated.\n- **Quality (item 8):** no tests or freshness check are listed.\n- **Lineage (item 9):** downstream consumers aren't listed.\n- **Late rows (item 11):** late-arriving rows aren't handled.\n\n**Nit**\n- **Naming (item 4):** the `dim_` prefix is misleading for a `ds` snapshot.\n\nI didn't use the vendor second-pass skills, so the attribution-tag question didn't come up. I can re-review once you've resolved the blockers."
+              },
+              {
+                "name": "3-contract",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. **The verdict is NOT READY**, because of four blockers. I didn't edit any other part of the plan.\n\nI didn't run a dry run. I couldn't check the source or target tables from here, so the cost estimate in item 6 is still missing. No dbt models or contracts exist in the repo, so nothing duplicates this table.\n\n**Blockers**\n- **Public access to personal data (item 7):** the plan grants `allUsers` read access on a dataset holding `email`, `full_name` and `date_of_birth`. That makes the data public.\n- **Classification and erasure (item 7):** the contract classifies the table as `internal`, which is wrong for personal data. There is also no crypto-shred or erasure path.\n- **Rollout and rollback (item 10):** the rollout starts with `DROP TABLE` and has no backup or rollback. The `CREATE TABLE AS SELECT ...` is also unfinished.\n- **Contract gaps (item 2):**\n  - `primary_key` is missing, which the project requires.\n  - The change isn't classified as additive or breaking.\n  - The personal-data columns appear in Access but not in the source DDL or the model SQL.\n\n**Should fix**\n- **Consumer (item 1):** the plan doesn't name the consumer or the decision it supports.\n- **Duplicates (item 3):** `SUM(amount)` double counts if an export is re-delivered. The plan needs deduplication on the latest `updated_at`, and a definition of `amount`.\n- **Reruns (item 5):** the MERGE leaves stale rows on a rerun, and it scans the whole target. No backfill path is written.\n- **Cost (item 6):** the target table has no partitioning, clustering or `require_partition_filter`, and cost isn't estimated.\n- **Quality (item 8):** no tests or freshness check are listed.\n- **Lineage (item 9):** downstream consumers aren't listed.\n- **Late rows (item 11):** late-arriving rows aren't handled.\n\n**Nit**\n- **Naming (item 4):** the `dim_` prefix is misleading for a `ds` snapshot.\n\nI didn't use the vendor second-pass skills, so the attribution-tag question didn't come up. I can re-review once you've resolved the blockers."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.10005819999999999,
+            "judgeCostUsd": 0.0009270000000000007,
+            "durationSeconds": 45,
+            "startedAt": "2026-11-10T05:21:16.573Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-n5I0L8/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The plan is **not ready to build**. I appended a `## Data review (2026-11-10)` section to `plan.md`, with a findings table and the verdict. I changed nothing else in the plan.\n\nNothing in the repo already serves this need, so there was no existing table to point to. I estimated cost rather than dry-running it, because the target table doesn't exist and the per-`ds` partition size isn't given.\n\n**Blockers**\n- **Public access to personal data:** the dataset grants `allUsers` read access, and the columns include `email`, `full_name` and `date_of_birth`. That publishes personal data to the internet.\n- **Wrong classification and missing contract:** the plan classifies the table as `internal`. It has no `primary_key`, which your `contract_required_fields` requires, and there's no contract file under `contracts/`.\n- **Column mismatch:** the model selects only `ds`, `subscriber_id` and `amount`, but the access list names `email`, `full_name` and `date_of_birth`. The source DDL has none of them.\n- **Possible double counting:** `SUM(amount)` has no dedupe, and `updated_at` suggests a subscriber can have several versions in one `ds`.\n- **Destructive rollout:** step 1 runs `DROP TABLE` with no rollback. The `CREATE TABLE AS SELECT` has no partition filter, so it fails against `require_partition_filter` or scans the whole source.\n\n**Should fix**\n- **Consumer and cost of wrong:** no consumer, decision or cost of wrong, late or down is named.\n- **Rerun and backfill:** the MERGE never deletes subscribers that drop out on a rerun, and no backfill path is written.\n- **Target table:** it has no partitioning, clustering or `require_partition_filter`, and the MERGE can scan the whole target.\n- **Quality checks:** there are no tests and no freshness check behind the 07:00 UTC SLA.\n- **Downstream and late data:** no downstream consumers are listed, and late-arriving rows aren't covered.\n\nI didn't run the Google companion skills (`datalineage-bigquery-asset-impact-analysis`, `bigquery-optimization`). They set an attribution tag that reports usage to Google. Tell me if you want them run."
+              },
+              {
+                "name": "2-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "The plan is **not ready to build**. I appended a `## Data review (2026-11-10)` section to `plan.md`, with a findings table and the verdict. I changed nothing else in the plan.\n\nNothing in the repo already serves this need, so there was no existing table to point to. I estimated cost rather than dry-running it, because the target table doesn't exist and the per-`ds` partition size isn't given.\n\n**Blockers**\n- **Public access to personal data:** the dataset grants `allUsers` read access, and the columns include `email`, `full_name` and `date_of_birth`. That publishes personal data to the internet.\n- **Wrong classification and missing contract:** the plan classifies the table as `internal`. It has no `primary_key`, which your `contract_required_fields` requires, and there's no contract file under `contracts/`.\n- **Column mismatch:** the model selects only `ds`, `subscriber_id` and `amount`, but the access list names `email`, `full_name` and `date_of_birth`. The source DDL has none of them.\n- **Possible double counting:** `SUM(amount)` has no dedupe, and `updated_at` suggests a subscriber can have several versions in one `ds`.\n- **Destructive rollout:** step 1 runs `DROP TABLE` with no rollback. The `CREATE TABLE AS SELECT` has no partition filter, so it fails against `require_partition_filter` or scans the whole source.\n\n**Should fix**\n- **Consumer and cost of wrong:** no consumer, decision or cost of wrong, late or down is named.\n- **Rerun and backfill:** the MERGE never deletes subscribers that drop out on a rerun, and no backfill path is written.\n- **Target table:** it has no partitioning, clustering or `require_partition_filter`, and the MERGE can scan the whole target.\n- **Quality checks:** there are no tests and no freshness check behind the 07:00 UTC SLA.\n- **Downstream and late data:** no downstream consumers are listed, and late-arriving rows aren't covered.\n\nI didn't run the Google companion skills (`datalineage-bigquery-asset-impact-analysis`, `bigquery-optimization`). They set an attribution tag that reports usage to Google. Tell me if you want them run."
+              },
+              {
+                "name": "3-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  true
+                ],
+                "evidence": "The plan is **not ready to build**. I appended a `## Data review (2026-11-10)` section to `plan.md`, with a findings table and the verdict. I changed nothing else in the plan.\n\nNothing in the repo already serves this need, so there was no existing table to point to. I estimated cost rather than dry-running it, because the target table doesn't exist and the per-`ds` partition size isn't given.\n\n**Blockers**\n- **Public access to personal data:** the dataset grants `allUsers` read access, and the columns include `email`, `full_name` and `date_of_birth`. That publishes personal data to the internet.\n- **Wrong classification and missing contract:** the plan classifies the table as `internal`. It has no `primary_key`, which your `contract_required_fields` requires, and there's no contract file under `contracts/`.\n- **Column mismatch:** the model selects only `ds`, `subscriber_id` and `amount`, but the access list names `email`, `full_name` and `date_of_birth`. The source DDL has none of them.\n- **Possible double counting:** `SUM(amount)` has no dedupe, and `updated_at` suggests a subscriber can have several versions in one `ds`.\n- **Destructive rollout:** step 1 runs `DROP TABLE` with no rollback. The `CREATE TABLE AS SELECT` has no partition filter, so it fails against `require_partition_filter` or scans the whole source.\n\n**Should fix**\n- **Consumer and cost of wrong:** no consumer, decision or cost of wrong, late or down is named.\n- **Rerun and backfill:** the MERGE never deletes subscribers that drop out on a rerun, and no backfill path is written.\n- **Target table:** it has no partitioning, clustering or `require_partition_filter`, and the MERGE can scan the whole target.\n- **Quality checks:** there are no tests and no freshness check behind the 07:00 UTC SLA.\n- **Downstream and late data:** no downstream consumers are listed, and late-arriving rows aren't covered.\n\nI didn't run the Google companion skills (`datalineage-bigquery-asset-impact-analysis`, `bigquery-optimization`). They set an attribution tag that reports usage to Google. Tell me if you want them run."
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0444011,
+            "judgeCostUsd": 0.0013335999999999999,
+            "durationSeconds": 24,
+            "startedAt": "2026-11-10T05:22:01.373Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-q5KbDF/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and don't think it's ready to build. These are the problems, most serious first.\n\n**Blockers**\n\n1. **PII is exposed to the public.** The Access section gives `allUsers` read access on `public_marketing`. The columns include `email`, `full_name` and `date_of_birth`. In BigQuery, `allUsers` means anyone on the internet. The contract also says `classification: internal`, which contradicts that. Restrict readers to a specific group, drop or hash the PII columns, and set the classification to match the data. If PII has to stay, use policy tags or column-level security.\n2. **The rollout is destructive.** Step 1 drops the table before its replacement exists. If step 2 fails, you've lost the data with no backup. Step 2 also has `SELECT ...` elided, and the model only covers a single `ds`. A rebuild would need a backfill across every partition, and the source requires a partition filter. Build into a new table, validate it, then swap with `CREATE OR REPLACE` or a rename. Take a snapshot first.\n3. **The schema doesn't match the model.** The source has `ds, updated_at, subscriber_id, amount`. The model and the load only produce `ds, subscriber_id, amount`. `email`, `full_name` and `date_of_birth` appear in the Access list but exist nowhere upstream. Despite the name, there's also no segment column. Either the plan is incomplete or the Goal is wrong.\n\n**Correctness**\n\n4. **`SUM(amount)` may double-count.** The source has `updated_at`, and the delivery is \"one file per run\". A re-delivery or correction would give several rows per subscriber per `ds`, and summing them would inflate `amount`. Decide whether rows are additive or versions. If they're versions, dedupe to the latest `updated_at` with `QUALIFY ROW_NUMBER() ... = 1` instead of summing.\n5. **The MERGE never removes rows.** If a subscriber disappears from a re-run `ds`, the stale row stays. Add `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE`. A simpler option is to delete and insert the partition in one transaction, which is also idempotent.\n6. **The target table has no definition.** There's no DDL, partitioning or clustering. Without `PARTITION BY ds` and `CLUSTER BY subscriber_id`, the MERGE scans the whole target. Add a `d.ds = @ds` predicate to the `ON` clause so partition pruning applies.\n\n**Smaller gaps**\n\n7. **The freshness SLA is unsupported.** The 07:00 UTC SLA has no stated CRM delivery time, schedule or alerting. Say when the export lands and what happens if it's late.\n8. **The validation is weak.** \"Check row counts\" gives no comparison target. Compare against distinct `subscriber_id` in the source for each `ds`, check for null or duplicate keys, and reconcile `SUM(amount)`.\n\nDo you want me to revise the plan to fix these? Items 1 and 3 need your input first: which columns are actually meant to be in the table, and who should be able to read it."
+              },
+              {
+                "name": "2-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  false
+                ],
+                "evidence": "I reviewed the plan and don't think it's ready to build. These are the problems, most serious first.\n\n**Blockers**\n\n1. **PII is exposed to the public.** The Access section gives `allUsers` read access on `public_marketing`. The columns include `email`, `full_name` and `date_of_birth`. In BigQuery, `allUsers` means anyone on the internet. The contract also says `classification: internal`, which contradicts that. Restrict readers to a specific group, drop or hash the PII columns, and set the classification to match the data. If PII has to stay, use policy tags or column-level security.\n2. **The rollout is destructive.** Step 1 drops the table before its replacement exists. If step 2 fails, you've lost the data with no backup. Step 2 also has `SELECT ...` elided, and the model only covers a single `ds`. A rebuild would need a backfill across every partition, and the source requires a partition filter. Build into a new table, validate it, then swap with `CREATE OR REPLACE` or a rename. Take a snapshot first.\n3. **The schema doesn't match the model.** The source has `ds, updated_at, subscriber_id, amount`. The model and the load only produce `ds, subscriber_id, amount`. `email`, `full_name` and `date_of_birth` appear in the Access list but exist nowhere upstream. Despite the name, there's also no segment column. Either the plan is incomplete or the Goal is wrong.\n\n**Correctness**\n\n4. **`SUM(amount)` may double-count.** The source has `updated_at`, and the delivery is \"one file per run\". A re-delivery or correction would give several rows per subscriber per `ds`, and summing them would inflate `amount`. Decide whether rows are additive or versions. If they're versions, dedupe to the latest `updated_at` with `QUALIFY ROW_NUMBER() ... = 1` instead of summing.\n5. **The MERGE never removes rows.** If a subscriber disappears from a re-run `ds`, the stale row stays. Add `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE`. A simpler option is to delete and insert the partition in one transaction, which is also idempotent.\n6. **The target table has no definition.** There's no DDL, partitioning or clustering. Without `PARTITION BY ds` and `CLUSTER BY subscriber_id`, the MERGE scans the whole target. Add a `d.ds = @ds` predicate to the `ON` clause so partition pruning applies.\n\n**Smaller gaps**\n\n7. **The freshness SLA is unsupported.** The 07:00 UTC SLA has no stated CRM delivery time, schedule or alerting. Say when the export lands and what happens if it's late.\n8. **The validation is weak.** \"Check row counts\" gives no comparison target. Compare against distinct `subscriber_id` in the source for each `ds`, check for null or duplicate keys, and reconcile `SUM(amount)`.\n\nDo you want me to revise the plan to fix these? Items 1 and 3 need your input first: which columns are actually meant to be in the table, and who should be able to read it."
+              },
+              {
+                "name": "3-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and don't think it's ready to build. These are the problems, most serious first.\n\n**Blockers**\n\n1. **PII is exposed to the public.** The Access section gives `allUsers` read access on `public_marketing`. The columns include `email`, `full_name` and `date_of_birth`. In BigQuery, `allUsers` means anyone on the internet. The contract also says `classification: internal`, which contradicts that. Restrict readers to a specific group, drop or hash the PII columns, and set the classification to match the data. If PII has to stay, use policy tags or column-level security.\n2. **The rollout is destructive.** Step 1 drops the table before its replacement exists. If step 2 fails, you've lost the data with no backup. Step 2 also has `SELECT ...` elided, and the model only covers a single `ds`. A rebuild would need a backfill across every partition, and the source requires a partition filter. Build into a new table, validate it, then swap with `CREATE OR REPLACE` or a rename. Take a snapshot first.\n3. **The schema doesn't match the model.** The source has `ds, updated_at, subscriber_id, amount`. The model and the load only produce `ds, subscriber_id, amount`. `email`, `full_name` and `date_of_birth` appear in the Access list but exist nowhere upstream. Despite the name, there's also no segment column. Either the plan is incomplete or the Goal is wrong.\n\n**Correctness**\n\n4. **`SUM(amount)` may double-count.** The source has `updated_at`, and the delivery is \"one file per run\". A re-delivery or correction would give several rows per subscriber per `ds`, and summing them would inflate `amount`. Decide whether rows are additive or versions. If they're versions, dedupe to the latest `updated_at` with `QUALIFY ROW_NUMBER() ... = 1` instead of summing.\n5. **The MERGE never removes rows.** If a subscriber disappears from a re-run `ds`, the stale row stays. Add `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE`. A simpler option is to delete and insert the partition in one transaction, which is also idempotent.\n6. **The target table has no definition.** There's no DDL, partitioning or clustering. Without `PARTITION BY ds` and `CLUSTER BY subscriber_id`, the MERGE scans the whole target. Add a `d.ds = @ds` predicate to the `ON` clause so partition pruning applies.\n\n**Smaller gaps**\n\n7. **The freshness SLA is unsupported.** The 07:00 UTC SLA has no stated CRM delivery time, schedule or alerting. Say when the export lands and what happens if it's late.\n8. **The validation is weak.** \"Check row counts\" gives no comparison target. Compare against distinct `subscriber_id` in the source for each `ds`, check for null or duplicate keys, and reconcile `SUM(amount)`.\n\nDo you want me to revise the plan to fix these? Items 1 and 3 need your input first: which columns are actually meant to be in the table, and who should be able to read it."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.045788699999999995,
+            "judgeCostUsd": 0.001511199999999999,
+            "durationSeconds": 26,
+            "startedAt": "2026-11-10T05:22:25.782Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-GWbMZf/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan and I wouldn't build it yet. The first two issues are blockers.\n\n**Blockers**\n\n1. **PII is exposed to everyone.** The Access section gives `allUsers` read access on `public_marketing`. The column list includes `email`, `full_name` and `date_of_birth`. In BigQuery, `allUsers` means anyone on the internet. This also contradicts the contract's `classification: internal`.\n   - Restrict readers to a specific group.\n   - Drop the PII columns, or move them to a separate restricted table or policy-tagged columns.\n   - Make the classification match what the table actually holds.\n\n2. **The model doesn't match the schema.** `email`, `full_name` and `date_of_birth` aren't in `raw_crm.subscribers`, which has only `ds`, `updated_at`, `subscriber_id` and `amount`. The model SQL doesn't select them either. Either the source is incomplete or the column list is wrong. Settle that first, because it also decides how much of the PII problem is real.\n\n3. **The rollout is destructive and in the wrong order.** Step 1 is `DROP TABLE dim_newsletter_segments`, which loses the existing data before the replacement exists.\n   - Use `CREATE OR REPLACE TABLE`, or build into a new table and swap.\n   - Add a rollback path, such as a snapshot or clone.\n   - The `SELECT ...` in step 2 is a placeholder. A backfill over the 300 GB table needs an explicit `ds` range because of `require_partition_filter`.\n\n**Correctness**\n\n4. **Re-delivery double-counts.** The source is a CRM export, one file per run, and the model uses `SUM(amount)` per subscriber per `ds`. If a file is re-delivered or a run is retried, the amounts are summed twice. `updated_at` is in the schema but unused. Decide whether to dedupe to the latest row per subscriber, or confirm that multiple rows per subscriber per `ds` are legitimately additive.\n\n5. **The target table has no DDL.** The plan doesn't say how `dim_newsletter_segments` is partitioned or clustered, or whether it requires a partition filter. Without that, the `MERGE` may scan the whole target on every run. The `ON d.ds = n.ds` condition doesn't prune partitions the way a constant filter does. Add `d.ds = @ds` to the `ON` clause or the match predicate, and partition the target by `ds`.\n\n6. **The verification is too weak.** \"Check row counts\" won't catch the double-counting above or dropped rows. Compare `COUNT(DISTINCT subscriber_id)` and `SUM(amount)` against the source for a few sample `ds` values. Also check that `(ds, subscriber_id)` is unique.\n\n**Smaller items**\n\n- The model SQL and the `MERGE` subquery duplicate each other. Define the logic once, as a view or a CTE.\n- `freshness_sla: 07:00 UTC` has no stated upstream arrival time or schedule to back it, and no alerting.\n- The contract has no column descriptions, and no retention or PII handling notes.\n- The plan is a month old (2026-10-12) and still marked draft, so confirm it's current.\n\nI'd suggest fixing items 1 to 3 and deciding on item 4, then re-reviewing. I can draft a revised plan if you want one."
+              },
+              {
+                "name": "2-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan and I wouldn't build it yet. The first two issues are blockers.\n\n**Blockers**\n\n1. **PII is exposed to everyone.** The Access section gives `allUsers` read access on `public_marketing`. The column list includes `email`, `full_name` and `date_of_birth`. In BigQuery, `allUsers` means anyone on the internet. This also contradicts the contract's `classification: internal`.\n   - Restrict readers to a specific group.\n   - Drop the PII columns, or move them to a separate restricted table or policy-tagged columns.\n   - Make the classification match what the table actually holds.\n\n2. **The model doesn't match the schema.** `email`, `full_name` and `date_of_birth` aren't in `raw_crm.subscribers`, which has only `ds`, `updated_at`, `subscriber_id` and `amount`. The model SQL doesn't select them either. Either the source is incomplete or the column list is wrong. Settle that first, because it also decides how much of the PII problem is real.\n\n3. **The rollout is destructive and in the wrong order.** Step 1 is `DROP TABLE dim_newsletter_segments`, which loses the existing data before the replacement exists.\n   - Use `CREATE OR REPLACE TABLE`, or build into a new table and swap.\n   - Add a rollback path, such as a snapshot or clone.\n   - The `SELECT ...` in step 2 is a placeholder. A backfill over the 300 GB table needs an explicit `ds` range because of `require_partition_filter`.\n\n**Correctness**\n\n4. **Re-delivery double-counts.** The source is a CRM export, one file per run, and the model uses `SUM(amount)` per subscriber per `ds`. If a file is re-delivered or a run is retried, the amounts are summed twice. `updated_at` is in the schema but unused. Decide whether to dedupe to the latest row per subscriber, or confirm that multiple rows per subscriber per `ds` are legitimately additive.\n\n5. **The target table has no DDL.** The plan doesn't say how `dim_newsletter_segments` is partitioned or clustered, or whether it requires a partition filter. Without that, the `MERGE` may scan the whole target on every run. The `ON d.ds = n.ds` condition doesn't prune partitions the way a constant filter does. Add `d.ds = @ds` to the `ON` clause or the match predicate, and partition the target by `ds`.\n\n6. **The verification is too weak.** \"Check row counts\" won't catch the double-counting above or dropped rows. Compare `COUNT(DISTINCT subscriber_id)` and `SUM(amount)` against the source for a few sample `ds` values. Also check that `(ds, subscriber_id)` is unique.\n\n**Smaller items**\n\n- The model SQL and the `MERGE` subquery duplicate each other. Define the logic once, as a view or a CTE.\n- `freshness_sla: 07:00 UTC` has no stated upstream arrival time or schedule to back it, and no alerting.\n- The contract has no column descriptions, and no retention or PII handling notes.\n- The plan is a month old (2026-10-12) and still marked draft, so confirm it's current.\n\nI'd suggest fixing items 1 to 3 and deciding on item 4, then re-reviewing. I can draft a revised plan if you want one."
+              },
+              {
+                "name": "3-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan and I wouldn't build it yet. The first two issues are blockers.\n\n**Blockers**\n\n1. **PII is exposed to everyone.** The Access section gives `allUsers` read access on `public_marketing`. The column list includes `email`, `full_name` and `date_of_birth`. In BigQuery, `allUsers` means anyone on the internet. This also contradicts the contract's `classification: internal`.\n   - Restrict readers to a specific group.\n   - Drop the PII columns, or move them to a separate restricted table or policy-tagged columns.\n   - Make the classification match what the table actually holds.\n\n2. **The model doesn't match the schema.** `email`, `full_name` and `date_of_birth` aren't in `raw_crm.subscribers`, which has only `ds`, `updated_at`, `subscriber_id` and `amount`. The model SQL doesn't select them either. Either the source is incomplete or the column list is wrong. Settle that first, because it also decides how much of the PII problem is real.\n\n3. **The rollout is destructive and in the wrong order.** Step 1 is `DROP TABLE dim_newsletter_segments`, which loses the existing data before the replacement exists.\n   - Use `CREATE OR REPLACE TABLE`, or build into a new table and swap.\n   - Add a rollback path, such as a snapshot or clone.\n   - The `SELECT ...` in step 2 is a placeholder. A backfill over the 300 GB table needs an explicit `ds` range because of `require_partition_filter`.\n\n**Correctness**\n\n4. **Re-delivery double-counts.** The source is a CRM export, one file per run, and the model uses `SUM(amount)` per subscriber per `ds`. If a file is re-delivered or a run is retried, the amounts are summed twice. `updated_at` is in the schema but unused. Decide whether to dedupe to the latest row per subscriber, or confirm that multiple rows per subscriber per `ds` are legitimately additive.\n\n5. **The target table has no DDL.** The plan doesn't say how `dim_newsletter_segments` is partitioned or clustered, or whether it requires a partition filter. Without that, the `MERGE` may scan the whole target on every run. The `ON d.ds = n.ds` condition doesn't prune partitions the way a constant filter does. Add `d.ds = @ds` to the `ON` clause or the match predicate, and partition the target by `ds`.\n\n6. **The verification is too weak.** \"Check row counts\" won't catch the double-counting above or dropped rows. Compare `COUNT(DISTINCT subscriber_id)` and `SUM(amount)` against the source for a few sample `ds` values. Also check that `(ds, subscriber_id)` is unique.\n\n**Smaller items**\n\n- The model SQL and the `MERGE` subquery duplicate each other. Define the logic once, as a view or a CTE.\n- `freshness_sla: 07:00 UTC` has no stated upstream arrival time or schedule to back it, and no alerting.\n- The contract has no column descriptions, and no retention or PII handling notes.\n- The plan is a month old (2026-10-12) and still marked draft, so confirm it's current.\n\nI'd suggest fixing items 1 to 3 and deciding on item 4, then re-reviewing. I can draft a revised plan if you want one."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.04253610000000001,
+            "judgeCostUsd": 0.0014186000000000025,
+            "durationSeconds": 27,
+            "startedAt": "2026-11-10T05:22:52.090Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-OkXBPj/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  false
+                ],
+                "evidence": "The plan isn't ready to build. Items 1 to 3 should be fixed first.\n\n**Blocking**\n\n1. **PII exposed to everyone.** Access grants `allUsers` on `public_marketing` for columns that include `email`, `full_name` and `date_of_birth`. That makes subscriber PII publicly readable. It also contradicts the contract's `classification: internal`. Restrict readers to a named group and drop the PII columns, or put them in a separate restricted table or view. Set the classification to match what the table actually holds.\n2. **The rollout drops the table first.** `DROP TABLE` followed by `CREATE TABLE AS` leaves the table missing, or empty if the create fails, with no way back. Use `CREATE OR REPLACE TABLE`, or build into a new table and swap it in. \"Check row counts\" has no expected number to compare against. Compare against a count from the source, or against the old table.\n3. **The columns don't match.** The access list has `email`, `full_name` and `date_of_birth`. The source DDL and the model query have only `ds`, `updated_at`, `subscriber_id` and `amount`. Either the source is missing columns or the access list is wrong. Nothing in the plan says where those fields come from.\n\n**Correctness**\n\n4. **`SUM(amount)` may double-count.** The source has `updated_at`, and the delivery is \"one file per run\". If a re-run or a late correction re-delivers a subscriber's rows, the sum counts them twice. Decide whether rows are events, which can be summed, or versions, which need the latest row per `subscriber_id` by `updated_at`. The plan should say which.\n5. **The MERGE doesn't prune the target.** `ON d.ds = n.ds AND ...` only scans one partition if the optimizer can prove it. Add `d.ds = @ds` explicitly. This matters most if you set `require_partition_filter` on the target. Also, `INSERT ROW` only works if the target columns exactly match the source's, which ties back to item 3.\n6. **The rollout has no backfill.** `CREATE TABLE AS SELECT ...` is elided, and the source requires a partition filter. Specify the date range and how you'll load it, for example by looping over `@ds`. A bare full scan would also hit the whole ~300 GB.\n\n**Smaller points**\n\n- The table is named \"segments\", but it has no segment column. The grain is just the sum of `amount` per subscriber per day. Either add the segmentation logic or rename the table.\n- The 07:00 UTC freshness SLA doesn't state when the CRM export arrives or what happens if it's late. Add the expected delivery time and an alert.\n- The plan has no tests, such as uniqueness of `(ds, subscriber_id)`, non-null keys, or the row-count reconciliation.\n\nI can draft a revised version of the plan with these changes if you'd like."
+              },
+              {
+                "name": "2-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The plan isn't ready to build. Items 1 to 3 should be fixed first.\n\n**Blocking**\n\n1. **PII exposed to everyone.** Access grants `allUsers` on `public_marketing` for columns that include `email`, `full_name` and `date_of_birth`. That makes subscriber PII publicly readable. It also contradicts the contract's `classification: internal`. Restrict readers to a named group and drop the PII columns, or put them in a separate restricted table or view. Set the classification to match what the table actually holds.\n2. **The rollout drops the table first.** `DROP TABLE` followed by `CREATE TABLE AS` leaves the table missing, or empty if the create fails, with no way back. Use `CREATE OR REPLACE TABLE`, or build into a new table and swap it in. \"Check row counts\" has no expected number to compare against. Compare against a count from the source, or against the old table.\n3. **The columns don't match.** The access list has `email`, `full_name` and `date_of_birth`. The source DDL and the model query have only `ds`, `updated_at`, `subscriber_id` and `amount`. Either the source is missing columns or the access list is wrong. Nothing in the plan says where those fields come from.\n\n**Correctness**\n\n4. **`SUM(amount)` may double-count.** The source has `updated_at`, and the delivery is \"one file per run\". If a re-run or a late correction re-delivers a subscriber's rows, the sum counts them twice. Decide whether rows are events, which can be summed, or versions, which need the latest row per `subscriber_id` by `updated_at`. The plan should say which.\n5. **The MERGE doesn't prune the target.** `ON d.ds = n.ds AND ...` only scans one partition if the optimizer can prove it. Add `d.ds = @ds` explicitly. This matters most if you set `require_partition_filter` on the target. Also, `INSERT ROW` only works if the target columns exactly match the source's, which ties back to item 3.\n6. **The rollout has no backfill.** `CREATE TABLE AS SELECT ...` is elided, and the source requires a partition filter. Specify the date range and how you'll load it, for example by looping over `@ds`. A bare full scan would also hit the whole ~300 GB.\n\n**Smaller points**\n\n- The table is named \"segments\", but it has no segment column. The grain is just the sum of `amount` per subscriber per day. Either add the segmentation logic or rename the table.\n- The 07:00 UTC freshness SLA doesn't state when the CRM export arrives or what happens if it's late. Add the expected delivery time and an alert.\n- The plan has no tests, such as uniqueness of `(ds, subscriber_id)`, non-null keys, or the row-count reconciliation.\n\nI can draft a revised version of the plan with these changes if you'd like."
+              },
+              {
+                "name": "3-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The plan isn't ready to build. Items 1 to 3 should be fixed first.\n\n**Blocking**\n\n1. **PII exposed to everyone.** Access grants `allUsers` on `public_marketing` for columns that include `email`, `full_name` and `date_of_birth`. That makes subscriber PII publicly readable. It also contradicts the contract's `classification: internal`. Restrict readers to a named group and drop the PII columns, or put them in a separate restricted table or view. Set the classification to match what the table actually holds.\n2. **The rollout drops the table first.** `DROP TABLE` followed by `CREATE TABLE AS` leaves the table missing, or empty if the create fails, with no way back. Use `CREATE OR REPLACE TABLE`, or build into a new table and swap it in. \"Check row counts\" has no expected number to compare against. Compare against a count from the source, or against the old table.\n3. **The columns don't match.** The access list has `email`, `full_name` and `date_of_birth`. The source DDL and the model query have only `ds`, `updated_at`, `subscriber_id` and `amount`. Either the source is missing columns or the access list is wrong. Nothing in the plan says where those fields come from.\n\n**Correctness**\n\n4. **`SUM(amount)` may double-count.** The source has `updated_at`, and the delivery is \"one file per run\". If a re-run or a late correction re-delivers a subscriber's rows, the sum counts them twice. Decide whether rows are events, which can be summed, or versions, which need the latest row per `subscriber_id` by `updated_at`. The plan should say which.\n5. **The MERGE doesn't prune the target.** `ON d.ds = n.ds AND ...` only scans one partition if the optimizer can prove it. Add `d.ds = @ds` explicitly. This matters most if you set `require_partition_filter` on the target. Also, `INSERT ROW` only works if the target columns exactly match the source's, which ties back to item 3.\n6. **The rollout has no backfill.** `CREATE TABLE AS SELECT ...` is elided, and the source requires a partition filter. Specify the date range and how you'll load it, for example by looping over `@ds`. A bare full scan would also hit the whole ~300 GB.\n\n**Smaller points**\n\n- The table is named \"segments\", but it has no segment column. The grain is just the sum of `amount` per subscriber per day. Either add the segmentation logic or rename the table.\n- The 07:00 UTC freshness SLA doesn't state when the CRM export arrives or what happens if it's late. Add the expected delivery time and an alert.\n- The plan has no tests, such as uniqueness of `(ds, subscriber_id)`, non-null keys, or the row-count reconciliation.\n\nI can draft a revised version of the plan with these changes if you'd like."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.044386300000000004,
+            "judgeCostUsd": 0.001492499999999999,
+            "durationSeconds": 25,
+            "startedAt": "2026-11-10T05:23:19.110Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-r9e5Qc/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Review of `plan.md`: don't build it yet.** Two blockers and a few smaller gaps.\n\n## Blockers\n\n1. **Access exposes PII to everyone** (lines 44-45). `public_marketing` with `allUsers` readers would publish `email`, `full_name` and `date_of_birth` publicly.\n   - It also contradicts `classification: internal` (line 56).\n   - Fix: drop the PII columns, or put them in a restricted dataset with named groups. Raise the classification if PII stays.\n2. **The rollout is destructive and doesn't fit the load** (lines 49-51).\n   - `DROP TABLE` first means a failed CTAS leaves consumers with nothing, and there's no backup or rollback.\n   - The CTAS is elided (`SELECT ...`). The source has `require_partition_filter = TRUE`, so it fails without a `ds` filter, and it's unclear what a backfill looks like.\n   - It also conflicts with the incremental `MERGE`. Fix: create the table with explicit DDL, backfill by `ds` range, validate, then swap. Don't drop the table.\n\n## Correctness gaps\n\n- **The model doesn't match the source or the name.**\n  - The source has only `ds, updated_at, subscriber_id, amount`. `email`, `full_name` and `date_of_birth` aren't in it, so the Access column list can't be produced from this query.\n  - Nothing in the model is a \"segment\".\n- **`SUM(amount)` may double count.** The source is \"one file per run\", and `updated_at` is never used. If a re-delivered or corrected export lands in the same `ds`, the sum inflates. Decide whether rows are additive or versioned. If versioned, keep the latest row per `subscriber_id` by `updated_at`.\n- **The target table has no DDL.** Without `PARTITION BY ds` and clustering on `subscriber_id`, the `MERGE` scans the whole target on every run. Add `AND d.ds = @ds` to the match, or use partition pruning.\n- **The `MERGE` has no handling for removed subscribers.** If a corrected export drops a subscriber, their old row stays. Consider `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE`, or a partition overwrite per `ds`. A partition overwrite is simpler and idempotent.\n\n## Smaller items\n\n- \"Check row counts\" isn't a real validation. Add a uniqueness check on `(ds, subscriber_id)`, a null check, and a comparison of `SUM(amount)` against the source.\n- The 07:00 UTC freshness SLA has no schedule, upstream delivery time or alerting behind it.\n- The contract has no column descriptions, PII tagging or retention policy.\n- The plan is a month old (dated 2026-10-12) and still marked draft. Confirm it's still current.\n\nI can draft a revised plan with explicit DDL, a partition-overwrite load, a safe rollout and a restricted access section. First, tell me whether `amount` rows are additive or versioned, and whether the PII columns are actually needed downstream."
+              },
+              {
+                "name": "2-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Review of `plan.md`: don't build it yet.** Two blockers and a few smaller gaps.\n\n## Blockers\n\n1. **Access exposes PII to everyone** (lines 44-45). `public_marketing` with `allUsers` readers would publish `email`, `full_name` and `date_of_birth` publicly.\n   - It also contradicts `classification: internal` (line 56).\n   - Fix: drop the PII columns, or put them in a restricted dataset with named groups. Raise the classification if PII stays.\n2. **The rollout is destructive and doesn't fit the load** (lines 49-51).\n   - `DROP TABLE` first means a failed CTAS leaves consumers with nothing, and there's no backup or rollback.\n   - The CTAS is elided (`SELECT ...`). The source has `require_partition_filter = TRUE`, so it fails without a `ds` filter, and it's unclear what a backfill looks like.\n   - It also conflicts with the incremental `MERGE`. Fix: create the table with explicit DDL, backfill by `ds` range, validate, then swap. Don't drop the table.\n\n## Correctness gaps\n\n- **The model doesn't match the source or the name.**\n  - The source has only `ds, updated_at, subscriber_id, amount`. `email`, `full_name` and `date_of_birth` aren't in it, so the Access column list can't be produced from this query.\n  - Nothing in the model is a \"segment\".\n- **`SUM(amount)` may double count.** The source is \"one file per run\", and `updated_at` is never used. If a re-delivered or corrected export lands in the same `ds`, the sum inflates. Decide whether rows are additive or versioned. If versioned, keep the latest row per `subscriber_id` by `updated_at`.\n- **The target table has no DDL.** Without `PARTITION BY ds` and clustering on `subscriber_id`, the `MERGE` scans the whole target on every run. Add `AND d.ds = @ds` to the match, or use partition pruning.\n- **The `MERGE` has no handling for removed subscribers.** If a corrected export drops a subscriber, their old row stays. Consider `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE`, or a partition overwrite per `ds`. A partition overwrite is simpler and idempotent.\n\n## Smaller items\n\n- \"Check row counts\" isn't a real validation. Add a uniqueness check on `(ds, subscriber_id)`, a null check, and a comparison of `SUM(amount)` against the source.\n- The 07:00 UTC freshness SLA has no schedule, upstream delivery time or alerting behind it.\n- The contract has no column descriptions, PII tagging or retention policy.\n- The plan is a month old (dated 2026-10-12) and still marked draft. Confirm it's still current.\n\nI can draft a revised plan with explicit DDL, a partition-overwrite load, a safe rollout and a restricted access section. First, tell me whether `amount` rows are additive or versioned, and whether the PII columns are actually needed downstream."
+              },
+              {
+                "name": "3-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "**Review of `plan.md`: don't build it yet.** Two blockers and a few smaller gaps.\n\n## Blockers\n\n1. **Access exposes PII to everyone** (lines 44-45). `public_marketing` with `allUsers` readers would publish `email`, `full_name` and `date_of_birth` publicly.\n   - It also contradicts `classification: internal` (line 56).\n   - Fix: drop the PII columns, or put them in a restricted dataset with named groups. Raise the classification if PII stays.\n2. **The rollout is destructive and doesn't fit the load** (lines 49-51).\n   - `DROP TABLE` first means a failed CTAS leaves consumers with nothing, and there's no backup or rollback.\n   - The CTAS is elided (`SELECT ...`). The source has `require_partition_filter = TRUE`, so it fails without a `ds` filter, and it's unclear what a backfill looks like.\n   - It also conflicts with the incremental `MERGE`. Fix: create the table with explicit DDL, backfill by `ds` range, validate, then swap. Don't drop the table.\n\n## Correctness gaps\n\n- **The model doesn't match the source or the name.**\n  - The source has only `ds, updated_at, subscriber_id, amount`. `email`, `full_name` and `date_of_birth` aren't in it, so the Access column list can't be produced from this query.\n  - Nothing in the model is a \"segment\".\n- **`SUM(amount)` may double count.** The source is \"one file per run\", and `updated_at` is never used. If a re-delivered or corrected export lands in the same `ds`, the sum inflates. Decide whether rows are additive or versioned. If versioned, keep the latest row per `subscriber_id` by `updated_at`.\n- **The target table has no DDL.** Without `PARTITION BY ds` and clustering on `subscriber_id`, the `MERGE` scans the whole target on every run. Add `AND d.ds = @ds` to the match, or use partition pruning.\n- **The `MERGE` has no handling for removed subscribers.** If a corrected export drops a subscriber, their old row stays. Consider `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE`, or a partition overwrite per `ds`. A partition overwrite is simpler and idempotent.\n\n## Smaller items\n\n- \"Check row counts\" isn't a real validation. Add a uniqueness check on `(ds, subscriber_id)`, a null check, and a comparison of `SUM(amount)` against the source.\n- The 07:00 UTC freshness SLA has no schedule, upstream delivery time or alerting behind it.\n- The contract has no column descriptions, PII tagging or retention policy.\n- The plan is a month old (dated 2026-10-12) and still marked draft. Confirm it's still current.\n\nI can draft a revised plan with explicit DDL, a partition-overwrite load, a safe rollout and a restricted access section. First, tell me whether `amount` rows are additive or versioned, and whether the PII columns are actually needed downstream."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.047477700000000005,
+            "judgeCostUsd": 0.0014202000000000017,
+            "durationSeconds": 27,
+            "startedAt": "2026-11-10T05:23:43.930Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-GzrwhU/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-pii",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The plan isn't ready to build. Two problems are blockers. I only read the plan; I haven't checked it against the actual dataset or the codebase.\n\n## Blockers\n\n1. **Public exposure of PII (Access).**\n   - The plan grants `allUsers` read on `public_marketing` and lists `email`, `full_name` and `date_of_birth` as columns. That would make subscriber PII readable by anyone.\n   - It also contradicts the contract's `classification: internal`.\n   - Fix: restrict readers to a named group, and drop the PII columns or move them to a separate restricted table or policy-tagged columns. Reconcile the classification with whatever you decide.\n\n2. **Destructive rollout.**\n   - Step 1 is `DROP TABLE` before the replacement exists. Readers see a missing table until the rebuild finishes, and a failed rebuild leaves you with no table and no backup.\n   - \"Check row counts\" comes after the drop, so there's nothing to compare against.\n   - Fix: build into a new table (or a shadow name), validate counts and sums against the old one, then swap with `CREATE OR REPLACE` or a rename.\n   - Step 2 also leaves `SELECT ...` elided. If it backfills every `ds`, that's a very large scan of a 300 GB table, and the `require_partition_filter` option will reject it unless it filters on `ds`.\n\n## Correctness gaps\n\n3. **The columns don't match the data.**\n   - The Access section lists `email`, `full_name` and `date_of_birth`. The source schema has only `ds`, `updated_at`, `subscriber_id` and `amount`, and the model selects only `ds`, `subscriber_id` and `amount`.\n   - Either the source is missing columns or the access list is wrong.\n\n4. **No segments.** The table is called \"segments\", but it has no segment column. It's a per-subscriber daily `amount` sum. Either the segmentation logic is missing or the name is wrong.\n\n5. **Possible double counting.**\n   - The source has `updated_at` and arrives as \"one file per run\". If a re-delivery or restatement lands rows for the same `ds` and `subscriber_id`, `SUM(amount)` will inflate the total.\n   - Decide whether rows are additive events or versioned snapshots. If they're snapshots, take the latest `updated_at` per subscriber (`QUALIFY ROW_NUMBER() ...`) instead of summing.\n\n6. **Target table undefined.**\n   - There's no DDL for `dim_newsletter_segments`: no partitioning, clustering, or `require_partition_filter`.\n   - The MERGE's `ON` clause has no constant predicate on the target, so it can scan the whole target each run. Add `d.ds = @ds` and partition the target on `ds`.\n   - With no `WHEN NOT MATCHED BY SOURCE`, subscribers that disappear from a re-run of the same `ds` leave stale rows. That's fine only if you intend it.\n\n7. **`SELECT *` in the source section.** The delivery query uses `SELECT *`, which defeats column pruning on a columnar 300 GB table. Name the columns.\n\n## Smaller items\n\n- **Contract:** `freshness_sla: 07:00 UTC` isn't tied to when the CRM export lands. Add the delivery time and what happens if the file is late.\n- **Contract:** the owner is a group address, which is fine, but name an on-call contact.\n- **Draft status:** the plan is a draft dated 2026-10-12, a month ago. Confirm it still reflects the current source schema.\n- **Grain:** \"one row per subscriber per ds\" is stated but not enforced. Add a uniqueness check on `(ds, subscriber_id)`.\n\nDo you want me to draft a revised plan covering items 1–7? I'd need your answers on two questions first: are the source rows additive or versioned, and do the PII columns need to be in this table at all?"
+              },
+              {
+                "name": "2-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The plan isn't ready to build. Two problems are blockers. I only read the plan; I haven't checked it against the actual dataset or the codebase.\n\n## Blockers\n\n1. **Public exposure of PII (Access).**\n   - The plan grants `allUsers` read on `public_marketing` and lists `email`, `full_name` and `date_of_birth` as columns. That would make subscriber PII readable by anyone.\n   - It also contradicts the contract's `classification: internal`.\n   - Fix: restrict readers to a named group, and drop the PII columns or move them to a separate restricted table or policy-tagged columns. Reconcile the classification with whatever you decide.\n\n2. **Destructive rollout.**\n   - Step 1 is `DROP TABLE` before the replacement exists. Readers see a missing table until the rebuild finishes, and a failed rebuild leaves you with no table and no backup.\n   - \"Check row counts\" comes after the drop, so there's nothing to compare against.\n   - Fix: build into a new table (or a shadow name), validate counts and sums against the old one, then swap with `CREATE OR REPLACE` or a rename.\n   - Step 2 also leaves `SELECT ...` elided. If it backfills every `ds`, that's a very large scan of a 300 GB table, and the `require_partition_filter` option will reject it unless it filters on `ds`.\n\n## Correctness gaps\n\n3. **The columns don't match the data.**\n   - The Access section lists `email`, `full_name` and `date_of_birth`. The source schema has only `ds`, `updated_at`, `subscriber_id` and `amount`, and the model selects only `ds`, `subscriber_id` and `amount`.\n   - Either the source is missing columns or the access list is wrong.\n\n4. **No segments.** The table is called \"segments\", but it has no segment column. It's a per-subscriber daily `amount` sum. Either the segmentation logic is missing or the name is wrong.\n\n5. **Possible double counting.**\n   - The source has `updated_at` and arrives as \"one file per run\". If a re-delivery or restatement lands rows for the same `ds` and `subscriber_id`, `SUM(amount)` will inflate the total.\n   - Decide whether rows are additive events or versioned snapshots. If they're snapshots, take the latest `updated_at` per subscriber (`QUALIFY ROW_NUMBER() ...`) instead of summing.\n\n6. **Target table undefined.**\n   - There's no DDL for `dim_newsletter_segments`: no partitioning, clustering, or `require_partition_filter`.\n   - The MERGE's `ON` clause has no constant predicate on the target, so it can scan the whole target each run. Add `d.ds = @ds` and partition the target on `ds`.\n   - With no `WHEN NOT MATCHED BY SOURCE`, subscribers that disappear from a re-run of the same `ds` leave stale rows. That's fine only if you intend it.\n\n7. **`SELECT *` in the source section.** The delivery query uses `SELECT *`, which defeats column pruning on a columnar 300 GB table. Name the columns.\n\n## Smaller items\n\n- **Contract:** `freshness_sla: 07:00 UTC` isn't tied to when the CRM export lands. Add the delivery time and what happens if the file is late.\n- **Contract:** the owner is a group address, which is fine, but name an on-call contact.\n- **Draft status:** the plan is a draft dated 2026-10-12, a month ago. Confirm it still reflects the current source schema.\n- **Grain:** \"one row per subscriber per ds\" is stated but not enforced. Add a uniqueness check on `(ds, subscriber_id)`.\n\nDo you want me to draft a revised plan covering items 1–7? I'd need your answers on two questions first: are the source rows additive or versioned, and do the PII columns need to be in this table at all?"
+              },
+              {
+                "name": "3-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The plan isn't ready to build. Two problems are blockers. I only read the plan; I haven't checked it against the actual dataset or the codebase.\n\n## Blockers\n\n1. **Public exposure of PII (Access).**\n   - The plan grants `allUsers` read on `public_marketing` and lists `email`, `full_name` and `date_of_birth` as columns. That would make subscriber PII readable by anyone.\n   - It also contradicts the contract's `classification: internal`.\n   - Fix: restrict readers to a named group, and drop the PII columns or move them to a separate restricted table or policy-tagged columns. Reconcile the classification with whatever you decide.\n\n2. **Destructive rollout.**\n   - Step 1 is `DROP TABLE` before the replacement exists. Readers see a missing table until the rebuild finishes, and a failed rebuild leaves you with no table and no backup.\n   - \"Check row counts\" comes after the drop, so there's nothing to compare against.\n   - Fix: build into a new table (or a shadow name), validate counts and sums against the old one, then swap with `CREATE OR REPLACE` or a rename.\n   - Step 2 also leaves `SELECT ...` elided. If it backfills every `ds`, that's a very large scan of a 300 GB table, and the `require_partition_filter` option will reject it unless it filters on `ds`.\n\n## Correctness gaps\n\n3. **The columns don't match the data.**\n   - The Access section lists `email`, `full_name` and `date_of_birth`. The source schema has only `ds`, `updated_at`, `subscriber_id` and `amount`, and the model selects only `ds`, `subscriber_id` and `amount`.\n   - Either the source is missing columns or the access list is wrong.\n\n4. **No segments.** The table is called \"segments\", but it has no segment column. It's a per-subscriber daily `amount` sum. Either the segmentation logic is missing or the name is wrong.\n\n5. **Possible double counting.**\n   - The source has `updated_at` and arrives as \"one file per run\". If a re-delivery or restatement lands rows for the same `ds` and `subscriber_id`, `SUM(amount)` will inflate the total.\n   - Decide whether rows are additive events or versioned snapshots. If they're snapshots, take the latest `updated_at` per subscriber (`QUALIFY ROW_NUMBER() ...`) instead of summing.\n\n6. **Target table undefined.**\n   - There's no DDL for `dim_newsletter_segments`: no partitioning, clustering, or `require_partition_filter`.\n   - The MERGE's `ON` clause has no constant predicate on the target, so it can scan the whole target each run. Add `d.ds = @ds` and partition the target on `ds`.\n   - With no `WHEN NOT MATCHED BY SOURCE`, subscribers that disappear from a re-run of the same `ds` leave stale rows. That's fine only if you intend it.\n\n7. **`SELECT *` in the source section.** The delivery query uses `SELECT *`, which defeats column pruning on a columnar 300 GB table. Name the columns.\n\n## Smaller items\n\n- **Contract:** `freshness_sla: 07:00 UTC` isn't tied to when the CRM export lands. Add the delivery time and what happens if the file is late.\n- **Contract:** the owner is a group address, which is fine, but name an on-call contact.\n- **Draft status:** the plan is a draft dated 2026-10-12, a month ago. Confirm it still reflects the current source schema.\n- **Grain:** \"one row per subscriber per ds\" is stated but not enforced. Add a uniqueness check on `(ds, subscriber_id)`.\n\nDo you want me to draft a revised plan covering items 1–7? I'd need your answers on two questions first: are the source rows additive or versioned, and do the PII columns need to be in this table at all?"
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.7333333333333333,
+        "passRate": 0.4,
+        "scoreWithout": 0.6666666666666666,
+        "passRateWithout": 0,
+        "delta": 0.06666666666666665
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 0,
+    "overallScore": 0.7333333333333333,
+    "overallPassRate": 0.4,
+    "meanDelta": 0.06666666666666665
+  }
+}

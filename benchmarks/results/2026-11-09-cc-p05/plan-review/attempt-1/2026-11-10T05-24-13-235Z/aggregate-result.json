@@ -1,0 +1,647 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.316",
+  "startedAt": "2026-11-10T05:24:13.235Z",
+  "durationSeconds": 365,
+  "costUsd": 0.7226566,
+  "partial": false,
+  "suite": {
+    "root": "/work",
+    "ablation": "with-without",
+    "modelOverride": "claude-sonnet-5-5",
+    "judgeModel": "claude-haiku-5-5",
+    "caseFilter": "plan-review-p05",
+    "threshold": 1,
+    "concurrency": 1,
+    "plugins": [
+      {
+        "name": "wraith",
+        "version": "0.8.3",
+        "path": "/work"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "plan-review-p05",
+      "dir": "bench-plan-review/p05",
+      "source": "mixed",
+      "promptMarkdown": "The plan for the inventory snapshot is at docs/wraith/2026-10-12-inventory-snapshot/plan.md. Review it before we build it.",
+      "runsPerCase": 5,
+      "timeoutSeconds": 600,
+      "maxTurns": 12,
+      "graders": [
+        {
+          "name": "1-rollback",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category rollback. Planted defect: the Rollout changes the live table (TRUNCATE then INSERT) with no snapshot, clone or restore step, so there is no way back. Location: the Rollout section (TRUNCATE then INSERT) of `snap_inventory`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category rollback. Planted defect: the Rollout changes the live table (TRUNCATE then INSERT) with no snapshot, clone or restore step, so there is no way back. Location: the Rollout section (TRUNCATE then INSERT) of `snap_inventory`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "2-contract",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category contract. Planted defect: in the Contract section freshness_sla is missing, although AGENTS.md requires owner, primary_key, classification and freshness_sla. Location: the Contract section of `snap_inventory`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category contract. Planted defect: in the Contract section freshness_sla is missing, although AGENTS.md requires owner, primary_key, classification and freshness_sla. Location: the Contract section of `snap_inventory`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "3-grain",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Answer key, category grain. Planted defect: the Model SQL declares one row per sku per warehouse per ds but groups by only ds, sku, so rows of the same grain are merged. Location: the GROUP BY in the Model section SQL of `snap_inventory`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+          "config": {
+            "criteria": "Answer key, category grain. Planted defect: the Model SQL declares one row per sku per warehouse per ds but groups by only ds, sku, so rows of the same grain are merged. Location: the GROUP BY in the Model section SQL of `snap_inventory`'s plan.\n\nPASS only if the review names this defect and ties it to that part of the plan. Generic advice with no tie to this table or step does not count. FAIL otherwise.",
+            "focus": "last_message"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.0931308,
+            "judgeCostUsd": 0.0008340000000000001,
+            "durationSeconds": 38,
+            "startedAt": "2026-11-10T05:24:13.267Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-CPknkY/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. **Verdict: NOT READY**, with four blockers.\n\n**Blockers**\n1. **Grain mismatch:** `warehouse_id` isn't in the source DDL, and the Model query leaves it out. The Load query groups by it, so as written it would fail.\n2. **Double-counting:** `counted_at` means a sku can have several counts per `ds`. `SUM(amount)` would add point-in-time levels together. The plan needs a rule, such as the latest count per sku and warehouse.\n3. **Rollout:** `TRUNCATE` then `INSERT` is destructive, empties the table for readers, and can't be rerun per `ds`. The plan also has no rollback or backfill path.\n4. **Contract:** it has no `freshness_sla`, which your AGENTS.md requires. It also has no schema or quality rules and no additive/breaking classification, and it isn't in `contracts/`.\n\n**Should-fix**\n- The primary key omits `ds`.\n- No consumer or decision is named.\n- `snap_inventory` has no partitioning or clustering, and no cost estimate.\n- The plan says identifiers are SHA256-hashed, but no query hashes anything. An unsalted hash of SKUs is reversible, and `snap_private` doesn't match the `internal` classification.\n- There are no tests or freshness check, no late-arrival rule, and no downstream consumers listed.\n\nI found no existing model or table for inventory in the repo, so the premise holds. I didn't run a dry-run, because `raw_wms.stock_levels` isn't in the repo and the plan gives no per-`ds` size. The cost estimate is still open.\n\nI left the rest of the plan unchanged, so the author resolves the findings. I didn't use the vendor second-pass skills. If you want them, they ask the agent to set an attribution tag that reports usage to Google, so that's your call."
+              },
+              {
+                "name": "2-contract",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. **Verdict: NOT READY**, with four blockers.\n\n**Blockers**\n1. **Grain mismatch:** `warehouse_id` isn't in the source DDL, and the Model query leaves it out. The Load query groups by it, so as written it would fail.\n2. **Double-counting:** `counted_at` means a sku can have several counts per `ds`. `SUM(amount)` would add point-in-time levels together. The plan needs a rule, such as the latest count per sku and warehouse.\n3. **Rollout:** `TRUNCATE` then `INSERT` is destructive, empties the table for readers, and can't be rerun per `ds`. The plan also has no rollback or backfill path.\n4. **Contract:** it has no `freshness_sla`, which your AGENTS.md requires. It also has no schema or quality rules and no additive/breaking classification, and it isn't in `contracts/`.\n\n**Should-fix**\n- The primary key omits `ds`.\n- No consumer or decision is named.\n- `snap_inventory` has no partitioning or clustering, and no cost estimate.\n- The plan says identifiers are SHA256-hashed, but no query hashes anything. An unsalted hash of SKUs is reversible, and `snap_private` doesn't match the `internal` classification.\n- There are no tests or freshness check, no late-arrival rule, and no downstream consumers listed.\n\nI found no existing model or table for inventory in the repo, so the premise holds. I didn't run a dry-run, because `raw_wms.stock_levels` isn't in the repo and the plan gives no per-`ds` size. The cost estimate is still open.\n\nI left the rest of the plan unchanged, so the author resolves the findings. I didn't use the vendor second-pass skills. If you want them, they ask the agent to set an attribution tag that reports usage to Google, so that's your call."
+              },
+              {
+                "name": "3-grain",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. **Verdict: NOT READY**, with four blockers.\n\n**Blockers**\n1. **Grain mismatch:** `warehouse_id` isn't in the source DDL, and the Model query leaves it out. The Load query groups by it, so as written it would fail.\n2. **Double-counting:** `counted_at` means a sku can have several counts per `ds`. `SUM(amount)` would add point-in-time levels together. The plan needs a rule, such as the latest count per sku and warehouse.\n3. **Rollout:** `TRUNCATE` then `INSERT` is destructive, empties the table for readers, and can't be rerun per `ds`. The plan also has no rollback or backfill path.\n4. **Contract:** it has no `freshness_sla`, which your AGENTS.md requires. It also has no schema or quality rules and no additive/breaking classification, and it isn't in `contracts/`.\n\n**Should-fix**\n- The primary key omits `ds`.\n- No consumer or decision is named.\n- `snap_inventory` has no partitioning or clustering, and no cost estimate.\n- The plan says identifiers are SHA256-hashed, but no query hashes anything. An unsalted hash of SKUs is reversible, and `snap_private` doesn't match the `internal` classification.\n- There are no tests or freshness check, no late-arrival rule, and no downstream consumers listed.\n\nI found no existing model or table for inventory in the repo, so the premise holds. I didn't run a dry-run, because `raw_wms.stock_levels` isn't in the repo and the plan gives no per-`ds` size. The cost estimate is still open.\n\nI left the rest of the plan unchanged, so the author resolves the findings. I didn't use the vendor second-pass skills. If you want them, they ask the agent to set an attribution tag that reports usage to Google, so that's your call."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 10,
+            "costUsd": 0.10394110000000001,
+            "judgeCostUsd": 0.0009027,
+            "durationSeconds": 43,
+            "startedAt": "2026-11-10T05:24:51.092Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-ZxwSXo/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. **Verdict: NOT READY.** I didn't change the rest of the plan.\n\nI found no existing inventory model or contract in the repo, but I only searched the repo. `dbt/` and `contracts/` are both empty. I didn't run a `bq` dry run, so the cost item has no measured bytes.\n\n**Blockers**\n- **Grain mismatch:** The grain says \"per sku per warehouse per ds\", but the Model query groups by `ds, sku` only. The source DDL has no `warehouse_id` column, although the Load query uses one.\n- **Double counting:** `SUM(amount)` over a day's rows double-counts stock if a sku is counted more than once a day. The source has `counted_at`, which suggests it can be.\n- **Truncate:** Rollout step 1 is `TRUNCATE TABLE snap_inventory`. That wipes every prior snapshot, and no rollback is written.\n- **Contract:** The contract has no `freshness_sla`, which `AGENTS.md` requires. Its `primary_key` also omits `ds`, and no contract file is planned.\n\n**Should-fix items (full detail in the plan)**\n- The consumer and decision aren't named.\n- The `snap_inventory` DDL is missing, with no partitioning or `require_partition_filter`.\n- The MERGE leaves stale rows on rerun and scans the whole target table. The backfill path isn't written.\n- No bytes-per-day cost estimate against the 10 GB `dev_max_bytes_billed`.\n- \"Hashed with SHA256\" appears in no query, and it isn't crypto-shredding.\n- Quality checks are only \"check row counts\".\n- Downstream consumers aren't listed.\n- Late-arriving data isn't handled.\n\nThe Google companion skills (`datalineage-bigquery-asset-impact-analysis` and `bigquery-optimization`) aren't installed here, so I skipped the second pass.\n\nOnce the blockers are fixed, I can re-review. The grain and double-counting questions depend on what a row in `stock_levels` actually represents, so that needs an answer from the data team first."
+              },
+              {
+                "name": "2-contract",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. **Verdict: NOT READY.** I didn't change the rest of the plan.\n\nI found no existing inventory model or contract in the repo, but I only searched the repo. `dbt/` and `contracts/` are both empty. I didn't run a `bq` dry run, so the cost item has no measured bytes.\n\n**Blockers**\n- **Grain mismatch:** The grain says \"per sku per warehouse per ds\", but the Model query groups by `ds, sku` only. The source DDL has no `warehouse_id` column, although the Load query uses one.\n- **Double counting:** `SUM(amount)` over a day's rows double-counts stock if a sku is counted more than once a day. The source has `counted_at`, which suggests it can be.\n- **Truncate:** Rollout step 1 is `TRUNCATE TABLE snap_inventory`. That wipes every prior snapshot, and no rollback is written.\n- **Contract:** The contract has no `freshness_sla`, which `AGENTS.md` requires. Its `primary_key` also omits `ds`, and no contract file is planned.\n\n**Should-fix items (full detail in the plan)**\n- The consumer and decision aren't named.\n- The `snap_inventory` DDL is missing, with no partitioning or `require_partition_filter`.\n- The MERGE leaves stale rows on rerun and scans the whole target table. The backfill path isn't written.\n- No bytes-per-day cost estimate against the 10 GB `dev_max_bytes_billed`.\n- \"Hashed with SHA256\" appears in no query, and it isn't crypto-shredding.\n- Quality checks are only \"check row counts\".\n- Downstream consumers aren't listed.\n- Late-arriving data isn't handled.\n\nThe Google companion skills (`datalineage-bigquery-asset-impact-analysis` and `bigquery-optimization`) aren't installed here, so I skipped the second pass.\n\nOnce the blockers are fixed, I can re-review. The grain and double-counting questions depend on what a row in `stock_levels` actually represents, so that needs an answer from the data team first."
+              },
+              {
+                "name": "3-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. **Verdict: NOT READY.** I didn't change the rest of the plan.\n\nI found no existing inventory model or contract in the repo, but I only searched the repo. `dbt/` and `contracts/` are both empty. I didn't run a `bq` dry run, so the cost item has no measured bytes.\n\n**Blockers**\n- **Grain mismatch:** The grain says \"per sku per warehouse per ds\", but the Model query groups by `ds, sku` only. The source DDL has no `warehouse_id` column, although the Load query uses one.\n- **Double counting:** `SUM(amount)` over a day's rows double-counts stock if a sku is counted more than once a day. The source has `counted_at`, which suggests it can be.\n- **Truncate:** Rollout step 1 is `TRUNCATE TABLE snap_inventory`. That wipes every prior snapshot, and no rollback is written.\n- **Contract:** The contract has no `freshness_sla`, which `AGENTS.md` requires. Its `primary_key` also omits `ds`, and no contract file is planned.\n\n**Should-fix items (full detail in the plan)**\n- The consumer and decision aren't named.\n- The `snap_inventory` DDL is missing, with no partitioning or `require_partition_filter`.\n- The MERGE leaves stale rows on rerun and scans the whole target table. The backfill path isn't written.\n- No bytes-per-day cost estimate against the 10 GB `dev_max_bytes_billed`.\n- \"Hashed with SHA256\" appears in no query, and it isn't crypto-shredding.\n- Quality checks are only \"check row counts\".\n- Downstream consumers aren't listed.\n- Late-arriving data isn't handled.\n\nThe Google companion skills (`datalineage-bigquery-asset-impact-analysis` and `bigquery-optimization`) aren't installed here, so I skipped the second pass.\n\nOnce the blockers are fixed, I can re-review. The grain and double-counting questions depend on what a row in `stock_levels` actually represents, so that needs an answer from the data team first."
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 0.1052434,
+            "judgeCostUsd": 0.0012506,
+            "durationSeconds": 44,
+            "startedAt": "2026-11-10T05:25:34.092Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-2uVn3l/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to `plan.md`. I didn't edit the rest of the plan. The verdict is **NOT READY**, because three problems need fixing before anyone builds it.\n\n**Blockers**\n1. **Grain mismatch (item 3).**\n   - The plan says one row per sku per warehouse per ds, but the Model query groups by `ds, sku` only.\n   - The source table has no `warehouse_id` column, so the Load query can't run as written.\n   - The contract's primary key leaves out `ds`.\n   - `counted_at` suggests several counts per sku per day. `SUM(amount)` would add them together, so the plan needs a \"latest count\" rule instead.\n2. **No safe rollout or rollback (item 10).** The rollout runs `TRUNCATE` first, with no backup. The follow-up insert is elided, and no rollback is written.\n3. **Reruns aren't idempotent (item 5).** The MERGE never deletes rows that disappear from a re-delivered `ds`, and no backfill path is written.\n\n**Should-fix**\n- **Missing context:** the plan names no consumer or decision, and it doesn't list downstream models.\n- **Contract:** `freshness_sla` is missing, and this repo requires it. There are also no schema or quality rules, and no contract file exists in `contracts/`.\n- **Table design and cost:** the `snap_inventory` DDL has no partitioning, clustering or `require_partition_filter`. The cost isn't estimated. A multi-day backfill could exceed the 10 GB dev cap.\n- **Personal data:** the \"SHA256 hashed identifiers\" claim conflicts with the plain columns listed. The `internal` classification also sits oddly in a dataset called `snap_private`.\n- **Quality checks and late data:** \"check row counts\" is the only check, and late-arriving data isn't handled.\n\nI also added two nits: say explicitly that this is a `ds` snapshot, and confirm the plan is still current, since it's about a month old.\n\nTwo things I couldn't do:\n- **Dry run:** I didn't run one. The queries don't compile as written, because `warehouse_id` is missing from the source table.\n- **Existing assets:** I found no existing inventory model, table or contract in the repo that would replace this.\n\nI also didn't use the optional Google companion skills."
+              },
+              {
+                "name": "2-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to `plan.md`. I didn't edit the rest of the plan. The verdict is **NOT READY**, because three problems need fixing before anyone builds it.\n\n**Blockers**\n1. **Grain mismatch (item 3).**\n   - The plan says one row per sku per warehouse per ds, but the Model query groups by `ds, sku` only.\n   - The source table has no `warehouse_id` column, so the Load query can't run as written.\n   - The contract's primary key leaves out `ds`.\n   - `counted_at` suggests several counts per sku per day. `SUM(amount)` would add them together, so the plan needs a \"latest count\" rule instead.\n2. **No safe rollout or rollback (item 10).** The rollout runs `TRUNCATE` first, with no backup. The follow-up insert is elided, and no rollback is written.\n3. **Reruns aren't idempotent (item 5).** The MERGE never deletes rows that disappear from a re-delivered `ds`, and no backfill path is written.\n\n**Should-fix**\n- **Missing context:** the plan names no consumer or decision, and it doesn't list downstream models.\n- **Contract:** `freshness_sla` is missing, and this repo requires it. There are also no schema or quality rules, and no contract file exists in `contracts/`.\n- **Table design and cost:** the `snap_inventory` DDL has no partitioning, clustering or `require_partition_filter`. The cost isn't estimated. A multi-day backfill could exceed the 10 GB dev cap.\n- **Personal data:** the \"SHA256 hashed identifiers\" claim conflicts with the plain columns listed. The `internal` classification also sits oddly in a dataset called `snap_private`.\n- **Quality checks and late data:** \"check row counts\" is the only check, and late-arriving data isn't handled.\n\nI also added two nits: say explicitly that this is a `ds` snapshot, and confirm the plan is still current, since it's about a month old.\n\nTwo things I couldn't do:\n- **Dry run:** I didn't run one. The queries don't compile as written, because `warehouse_id` is missing from the source table.\n- **Existing assets:** I found no existing inventory model, table or contract in the repo that would replace this.\n\nI also didn't use the optional Google companion skills."
+              },
+              {
+                "name": "3-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to `plan.md`. I didn't edit the rest of the plan. The verdict is **NOT READY**, because three problems need fixing before anyone builds it.\n\n**Blockers**\n1. **Grain mismatch (item 3).**\n   - The plan says one row per sku per warehouse per ds, but the Model query groups by `ds, sku` only.\n   - The source table has no `warehouse_id` column, so the Load query can't run as written.\n   - The contract's primary key leaves out `ds`.\n   - `counted_at` suggests several counts per sku per day. `SUM(amount)` would add them together, so the plan needs a \"latest count\" rule instead.\n2. **No safe rollout or rollback (item 10).** The rollout runs `TRUNCATE` first, with no backup. The follow-up insert is elided, and no rollback is written.\n3. **Reruns aren't idempotent (item 5).** The MERGE never deletes rows that disappear from a re-delivered `ds`, and no backfill path is written.\n\n**Should-fix**\n- **Missing context:** the plan names no consumer or decision, and it doesn't list downstream models.\n- **Contract:** `freshness_sla` is missing, and this repo requires it. There are also no schema or quality rules, and no contract file exists in `contracts/`.\n- **Table design and cost:** the `snap_inventory` DDL has no partitioning, clustering or `require_partition_filter`. The cost isn't estimated. A multi-day backfill could exceed the 10 GB dev cap.\n- **Personal data:** the \"SHA256 hashed identifiers\" claim conflicts with the plain columns listed. The `internal` classification also sits oddly in a dataset called `snap_private`.\n- **Quality checks and late data:** \"check row counts\" is the only check, and late-arriving data isn't handled.\n\nI also added two nits: say explicitly that this is a `ds` snapshot, and confirm the plan is still current, since it's about a month old.\n\nTwo things I couldn't do:\n- **Dry run:** I didn't run one. The queries don't compile as written, because `warehouse_id` is missing from the source table.\n- **Existing assets:** I found no existing inventory model, table or contract in the repo that would replace this.\n\nI also didn't use the optional Google companion skills."
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.0974912,
+            "judgeCostUsd": 0.001453499999999999,
+            "durationSeconds": 45,
+            "startedAt": "2026-11-10T05:26:18.207Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-S3wKtg/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to `plan.md`. **The verdict is NOT READY.** I didn't touch the rest of the plan. I made no dry run, because the load query wouldn't compile (first blocker below).\n\n**Blockers**\n1. **`warehouse_id` is missing from the source.** The grain, Load, Access and Contract all use it, but it isn't in the `raw_wms.stock_levels` DDL. The Model query also leaves it out, so it contradicts the plan's own grain.\n2. **`counted_at` makes the sum unsafe.** A sku can be counted more than once per ds, so `SUM(amount)` would overstate stock. The plan needs a rule such as the latest count per sku and warehouse.\n3. **The rollout can't be rerun or undone.** It does `TRUNCATE` and then a bare `INSERT`. It has no backfill path and no rollback, and the `SELECT ...` isn't written.\n4. **There is no real contract.** No ODCS file exists in `contracts/`. The inline contract lacks `freshness_sla`, which your AGENTS.md requires, and has no schema or quality rules.\n\n**Should-fix**\n- primary_key should include `ds`.\n- The plan names no consumer or decision.\n- MERGE leaves stale rows when a ds is rerun.\n- The target table has no partition or clustering DDL, and the cost isn't estimated. The 600 GB is the whole table, not one ds.\n- The plan says identifiers are hashed with SHA256, but no step does that. Unsalted SHA256 is also weak for low-entropy ids.\n- The plan has no tests, no freshness SLA, no late-data rule and no downstream list.\n\nStep 0 found nothing in the repo that already serves this need. I didn't run the vendor second pass because the companion Google skills aren't installed.\n\nDo you want me to fix the plan against these findings, or would you rather the author do it?"
+              },
+              {
+                "name": "2-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to `plan.md`. **The verdict is NOT READY.** I didn't touch the rest of the plan. I made no dry run, because the load query wouldn't compile (first blocker below).\n\n**Blockers**\n1. **`warehouse_id` is missing from the source.** The grain, Load, Access and Contract all use it, but it isn't in the `raw_wms.stock_levels` DDL. The Model query also leaves it out, so it contradicts the plan's own grain.\n2. **`counted_at` makes the sum unsafe.** A sku can be counted more than once per ds, so `SUM(amount)` would overstate stock. The plan needs a rule such as the latest count per sku and warehouse.\n3. **The rollout can't be rerun or undone.** It does `TRUNCATE` and then a bare `INSERT`. It has no backfill path and no rollback, and the `SELECT ...` isn't written.\n4. **There is no real contract.** No ODCS file exists in `contracts/`. The inline contract lacks `freshness_sla`, which your AGENTS.md requires, and has no schema or quality rules.\n\n**Should-fix**\n- primary_key should include `ds`.\n- The plan names no consumer or decision.\n- MERGE leaves stale rows when a ds is rerun.\n- The target table has no partition or clustering DDL, and the cost isn't estimated. The 600 GB is the whole table, not one ds.\n- The plan says identifiers are hashed with SHA256, but no step does that. Unsalted SHA256 is also weak for low-entropy ids.\n- The plan has no tests, no freshness SLA, no late-data rule and no downstream list.\n\nStep 0 found nothing in the repo that already serves this need. I didn't run the vendor second pass because the companion Google skills aren't installed.\n\nDo you want me to fix the plan against these findings, or would you rather the author do it?"
+              },
+              {
+                "name": "3-grain",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  true,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to `plan.md`. **The verdict is NOT READY.** I didn't touch the rest of the plan. I made no dry run, because the load query wouldn't compile (first blocker below).\n\n**Blockers**\n1. **`warehouse_id` is missing from the source.** The grain, Load, Access and Contract all use it, but it isn't in the `raw_wms.stock_levels` DDL. The Model query also leaves it out, so it contradicts the plan's own grain.\n2. **`counted_at` makes the sum unsafe.** A sku can be counted more than once per ds, so `SUM(amount)` would overstate stock. The plan needs a rule such as the latest count per sku and warehouse.\n3. **The rollout can't be rerun or undone.** It does `TRUNCATE` and then a bare `INSERT`. It has no backfill path and no rollback, and the `SELECT ...` isn't written.\n4. **There is no real contract.** No ODCS file exists in `contracts/`. The inline contract lacks `freshness_sla`, which your AGENTS.md requires, and has no schema or quality rules.\n\n**Should-fix**\n- primary_key should include `ds`.\n- The plan names no consumer or decision.\n- MERGE leaves stale rows when a ds is rerun.\n- The target table has no partition or clustering DDL, and the cost isn't estimated. The 600 GB is the whole table, not one ds.\n- The plan says identifiers are hashed with SHA256, but no step does that. Unsalted SHA256 is also weak for low-entropy ids.\n- The plan has no tests, no freshness SLA, no late-data rule and no downstream list.\n\nStep 0 found nothing in the repo that already serves this need. I didn't run the vendor second pass because the companion Google skills aren't installed.\n\nDo you want me to fix the plan against these findings, or would you rather the author do it?"
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.0948097,
+            "judgeCostUsd": 0.0018011,
+            "durationSeconds": 44,
+            "startedAt": "2026-11-10T05:27:03.501Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-nX0Ytq/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. The verdict is **NOT READY**. I didn't edit the rest of the plan.\n\nI found nothing existing that already serves this need: the repo has no dbt models and no contracts. So there is no premise blocker.\n\n**Blockers (4)**\n- **Grain:** `raw_wms.stock_levels` has no `warehouse_id` column, but the grain, the MERGE and the contract all use it. The Model query also leaves it out, so the two queries disagree.\n- **Double-counting:** `counted_at` allows several counts per sku per ds, and `SUM(amount)` would add them together. The plan needs a rule such as taking the latest count per sku and warehouse.\n- **Primary key:** the contract's `primary_key` omits `ds`, so it isn't unique for a daily snapshot.\n- **Rollout:** `TRUNCATE` then `INSERT` wipes every earlier snapshot. It can't be rerun for a single ds and has no rollback. Use a per-ds partition overwrite instead, and write the backfill and rollback paths.\n\n**Should fix (9)**\n- No consumer or decision is named.\n- The contract has no `freshness_sla`, which your `contract_required_fields` setting requires. There is also no contract file and no additive-or-breaking classification.\n- Using MERGE means rows that vanish from the source on a rerun are never removed.\n- The `snap_inventory` DDL is missing, so there is no partitioning, clustering or `require_partition_filter`.\n- The cost isn't estimated.\n- \"Hashed with SHA256\" contradicts the queries, which select raw `sku`. Unsalted SHA256 of a low-entropy sku is also weak. The plan also gives no personal-data statement or crypto-shred path.\n- There are no tests or freshness checks.\n- Downstream consumers aren't listed.\n- Late-arriving data isn't handled.\n\nI also added one minor item: the load job's service account isn't named.\n\nI didn't run the dry-run cost check or `dbt ls`. The plan's SQL doesn't run as written, and there is no dbt project to list. I also didn't run the vendor second pass.\n\nDo you want me to fix the plan against these findings?"
+              },
+              {
+                "name": "2-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. The verdict is **NOT READY**. I didn't edit the rest of the plan.\n\nI found nothing existing that already serves this need: the repo has no dbt models and no contracts. So there is no premise blocker.\n\n**Blockers (4)**\n- **Grain:** `raw_wms.stock_levels` has no `warehouse_id` column, but the grain, the MERGE and the contract all use it. The Model query also leaves it out, so the two queries disagree.\n- **Double-counting:** `counted_at` allows several counts per sku per ds, and `SUM(amount)` would add them together. The plan needs a rule such as taking the latest count per sku and warehouse.\n- **Primary key:** the contract's `primary_key` omits `ds`, so it isn't unique for a daily snapshot.\n- **Rollout:** `TRUNCATE` then `INSERT` wipes every earlier snapshot. It can't be rerun for a single ds and has no rollback. Use a per-ds partition overwrite instead, and write the backfill and rollback paths.\n\n**Should fix (9)**\n- No consumer or decision is named.\n- The contract has no `freshness_sla`, which your `contract_required_fields` setting requires. There is also no contract file and no additive-or-breaking classification.\n- Using MERGE means rows that vanish from the source on a rerun are never removed.\n- The `snap_inventory` DDL is missing, so there is no partitioning, clustering or `require_partition_filter`.\n- The cost isn't estimated.\n- \"Hashed with SHA256\" contradicts the queries, which select raw `sku`. Unsalted SHA256 of a low-entropy sku is also weak. The plan also gives no personal-data statement or crypto-shred path.\n- There are no tests or freshness checks.\n- Downstream consumers aren't listed.\n- Late-arriving data isn't handled.\n\nI also added one minor item: the load job's service account isn't named.\n\nI didn't run the dry-run cost check or `dbt ls`. The plan's SQL doesn't run as written, and there is no dbt project to list. I also didn't run the vendor second pass.\n\nDo you want me to fix the plan against these findings?"
+              },
+              {
+                "name": "3-grain",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  true,
+                  false
+                ],
+                "evidence": "I reviewed the plan and appended a `## Data review (2026-11-10)` section to it. The verdict is **NOT READY**. I didn't edit the rest of the plan.\n\nI found nothing existing that already serves this need: the repo has no dbt models and no contracts. So there is no premise blocker.\n\n**Blockers (4)**\n- **Grain:** `raw_wms.stock_levels` has no `warehouse_id` column, but the grain, the MERGE and the contract all use it. The Model query also leaves it out, so the two queries disagree.\n- **Double-counting:** `counted_at` allows several counts per sku per ds, and `SUM(amount)` would add them together. The plan needs a rule such as taking the latest count per sku and warehouse.\n- **Primary key:** the contract's `primary_key` omits `ds`, so it isn't unique for a daily snapshot.\n- **Rollout:** `TRUNCATE` then `INSERT` wipes every earlier snapshot. It can't be rerun for a single ds and has no rollback. Use a per-ds partition overwrite instead, and write the backfill and rollback paths.\n\n**Should fix (9)**\n- No consumer or decision is named.\n- The contract has no `freshness_sla`, which your `contract_required_fields` setting requires. There is also no contract file and no additive-or-breaking classification.\n- Using MERGE means rows that vanish from the source on a rerun are never removed.\n- The `snap_inventory` DDL is missing, so there is no partitioning, clustering or `require_partition_filter`.\n- The cost isn't estimated.\n- \"Hashed with SHA256\" contradicts the queries, which select raw `sku`. Unsalted SHA256 of a low-entropy sku is also weak. The plan also gives no personal-data statement or crypto-shred path.\n- There are no tests or freshness checks.\n- Downstream consumers aren't listed.\n- Late-arriving data isn't handled.\n\nI also added one minor item: the load job's service account isn't named.\n\nI didn't run the dry-run cost check or `dbt ls`. The plan's SQL doesn't run as written, and there is no dbt project to list. I also didn't run the vendor second pass.\n\nDo you want me to fix the plan against these findings?"
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.045897,
+            "judgeCostUsd": 0.0021193999999999996,
+            "durationSeconds": 32,
+            "startedAt": "2026-11-10T05:27:47.267Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-VQdsPS/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan and found several problems. The first four would produce wrong data or lose data, so I'd fix them before we build.\n\n**Blocking**\n\n1. **`warehouse_id` isn't in the source.** `raw_wms.stock_levels` has `(ds, counted_at, sku, amount)`. The grain, the MERGE and the contract all use `warehouse_id` (plan.md:23, 36, 56). Either the source DDL is incomplete or the warehouse can't be derived. Please confirm where it comes from.\n2. **The Model query contradicts the grain.** It groups by `ds, sku` only (plan.md:26-29), but the grain is per sku per warehouse. The MERGE query has `warehouse_id`, so the two queries disagree.\n3. **`SUM(amount)` is probably wrong.** The source has `counted_at`, which suggests several counts per sku per day. Stock levels are point-in-time readings, so summing them double-counts. You likely want the latest count per sku and warehouse (`QUALIFY ROW_NUMBER() OVER (PARTITION BY sku, warehouse_id ORDER BY counted_at DESC) = 1`). If the export holds one row per warehouse per day, the plan should say so. Please confirm which it is.\n4. **The rollout destroys history.** `TRUNCATE` followed by `INSERT` (plan.md:49-50) wipes every earlier snapshot. History is the point of a snapshot table, and the table is empty between the two statements. The `INSERT ... SELECT ...` is also unspecified, and a backfill has to loop over each `ds` because of `require_partition_filter`. Use the idempotent MERGE for every `ds`, including the first load and any backfill.\n\n**Should fix**\n\n5. **The contract key is missing `ds`.** `primary_key: sku, warehouse_id` conflicts with a grain that includes `ds`. It should be `ds, sku, warehouse_id`.\n6. **The hashing statement doesn't match the SQL.** The plan says identifiers are hashed with SHA256, but neither query hashes anything. Unsalted SHA256 of SKUs is also easy to reverse with a dictionary. If the hashing is real, state which columns, whether it's salted, and how joins to other tables will work. If it isn't needed, drop the line.\n7. **The classification looks inconsistent.** The dataset is named `snap_private` and the data is hashed, yet the contract says `internal`. Please check that these agree.\n8. **The target table has no DDL.** Add column types, partitioning on `ds` and `require_partition_filter`, so the MERGE doesn't scan the whole destination.\n9. **The validation is vague.** \"Check row counts\" (plan.md:51) has no pass criteria. Define concrete checks:\n   - The key is unique.\n   - Row count is within a tolerance of the previous day.\n   - There are no null SKUs.\n   - The partition for `@ds` exists, so a late or missing daily export fails loudly instead of loading nothing.\n\n**Minor**\n\n10. The plan is a month old (dated 2026-10-12, still \"draft\"). Confirm it's still current.\n\nI'd resolve items 1 and 3 first, because they decide the shape of the model. Do you know whether the export has a warehouse column and multiple counts per day? Once I know, I can draft a corrected version of the plan."
+              },
+              {
+                "name": "2-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan and found several problems. The first four would produce wrong data or lose data, so I'd fix them before we build.\n\n**Blocking**\n\n1. **`warehouse_id` isn't in the source.** `raw_wms.stock_levels` has `(ds, counted_at, sku, amount)`. The grain, the MERGE and the contract all use `warehouse_id` (plan.md:23, 36, 56). Either the source DDL is incomplete or the warehouse can't be derived. Please confirm where it comes from.\n2. **The Model query contradicts the grain.** It groups by `ds, sku` only (plan.md:26-29), but the grain is per sku per warehouse. The MERGE query has `warehouse_id`, so the two queries disagree.\n3. **`SUM(amount)` is probably wrong.** The source has `counted_at`, which suggests several counts per sku per day. Stock levels are point-in-time readings, so summing them double-counts. You likely want the latest count per sku and warehouse (`QUALIFY ROW_NUMBER() OVER (PARTITION BY sku, warehouse_id ORDER BY counted_at DESC) = 1`). If the export holds one row per warehouse per day, the plan should say so. Please confirm which it is.\n4. **The rollout destroys history.** `TRUNCATE` followed by `INSERT` (plan.md:49-50) wipes every earlier snapshot. History is the point of a snapshot table, and the table is empty between the two statements. The `INSERT ... SELECT ...` is also unspecified, and a backfill has to loop over each `ds` because of `require_partition_filter`. Use the idempotent MERGE for every `ds`, including the first load and any backfill.\n\n**Should fix**\n\n5. **The contract key is missing `ds`.** `primary_key: sku, warehouse_id` conflicts with a grain that includes `ds`. It should be `ds, sku, warehouse_id`.\n6. **The hashing statement doesn't match the SQL.** The plan says identifiers are hashed with SHA256, but neither query hashes anything. Unsalted SHA256 of SKUs is also easy to reverse with a dictionary. If the hashing is real, state which columns, whether it's salted, and how joins to other tables will work. If it isn't needed, drop the line.\n7. **The classification looks inconsistent.** The dataset is named `snap_private` and the data is hashed, yet the contract says `internal`. Please check that these agree.\n8. **The target table has no DDL.** Add column types, partitioning on `ds` and `require_partition_filter`, so the MERGE doesn't scan the whole destination.\n9. **The validation is vague.** \"Check row counts\" (plan.md:51) has no pass criteria. Define concrete checks:\n   - The key is unique.\n   - Row count is within a tolerance of the previous day.\n   - There are no null SKUs.\n   - The partition for `@ds` exists, so a late or missing daily export fails loudly instead of loading nothing.\n\n**Minor**\n\n10. The plan is a month old (dated 2026-10-12, still \"draft\"). Confirm it's still current.\n\nI'd resolve items 1 and 3 first, because they decide the shape of the model. Do you know whether the export has a warehouse column and multiple counts per day? Once I know, I can draft a corrected version of the plan."
+              },
+              {
+                "name": "3-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "I read the plan and found several problems. The first four would produce wrong data or lose data, so I'd fix them before we build.\n\n**Blocking**\n\n1. **`warehouse_id` isn't in the source.** `raw_wms.stock_levels` has `(ds, counted_at, sku, amount)`. The grain, the MERGE and the contract all use `warehouse_id` (plan.md:23, 36, 56). Either the source DDL is incomplete or the warehouse can't be derived. Please confirm where it comes from.\n2. **The Model query contradicts the grain.** It groups by `ds, sku` only (plan.md:26-29), but the grain is per sku per warehouse. The MERGE query has `warehouse_id`, so the two queries disagree.\n3. **`SUM(amount)` is probably wrong.** The source has `counted_at`, which suggests several counts per sku per day. Stock levels are point-in-time readings, so summing them double-counts. You likely want the latest count per sku and warehouse (`QUALIFY ROW_NUMBER() OVER (PARTITION BY sku, warehouse_id ORDER BY counted_at DESC) = 1`). If the export holds one row per warehouse per day, the plan should say so. Please confirm which it is.\n4. **The rollout destroys history.** `TRUNCATE` followed by `INSERT` (plan.md:49-50) wipes every earlier snapshot. History is the point of a snapshot table, and the table is empty between the two statements. The `INSERT ... SELECT ...` is also unspecified, and a backfill has to loop over each `ds` because of `require_partition_filter`. Use the idempotent MERGE for every `ds`, including the first load and any backfill.\n\n**Should fix**\n\n5. **The contract key is missing `ds`.** `primary_key: sku, warehouse_id` conflicts with a grain that includes `ds`. It should be `ds, sku, warehouse_id`.\n6. **The hashing statement doesn't match the SQL.** The plan says identifiers are hashed with SHA256, but neither query hashes anything. Unsalted SHA256 of SKUs is also easy to reverse with a dictionary. If the hashing is real, state which columns, whether it's salted, and how joins to other tables will work. If it isn't needed, drop the line.\n7. **The classification looks inconsistent.** The dataset is named `snap_private` and the data is hashed, yet the contract says `internal`. Please check that these agree.\n8. **The target table has no DDL.** Add column types, partitioning on `ds` and `require_partition_filter`, so the MERGE doesn't scan the whole destination.\n9. **The validation is vague.** \"Check row counts\" (plan.md:51) has no pass criteria. Define concrete checks:\n   - The key is unique.\n   - Row count is within a tolerance of the previous day.\n   - There are no null SKUs.\n   - The partition for `@ds` exists, so a late or missing daily export fails loudly instead of loading nothing.\n\n**Minor**\n\n10. The plan is a month old (dated 2026-10-12, still \"draft\"). Confirm it's still current.\n\nI'd resolve items 1 and 3 first, because they decide the shape of the model. Do you know whether the export has a warehouse column and multiple counts per day? Once I know, I can draft a corrected version of the plan."
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.04535019999999999,
+            "judgeCostUsd": 0.0014625999999999945,
+            "durationSeconds": 27,
+            "startedAt": "2026-11-10T05:28:18.891Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-dj7EwG/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-rollback",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan. It has several problems that I'd fix before building.\n\n**Blocking**\n\n1. **`warehouse_id` is missing from the source.** The `raw_wms.stock_levels` DDL has only `ds, counted_at, sku, amount`. The grain, the MERGE and the contract all use `warehouse_id`. Either the DDL is incomplete or the grain is wrong. Please confirm which.\n2. **The Model query contradicts its own grain.** The grain says \"per sku per warehouse per ds\", but the Model SQL groups by `ds, sku` only. The Load SQL does include `warehouse_id`. The two queries need to be the same.\n3. **The rollout is destructive and not atomic.** `TRUNCATE` followed by `INSERT` leaves the table empty until the insert finishes. If the insert fails, the history is gone.\n   - The insert is also a placeholder (`SELECT ...`). It would reload only one `ds`, or an unspecified backfill range.\n   - The row-count check comes after the truncate and has no expected number to compare against.\n   - Safer: build into a staging table, validate, then swap or MERGE. Alternatively, skip the truncate and run the idempotent MERGE per `ds`.\n4. **`SUM(amount)` may double-count.** The source has `counted_at`, which suggests several counts per sku per day, or re-delivered exports. Summing those inflates stock. The plan doesn't say whether rows are additive (per-location or per-bin) or repeated counts. If they are repeated counts, take the latest `counted_at` instead.\n\n**Should fix**\n\n5. **The access section doesn't match the model.** It says identifiers are hashed with SHA256, but no query hashes anything. It also lists `sku` and `warehouse_id` as columns without saying which ones are hashed. Hashing `sku` would also break joins with other tables, and the plan doesn't mention that.\n6. **The contract's primary key is wrong.** It should be `ds, sku, warehouse_id`. As written, it implies one row per sku per warehouse across all dates.\n7. **The MERGE never removes rows.** There is no `WHEN NOT MATCHED BY SOURCE` clause. If a re-delivery drops a sku for a `ds`, the stale row stays.\n   - If `snap_inventory` also requires a partition filter, add a constant `d.ds = @ds` predicate to the `ON` clause.\n8. **Operational gaps.**\n   - No schedule, freshness SLA or handling for a late or missing export.\n   - No data tests (null or negative `amount`, duplicate keys).\n   - No writer identity for the pipeline. Only readers are listed.\n   - The \"internal\" classification should be checked against the `snap_private` dataset name.\n\n**Fine as is**\n- Reading one partition with `ds = @ds` satisfies `require_partition_filter` and keeps scan cost to a single day, not the full 600 GB.\n- The `MERGE ... INSERT ROW` syntax is valid.\n\nI can write a revised plan once you answer items 1 and 4. Those two decide the grain and the aggregation."
+              },
+              {
+                "name": "2-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan. It has several problems that I'd fix before building.\n\n**Blocking**\n\n1. **`warehouse_id` is missing from the source.** The `raw_wms.stock_levels` DDL has only `ds, counted_at, sku, amount`. The grain, the MERGE and the contract all use `warehouse_id`. Either the DDL is incomplete or the grain is wrong. Please confirm which.\n2. **The Model query contradicts its own grain.** The grain says \"per sku per warehouse per ds\", but the Model SQL groups by `ds, sku` only. The Load SQL does include `warehouse_id`. The two queries need to be the same.\n3. **The rollout is destructive and not atomic.** `TRUNCATE` followed by `INSERT` leaves the table empty until the insert finishes. If the insert fails, the history is gone.\n   - The insert is also a placeholder (`SELECT ...`). It would reload only one `ds`, or an unspecified backfill range.\n   - The row-count check comes after the truncate and has no expected number to compare against.\n   - Safer: build into a staging table, validate, then swap or MERGE. Alternatively, skip the truncate and run the idempotent MERGE per `ds`.\n4. **`SUM(amount)` may double-count.** The source has `counted_at`, which suggests several counts per sku per day, or re-delivered exports. Summing those inflates stock. The plan doesn't say whether rows are additive (per-location or per-bin) or repeated counts. If they are repeated counts, take the latest `counted_at` instead.\n\n**Should fix**\n\n5. **The access section doesn't match the model.** It says identifiers are hashed with SHA256, but no query hashes anything. It also lists `sku` and `warehouse_id` as columns without saying which ones are hashed. Hashing `sku` would also break joins with other tables, and the plan doesn't mention that.\n6. **The contract's primary key is wrong.** It should be `ds, sku, warehouse_id`. As written, it implies one row per sku per warehouse across all dates.\n7. **The MERGE never removes rows.** There is no `WHEN NOT MATCHED BY SOURCE` clause. If a re-delivery drops a sku for a `ds`, the stale row stays.\n   - If `snap_inventory` also requires a partition filter, add a constant `d.ds = @ds` predicate to the `ON` clause.\n8. **Operational gaps.**\n   - No schedule, freshness SLA or handling for a late or missing export.\n   - No data tests (null or negative `amount`, duplicate keys).\n   - No writer identity for the pipeline. Only readers are listed.\n   - The \"internal\" classification should be checked against the `snap_private` dataset name.\n\n**Fine as is**\n- Reading one partition with `ds = @ds` satisfies `require_partition_filter` and keeps scan cost to a single day, not the full 600 GB.\n- The `MERGE ... INSERT ROW` syntax is valid.\n\nI can write a revised plan once you answer items 1 and 4. Those two decide the grain and the aggregation."
+              },
+              {
+                "name": "3-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. It has several problems that I'd fix before building.\n\n**Blocking**\n\n1. **`warehouse_id` is missing from the source.** The `raw_wms.stock_levels` DDL has only `ds, counted_at, sku, amount`. The grain, the MERGE and the contract all use `warehouse_id`. Either the DDL is incomplete or the grain is wrong. Please confirm which.\n2. **The Model query contradicts its own grain.** The grain says \"per sku per warehouse per ds\", but the Model SQL groups by `ds, sku` only. The Load SQL does include `warehouse_id`. The two queries need to be the same.\n3. **The rollout is destructive and not atomic.** `TRUNCATE` followed by `INSERT` leaves the table empty until the insert finishes. If the insert fails, the history is gone.\n   - The insert is also a placeholder (`SELECT ...`). It would reload only one `ds`, or an unspecified backfill range.\n   - The row-count check comes after the truncate and has no expected number to compare against.\n   - Safer: build into a staging table, validate, then swap or MERGE. Alternatively, skip the truncate and run the idempotent MERGE per `ds`.\n4. **`SUM(amount)` may double-count.** The source has `counted_at`, which suggests several counts per sku per day, or re-delivered exports. Summing those inflates stock. The plan doesn't say whether rows are additive (per-location or per-bin) or repeated counts. If they are repeated counts, take the latest `counted_at` instead.\n\n**Should fix**\n\n5. **The access section doesn't match the model.** It says identifiers are hashed with SHA256, but no query hashes anything. It also lists `sku` and `warehouse_id` as columns without saying which ones are hashed. Hashing `sku` would also break joins with other tables, and the plan doesn't mention that.\n6. **The contract's primary key is wrong.** It should be `ds, sku, warehouse_id`. As written, it implies one row per sku per warehouse across all dates.\n7. **The MERGE never removes rows.** There is no `WHEN NOT MATCHED BY SOURCE` clause. If a re-delivery drops a sku for a `ds`, the stale row stays.\n   - If `snap_inventory` also requires a partition filter, add a constant `d.ds = @ds` predicate to the `ON` clause.\n8. **Operational gaps.**\n   - No schedule, freshness SLA or handling for a late or missing export.\n   - No data tests (null or negative `amount`, duplicate keys).\n   - No writer identity for the pipeline. Only readers are listed.\n   - The \"internal\" classification should be checked against the `snap_private` dataset name.\n\n**Fine as is**\n- Reading one partition with `ds = @ds` satisfies `require_partition_filter` and keeps scan cost to a single day, not the full 600 GB.\n- The `MERGE ... INSERT ROW` syntax is valid.\n\nI can write a revised plan once you answer items 1 and 4. Those two decide the grain and the aggregation."
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.046754300000000006,
+            "judgeCostUsd": 0.002306700000000002,
+            "durationSeconds": 34,
+            "startedAt": "2026-11-10T05:28:45.552Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-RL6GoY/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-rollback",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The plan isn't ready to build. The main problem is that the source table has no `warehouse_id` column, so the plan contradicts itself. I only read the plan. I didn't check it against the actual warehouse export or any existing tables.\n\n**Blocking**\n\n1. **`warehouse_id` isn't in the source.** `raw_wms.stock_levels` has `ds, counted_at, sku, amount` (plan.md:14). The grain (line 23), the Load query (line 36), the access columns and the primary key all use `warehouse_id`. As written, the load fails. Either the source DDL is incomplete or the grain is wrong, so please confirm which.\n2. **The Model and Load queries disagree.** Model groups by `ds, sku` (line 26-29). Load groups by `ds, sku, warehouse_id`. Only one of them can be the real definition.\n3. **`SUM(amount)` may double count.** The source has `counted_at`, which suggests several counts per sku per day. If `amount` is a point-in-time stock level, summing counts overstates stock. You'd want the latest count per sku and warehouse instead. The same applies if a daily export is ever re-delivered. The plan needs to say what a row means and how duplicates are handled.\n4. **The rollout is destructive and non-atomic.** `TRUNCATE` followed by `INSERT ... SELECT ...` (lines 49-50) leaves the table empty if step 2 fails, and readers see that empty table in between. The `SELECT` isn't specified. It also doesn't match the MERGE load. Use `CREATE OR REPLACE`, or MERGE per `ds`, or a swap. \"Check row counts\" has no expected value or comparison.\n\n**Should fix**\n\n5. **Hashing isn't implemented.** The Access section says identifiers are hashed with SHA256, but no query does it. Unsalted SHA256 of a low-entropy `sku` is also easy to reverse. Decide whether hashing is needed at all, given that the classification is \"internal\" and the dataset is `snap_private`.\n6. **The primary key omits `ds`** (line 56), but the grain includes it. It should be `ds, sku, warehouse_id`.\n7. **The MERGE never removes stale rows.** On a re-run, a sku that is no longer in the source keeps its old row. Add `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE`.\n8. **The target table has no DDL.** Partitioning, clustering and `require_partition_filter` for `snap_inventory` aren't specified. Without a `ds` filter the MERGE scans the whole destination.\n9. **Nothing covers scheduling or late data.** The export arrives \"once a day\", but the plan has no schedule, no check that the `@ds` partition is complete before the run, and no backfill approach. Backfilling 600 GB, one partition at a time because of `require_partition_filter`, needs a cost estimate.\n10. **Ownership and access don't match.** The owner is data-platform, but the only reader is data-team. Confirm that this is intended.\n\nThe plan is also dated 2026-10-12 and still marked draft. I'd settle items 1-4 first. Do you want me to draft a corrected version of the plan once you've confirmed the real source schema and what `amount` means?"
+              },
+              {
+                "name": "2-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The plan isn't ready to build. The main problem is that the source table has no `warehouse_id` column, so the plan contradicts itself. I only read the plan. I didn't check it against the actual warehouse export or any existing tables.\n\n**Blocking**\n\n1. **`warehouse_id` isn't in the source.** `raw_wms.stock_levels` has `ds, counted_at, sku, amount` (plan.md:14). The grain (line 23), the Load query (line 36), the access columns and the primary key all use `warehouse_id`. As written, the load fails. Either the source DDL is incomplete or the grain is wrong, so please confirm which.\n2. **The Model and Load queries disagree.** Model groups by `ds, sku` (line 26-29). Load groups by `ds, sku, warehouse_id`. Only one of them can be the real definition.\n3. **`SUM(amount)` may double count.** The source has `counted_at`, which suggests several counts per sku per day. If `amount` is a point-in-time stock level, summing counts overstates stock. You'd want the latest count per sku and warehouse instead. The same applies if a daily export is ever re-delivered. The plan needs to say what a row means and how duplicates are handled.\n4. **The rollout is destructive and non-atomic.** `TRUNCATE` followed by `INSERT ... SELECT ...` (lines 49-50) leaves the table empty if step 2 fails, and readers see that empty table in between. The `SELECT` isn't specified. It also doesn't match the MERGE load. Use `CREATE OR REPLACE`, or MERGE per `ds`, or a swap. \"Check row counts\" has no expected value or comparison.\n\n**Should fix**\n\n5. **Hashing isn't implemented.** The Access section says identifiers are hashed with SHA256, but no query does it. Unsalted SHA256 of a low-entropy `sku` is also easy to reverse. Decide whether hashing is needed at all, given that the classification is \"internal\" and the dataset is `snap_private`.\n6. **The primary key omits `ds`** (line 56), but the grain includes it. It should be `ds, sku, warehouse_id`.\n7. **The MERGE never removes stale rows.** On a re-run, a sku that is no longer in the source keeps its old row. Add `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE`.\n8. **The target table has no DDL.** Partitioning, clustering and `require_partition_filter` for `snap_inventory` aren't specified. Without a `ds` filter the MERGE scans the whole destination.\n9. **Nothing covers scheduling or late data.** The export arrives \"once a day\", but the plan has no schedule, no check that the `@ds` partition is complete before the run, and no backfill approach. Backfilling 600 GB, one partition at a time because of `require_partition_filter`, needs a cost estimate.\n10. **Ownership and access don't match.** The owner is data-platform, but the only reader is data-team. Confirm that this is intended.\n\nThe plan is also dated 2026-10-12 and still marked draft. I'd settle items 1-4 first. Do you want me to draft a corrected version of the plan once you've confirmed the real source schema and what `amount` means?"
+              },
+              {
+                "name": "3-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The plan isn't ready to build. The main problem is that the source table has no `warehouse_id` column, so the plan contradicts itself. I only read the plan. I didn't check it against the actual warehouse export or any existing tables.\n\n**Blocking**\n\n1. **`warehouse_id` isn't in the source.** `raw_wms.stock_levels` has `ds, counted_at, sku, amount` (plan.md:14). The grain (line 23), the Load query (line 36), the access columns and the primary key all use `warehouse_id`. As written, the load fails. Either the source DDL is incomplete or the grain is wrong, so please confirm which.\n2. **The Model and Load queries disagree.** Model groups by `ds, sku` (line 26-29). Load groups by `ds, sku, warehouse_id`. Only one of them can be the real definition.\n3. **`SUM(amount)` may double count.** The source has `counted_at`, which suggests several counts per sku per day. If `amount` is a point-in-time stock level, summing counts overstates stock. You'd want the latest count per sku and warehouse instead. The same applies if a daily export is ever re-delivered. The plan needs to say what a row means and how duplicates are handled.\n4. **The rollout is destructive and non-atomic.** `TRUNCATE` followed by `INSERT ... SELECT ...` (lines 49-50) leaves the table empty if step 2 fails, and readers see that empty table in between. The `SELECT` isn't specified. It also doesn't match the MERGE load. Use `CREATE OR REPLACE`, or MERGE per `ds`, or a swap. \"Check row counts\" has no expected value or comparison.\n\n**Should fix**\n\n5. **Hashing isn't implemented.** The Access section says identifiers are hashed with SHA256, but no query does it. Unsalted SHA256 of a low-entropy `sku` is also easy to reverse. Decide whether hashing is needed at all, given that the classification is \"internal\" and the dataset is `snap_private`.\n6. **The primary key omits `ds`** (line 56), but the grain includes it. It should be `ds, sku, warehouse_id`.\n7. **The MERGE never removes stale rows.** On a re-run, a sku that is no longer in the source keeps its old row. Add `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE`.\n8. **The target table has no DDL.** Partitioning, clustering and `require_partition_filter` for `snap_inventory` aren't specified. Without a `ds` filter the MERGE scans the whole destination.\n9. **Nothing covers scheduling or late data.** The export arrives \"once a day\", but the plan has no schedule, no check that the `@ds` partition is complete before the run, and no backfill approach. Backfilling 600 GB, one partition at a time because of `require_partition_filter`, needs a cost estimate.\n10. **Ownership and access don't match.** The owner is data-platform, but the only reader is data-team. Confirm that this is intended.\n\nThe plan is also dated 2026-10-12 and still marked draft. I'd settle items 1-4 first. Do you want me to draft a corrected version of the plan once you've confirmed the real source schema and what `amount` means?"
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.04482849999999999,
+            "judgeCostUsd": 0.0019471999999999979,
+            "durationSeconds": 29,
+            "startedAt": "2026-11-10T05:29:19.091Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-HE594Z/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "I read the plan. It isn't ready to build. I found three blocking problems and several smaller ones.\n\n**Blocking**\n\n1. **`warehouse_id` isn't in the source.** `raw_wms.stock_levels` has `(ds, counted_at, sku, amount)` (plan.md:14). The Load query (plan.md:36) selects and groups by `warehouse_id`, so it fails as written. The stated grain is \"sku per warehouse per ds\" (plan.md:23), but the Model query (plan.md:26-29) groups by `ds, sku` only. Either the source is missing a column or the plan describes the wrong grain. Settle this first.\n2. **`SUM(amount)` probably double-counts.** The source has `counted_at`, so a sku can have several counts in one `ds`. If `amount` is a stock level (a point-in-time quantity), summing counts overstates it. You'd want the latest count per sku, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY sku[, warehouse_id] ORDER BY counted_at DESC) = 1`. The plan doesn't say which meaning is intended. It also doesn't cover a re-delivered export for the same `ds`.\n3. **The rollout is destructive and non-atomic** (plan.md:49-51).\n   - `TRUNCATE` runs before the load, so a failed insert leaves consumers with an empty table.\n   - Step 2 is `SELECT ...`, so the backfill logic and date range are undefined.\n   - The row-count check comes last and has no expected number or rollback.\n   - Build into a new table, validate it, then swap it in (or use the idempotent MERGE per `ds`). Don't truncate the live table.\n\n**Should fix**\n\n- **Access and hashing contradict the load.** The plan says identifiers are hashed with SHA256 (plan.md:45), but no query hashes anything. Unsalted SHA256 of SKUs is easy to reverse, so it protects little. Hashing `sku` would also break joins to other tables. Decide whether hashing is needed at all. The dataset is called `snap_private`, but the contract says `classification: internal` (plan.md:57), so those two should agree.\n- **The primary key omits `ds`** (plan.md:56). The grain and the MERGE key (plan.md:37) both include `ds`, so the key should be `ds, sku, warehouse_id`.\n- **The MERGE may scan the whole target.** If `snap_inventory` is partitioned by `ds` with a required filter, the MERGE needs a literal `d.ds = @ds` predicate to prune and to satisfy that filter. The plan doesn't give the target's DDL (partitioning, clustering, column types).\n- **Missing pieces:**\n  - a schedule and a dependency on the daily export's arrival\n  - a late or missing partition check\n  - null and negative `amount` handling\n  - uniqueness and row-count tests\n  - `INSERT ROW` is fragile if column order changes, so list the columns explicitly\n\nCost is fine. Filtering on `ds` prunes the 600 GB table to one partition, and `require_partition_filter` enforces that.\n\nI can draft a revised plan that fixes these, or you can answer the `warehouse_id` and `counted_at` questions first. Those two decide the grain and the aggregation."
+              },
+              {
+                "name": "2-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan. It isn't ready to build. I found three blocking problems and several smaller ones.\n\n**Blocking**\n\n1. **`warehouse_id` isn't in the source.** `raw_wms.stock_levels` has `(ds, counted_at, sku, amount)` (plan.md:14). The Load query (plan.md:36) selects and groups by `warehouse_id`, so it fails as written. The stated grain is \"sku per warehouse per ds\" (plan.md:23), but the Model query (plan.md:26-29) groups by `ds, sku` only. Either the source is missing a column or the plan describes the wrong grain. Settle this first.\n2. **`SUM(amount)` probably double-counts.** The source has `counted_at`, so a sku can have several counts in one `ds`. If `amount` is a stock level (a point-in-time quantity), summing counts overstates it. You'd want the latest count per sku, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY sku[, warehouse_id] ORDER BY counted_at DESC) = 1`. The plan doesn't say which meaning is intended. It also doesn't cover a re-delivered export for the same `ds`.\n3. **The rollout is destructive and non-atomic** (plan.md:49-51).\n   - `TRUNCATE` runs before the load, so a failed insert leaves consumers with an empty table.\n   - Step 2 is `SELECT ...`, so the backfill logic and date range are undefined.\n   - The row-count check comes last and has no expected number or rollback.\n   - Build into a new table, validate it, then swap it in (or use the idempotent MERGE per `ds`). Don't truncate the live table.\n\n**Should fix**\n\n- **Access and hashing contradict the load.** The plan says identifiers are hashed with SHA256 (plan.md:45), but no query hashes anything. Unsalted SHA256 of SKUs is easy to reverse, so it protects little. Hashing `sku` would also break joins to other tables. Decide whether hashing is needed at all. The dataset is called `snap_private`, but the contract says `classification: internal` (plan.md:57), so those two should agree.\n- **The primary key omits `ds`** (plan.md:56). The grain and the MERGE key (plan.md:37) both include `ds`, so the key should be `ds, sku, warehouse_id`.\n- **The MERGE may scan the whole target.** If `snap_inventory` is partitioned by `ds` with a required filter, the MERGE needs a literal `d.ds = @ds` predicate to prune and to satisfy that filter. The plan doesn't give the target's DDL (partitioning, clustering, column types).\n- **Missing pieces:**\n  - a schedule and a dependency on the daily export's arrival\n  - a late or missing partition check\n  - null and negative `amount` handling\n  - uniqueness and row-count tests\n  - `INSERT ROW` is fragile if column order changes, so list the columns explicitly\n\nCost is fine. Filtering on `ds` prunes the 600 GB table to one partition, and `require_partition_filter` enforces that.\n\nI can draft a revised plan that fixes these, or you can answer the `warehouse_id` and `counted_at` questions first. Those two decide the grain and the aggregation."
+              },
+              {
+                "name": "3-grain",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. It isn't ready to build. I found three blocking problems and several smaller ones.\n\n**Blocking**\n\n1. **`warehouse_id` isn't in the source.** `raw_wms.stock_levels` has `(ds, counted_at, sku, amount)` (plan.md:14). The Load query (plan.md:36) selects and groups by `warehouse_id`, so it fails as written. The stated grain is \"sku per warehouse per ds\" (plan.md:23), but the Model query (plan.md:26-29) groups by `ds, sku` only. Either the source is missing a column or the plan describes the wrong grain. Settle this first.\n2. **`SUM(amount)` probably double-counts.** The source has `counted_at`, so a sku can have several counts in one `ds`. If `amount` is a stock level (a point-in-time quantity), summing counts overstates it. You'd want the latest count per sku, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY sku[, warehouse_id] ORDER BY counted_at DESC) = 1`. The plan doesn't say which meaning is intended. It also doesn't cover a re-delivered export for the same `ds`.\n3. **The rollout is destructive and non-atomic** (plan.md:49-51).\n   - `TRUNCATE` runs before the load, so a failed insert leaves consumers with an empty table.\n   - Step 2 is `SELECT ...`, so the backfill logic and date range are undefined.\n   - The row-count check comes last and has no expected number or rollback.\n   - Build into a new table, validate it, then swap it in (or use the idempotent MERGE per `ds`). Don't truncate the live table.\n\n**Should fix**\n\n- **Access and hashing contradict the load.** The plan says identifiers are hashed with SHA256 (plan.md:45), but no query hashes anything. Unsalted SHA256 of SKUs is easy to reverse, so it protects little. Hashing `sku` would also break joins to other tables. Decide whether hashing is needed at all. The dataset is called `snap_private`, but the contract says `classification: internal` (plan.md:57), so those two should agree.\n- **The primary key omits `ds`** (plan.md:56). The grain and the MERGE key (plan.md:37) both include `ds`, so the key should be `ds, sku, warehouse_id`.\n- **The MERGE may scan the whole target.** If `snap_inventory` is partitioned by `ds` with a required filter, the MERGE needs a literal `d.ds = @ds` predicate to prune and to satisfy that filter. The plan doesn't give the target's DDL (partitioning, clustering, column types).\n- **Missing pieces:**\n  - a schedule and a dependency on the daily export's arrival\n  - a late or missing partition check\n  - null and negative `amount` handling\n  - uniqueness and row-count tests\n  - `INSERT ROW` is fragile if column order changes, so list the columns explicitly\n\nCost is fine. Filtering on `ds` prunes the 600 GB table to one partition, and `require_partition_filter` enforces that.\n\nI can draft a revised plan that fixes these, or you can answer the `warehouse_id` and `counted_at` questions first. Those two decide the grain and the aggregation."
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.045210400000000005,
+            "judgeCostUsd": 0.0018728000000000026,
+            "durationSeconds": 30,
+            "startedAt": "2026-11-10T05:29:48.314Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-L8JDyr/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "1-rollback",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I read the plan. It has a few problems that should be fixed before we build.\n\n**Blocking**\n\n1. **`warehouse_id` isn't in the source.** `raw_wms.stock_levels` has only `ds, counted_at, sku, amount`. The grain, the MERGE and the primary key all use `warehouse_id`. Either the source DDL is incomplete or the column doesn't exist, and we need to find out which.\n2. **The Model query contradicts the grain.** It groups by `ds, sku` and omits `warehouse_id`, but the stated grain is sku per warehouse per ds. The Load query does include it, so the two queries disagree.\n3. **`SUM(amount)` is probably wrong.** The source has `counted_at`, so a sku can have several counts in one `ds`. Stock levels are point-in-time values, so summing them double-counts. You likely want the latest count per sku and warehouse, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY sku, warehouse_id ORDER BY counted_at DESC) = 1`. Confirm with the data team whether the export can redeliver or contain duplicates.\n4. **The rollout destroys data.** `TRUNCATE` followed by `INSERT` isn't atomic, so readers see an empty table in between. A snapshot table also exists to keep history, and truncating wipes it. If the `INSERT ... SELECT` fails, the table stays empty. Instead, create the table, backfill by partition (or use the MERGE), validate, then switch readers over. The `SELECT ...` in step 2 is also left undefined.\n\n**Should fix**\n\n5. **The primary key leaves out `ds`.** The contract says `sku, warehouse_id`, but the table holds one row per day, so the key should be `ds, sku, warehouse_id`. With the current key, a uniqueness test would fail on day two.\n6. **The hashing claim has no implementation.** Access says identifiers are hashed with SHA256, but no query does that. Decide which columns are hashed, and whether hashing `sku` breaks joins to other tables. Unsalted SHA256 of low-entropy IDs is also easy to reverse.\n7. **The MERGE never removes stale rows.** If a rerun no longer produces a given sku and warehouse, the old row stays. Add `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE`, or replace the partition instead.\n8. **The validation is vague.** \"Check row counts\" has no baseline. Add concrete checks: uniqueness of the key, no null keys, and a row count against the distinct sku and warehouse count in the source for that `ds`.\n9. **Nothing covers the daily load.** The plan doesn't say how to handle a late or missing export, what triggers the load, or whether `snap_inventory` is partitioned by `ds`. It needs to be partitioned and clustered, or backfills will be costly. The source is about 600 GB, and `require_partition_filter` forces per-`ds` scans.\n\nItems 1 and 3 are questions about the data. I'd settle them before any code gets written. I can check the real schema if you can point me at it, or I can draft a revised plan."
+              },
+              {
+                "name": "2-contract",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan. It has a few problems that should be fixed before we build.\n\n**Blocking**\n\n1. **`warehouse_id` isn't in the source.** `raw_wms.stock_levels` has only `ds, counted_at, sku, amount`. The grain, the MERGE and the primary key all use `warehouse_id`. Either the source DDL is incomplete or the column doesn't exist, and we need to find out which.\n2. **The Model query contradicts the grain.** It groups by `ds, sku` and omits `warehouse_id`, but the stated grain is sku per warehouse per ds. The Load query does include it, so the two queries disagree.\n3. **`SUM(amount)` is probably wrong.** The source has `counted_at`, so a sku can have several counts in one `ds`. Stock levels are point-in-time values, so summing them double-counts. You likely want the latest count per sku and warehouse, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY sku, warehouse_id ORDER BY counted_at DESC) = 1`. Confirm with the data team whether the export can redeliver or contain duplicates.\n4. **The rollout destroys data.** `TRUNCATE` followed by `INSERT` isn't atomic, so readers see an empty table in between. A snapshot table also exists to keep history, and truncating wipes it. If the `INSERT ... SELECT` fails, the table stays empty. Instead, create the table, backfill by partition (or use the MERGE), validate, then switch readers over. The `SELECT ...` in step 2 is also left undefined.\n\n**Should fix**\n\n5. **The primary key leaves out `ds`.** The contract says `sku, warehouse_id`, but the table holds one row per day, so the key should be `ds, sku, warehouse_id`. With the current key, a uniqueness test would fail on day two.\n6. **The hashing claim has no implementation.** Access says identifiers are hashed with SHA256, but no query does that. Decide which columns are hashed, and whether hashing `sku` breaks joins to other tables. Unsalted SHA256 of low-entropy IDs is also easy to reverse.\n7. **The MERGE never removes stale rows.** If a rerun no longer produces a given sku and warehouse, the old row stays. Add `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE`, or replace the partition instead.\n8. **The validation is vague.** \"Check row counts\" has no baseline. Add concrete checks: uniqueness of the key, no null keys, and a row count against the distinct sku and warehouse count in the source for that `ds`.\n9. **Nothing covers the daily load.** The plan doesn't say how to handle a late or missing export, what triggers the load, or whether `snap_inventory` is partitioned by `ds`. It needs to be partitioned and clustered, or backfills will be costly. The source is about 600 GB, and `require_partition_filter` forces per-`ds` scans.\n\nItems 1 and 3 are questions about the data. I'd settle them before any code gets written. I can check the real schema if you can point me at it, or I can draft a revised plan."
+              },
+              {
+                "name": "3-grain",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  false
+                ],
+                "evidence": "I read the plan. It has a few problems that should be fixed before we build.\n\n**Blocking**\n\n1. **`warehouse_id` isn't in the source.** `raw_wms.stock_levels` has only `ds, counted_at, sku, amount`. The grain, the MERGE and the primary key all use `warehouse_id`. Either the source DDL is incomplete or the column doesn't exist, and we need to find out which.\n2. **The Model query contradicts the grain.** It groups by `ds, sku` and omits `warehouse_id`, but the stated grain is sku per warehouse per ds. The Load query does include it, so the two queries disagree.\n3. **`SUM(amount)` is probably wrong.** The source has `counted_at`, so a sku can have several counts in one `ds`. Stock levels are point-in-time values, so summing them double-counts. You likely want the latest count per sku and warehouse, for example `QUALIFY ROW_NUMBER() OVER (PARTITION BY sku, warehouse_id ORDER BY counted_at DESC) = 1`. Confirm with the data team whether the export can redeliver or contain duplicates.\n4. **The rollout destroys data.** `TRUNCATE` followed by `INSERT` isn't atomic, so readers see an empty table in between. A snapshot table also exists to keep history, and truncating wipes it. If the `INSERT ... SELECT` fails, the table stays empty. Instead, create the table, backfill by partition (or use the MERGE), validate, then switch readers over. The `SELECT ...` in step 2 is also left undefined.\n\n**Should fix**\n\n5. **The primary key leaves out `ds`.** The contract says `sku, warehouse_id`, but the table holds one row per day, so the key should be `ds, sku, warehouse_id`. With the current key, a uniqueness test would fail on day two.\n6. **The hashing claim has no implementation.** Access says identifiers are hashed with SHA256, but no query does that. Decide which columns are hashed, and whether hashing `sku` breaks joins to other tables. Unsalted SHA256 of low-entropy IDs is also easy to reverse.\n7. **The MERGE never removes stale rows.** If a rerun no longer produces a given sku and warehouse, the old row stays. Add `WHEN NOT MATCHED BY SOURCE AND d.ds = @ds THEN DELETE`, or replace the partition instead.\n8. **The validation is vague.** \"Check row counts\" has no baseline. Add concrete checks: uniqueness of the key, no null keys, and a row count against the distinct sku and warehouse count in the source for that `ds`.\n9. **Nothing covers the daily load.** The plan doesn't say how to handle a late or missing export, what triggers the load, or whether `snap_inventory` is partitioned by `ds`. It needs to be partitioned and clustered, or backfills will be costly. The source is about 600 GB, and `require_partition_filter` forces per-`ds` scans.\n\nItems 1 and 3 are questions about the data. I'd settle them before any code gets written. I can check the real schema if you can point me at it, or I can draft a revised plan."
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.6,
+        "passRate": 0.2,
+        "scoreWithout": 0.4666666666666667,
+        "passRateWithout": 0,
+        "delta": 0.1333333333333333
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 0,
+    "overallScore": 0.6,
+    "overallPassRate": 0.2,
+    "meanDelta": 0.1333333333333333
+  }
+}

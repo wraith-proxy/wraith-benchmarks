@@ -1,0 +1,231 @@
+{
+  "contracts": {
+    "status": "done",
+    "wraith_sha": "d7e2c3caa203731e030ec63fe273638b9fd92c59",
+    "complete": {
+      "contracts-accounts": "contracts/attempt-1",
+      "contracts-orders": "contracts/attempt-1",
+      "contracts-page_events": "contracts/attempt-1",
+      "contracts-payments": "contracts/attempt-1",
+      "contracts-products": "contracts/attempt-1"
+    },
+    "incomplete": [],
+    "models_seen": {
+      "contracts-accounts/with-0": [
+        "gpt-6-luna"
+      ],
+      "contracts-accounts/without-0": [
+        "gpt-6-luna"
+      ],
+      "contracts-accounts/without-1": [
+        "gpt-6-luna"
+      ],
+      "contracts-accounts/with-1": [
+        "gpt-6-luna"
+      ],
+      "contracts-accounts/with-2": [
+        "gpt-6-luna"
+      ],
+      "contracts-accounts/without-2": [
+        "gpt-6-luna"
+      ],
+      "contracts-accounts/without-3": [
+        "gpt-6-luna"
+      ],
+      "contracts-accounts/with-3": [
+        "gpt-6-luna"
+      ],
+      "contracts-accounts/with-4": [
+        "gpt-6-luna"
+      ],
+      "contracts-accounts/without-4": [
+        "gpt-6-luna"
+      ],
+      "contracts-orders/with-0": [
+        "gpt-6-luna"
+      ],
+      "contracts-orders/without-0": [
+        "gpt-6-luna"
+      ],
+      "contracts-orders/without-1": [
+        "gpt-6-luna"
+      ],
+      "contracts-orders/with-1": [
+        "gpt-6-luna"
+      ],
+      "contracts-orders/with-2": [
+        "gpt-6-luna"
+      ],
+      "contracts-orders/without-2": [
+        "gpt-6-luna"
+      ],
+      "contracts-orders/without-3": [
+        "gpt-6-luna"
+      ],
+      "contracts-orders/with-3": [
+        "gpt-6-luna"
+      ],
+      "contracts-orders/with-4": [
+        "gpt-6-luna"
+      ],
+      "contracts-orders/without-4": [
+        "gpt-6-luna"
+      ],
+      "contracts-page_events/with-0": [
+        "gpt-6-luna"
+      ],
+      "contracts-page_events/without-0": [
+        "gpt-6-luna"
+      ],
+      "contracts-page_events/without-1": [
+        "gpt-6-luna"
+      ],
+      "contracts-page_events/with-1": [
+        "gpt-6-luna"
+      ],
+      "contracts-page_events/with-2": [
+        "gpt-6-luna"
+      ],
+      "contracts-page_events/without-2": [
+        "gpt-6-luna"
+      ],
+      "contracts-page_events/without-3": [
+        "gpt-6-luna"
+      ],
+      "contracts-page_events/with-3": [
+        "gpt-6-luna"
+      ],
+      "contracts-page_events/with-4": [
+        "gpt-6-luna"
+      ],
+      "contracts-page_events/without-4": [
+        "gpt-6-luna"
+      ],
+      "contracts-payments/with-0": [
+        "gpt-6-luna"
+      ],
+      "contracts-payments/without-0": [
+        "gpt-6-luna"
+      ],
+      "contracts-payments/without-1": [
+        "gpt-6-luna"
+      ],
+      "contracts-payments/with-1": [
+        "gpt-6-luna"
+      ],
+      "contracts-payments/with-2": [
+        "gpt-6-luna"
+      ],
+      "contracts-payments/without-2": [
+        "gpt-6-luna"
+      ],
+      "contracts-payments/without-3": [
+        "gpt-6-luna"
+      ],
+      "contracts-payments/with-3": [
+        "gpt-6-luna"
+      ],
+      "contracts-payments/with-4": [
+        "gpt-6-luna"
+      ],
+      "contracts-payments/without-4": [
+        "gpt-6-luna"
+      ],
+      "contracts-products/with-0": [
+        "gpt-6-luna"
+      ],
+      "contracts-products/without-0": [
+        "gpt-6-luna"
+      ],
+      "contracts-products/without-1": [
+        "gpt-6-luna"
+      ],
+      "contracts-products/with-1": [
+        "gpt-6-luna"
+      ],
+      "contracts-products/with-2": [
+        "gpt-6-luna"
+      ],
+      "contracts-products/without-2": [
+        "gpt-6-luna"
+      ],
+      "contracts-products/without-3": [
+        "gpt-6-luna"
+      ],
+      "contracts-products/with-3": [
+        "gpt-6-luna"
+      ],
+      "contracts-products/with-4": [
+        "gpt-6-luna"
+      ],
+      "contracts-products/without-4": [
+        "gpt-6-luna"
+      ]
+    },
+    "credits_est": {
+      "contracts-accounts/with-0": 0.3639295,
+      "contracts-accounts/without-0": 0.2040975,
+      "contracts-accounts/without-1": 0.2739385,
+      "contracts-accounts/with-1": 0.3543105,
+      "contracts-accounts/with-2": 0.3878475,
+      "contracts-accounts/without-2": 0.195408,
+      "contracts-accounts/without-3": 0.201604,
+      "contracts-accounts/with-3": 0.3939165,
+      "contracts-accounts/with-4": 0.320959,
+      "contracts-accounts/without-4": 0.179347,
+      "contracts-orders/with-0": 0.405874,
+      "contracts-orders/without-0": 0.202193,
+      "contracts-orders/without-1": 0.220089,
+      "contracts-orders/with-1": 0.3678355,
+      "contracts-orders/with-2": 0.4096855,
+      "contracts-orders/without-2": 0.341895,
+      "contracts-orders/without-3": 0.2831885,
+      "contracts-orders/with-3": 0.464731,
+      "contracts-orders/with-4": 0.4902965,
+      "contracts-orders/without-4": 0.3289235,
+      "contracts-page_events/with-0": 0.372769,
+      "contracts-page_events/without-0": 0.198536,
+      "contracts-page_events/without-1": 0.2564795,
+      "contracts-page_events/with-1": 0.4712515,
+      "contracts-page_events/with-2": 0.418145,
+      "contracts-page_events/without-2": 0.193251,
+      "contracts-page_events/without-3": 0.271183,
+      "contracts-page_events/with-3": 0.372971,
+      "contracts-page_events/with-4": 0.438547,
+      "contracts-page_events/without-4": 0.296161,
+      "contracts-payments/with-0": 0.3936135,
+      "contracts-payments/without-0": 0.1887985,
+      "contracts-payments/without-1": 0.24619,
+      "contracts-payments/with-1": 0.4224995,
+      "contracts-payments/with-2": 0.462352,
+      "contracts-payments/without-2": 0.212641,
+      "contracts-payments/without-3": 0.2038735,
+      "contracts-payments/with-3": 0.478364,
+      "contracts-payments/with-4": 0.3781985,
+      "contracts-payments/without-4": 0.2157215,
+      "contracts-products/with-0": 0.477053,
+      "contracts-products/without-0": 0.192602,
+      "contracts-products/without-1": 0.234401,
+      "contracts-products/with-1": 0.3484585,
+      "contracts-products/with-2": 0.3959165,
+      "contracts-products/without-2": 0.21979,
+      "contracts-products/without-3": 0.185897,
+      "contracts-products/with-3": 0.4779465,
+      "contracts-products/with-4": 0.4237465,
+      "contracts-products/without-4": 0.1574545
+    },
+    "attempts": [
+      {
+        "n": 1,
+        "dir": "contracts/attempt-1",
+        "complete": [
+          "contracts-accounts",
+          "contracts-orders",
+          "contracts-page_events",
+          "contracts-payments",
+          "contracts-products"
+        ]
+      }
+    ]
+  }
+}

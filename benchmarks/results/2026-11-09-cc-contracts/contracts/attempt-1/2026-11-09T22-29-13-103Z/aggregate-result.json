@@ -1,0 +1,2047 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.316",
+  "startedAt": "2026-11-09T22:29:13.103Z",
+  "durationSeconds": 1344,
+  "costUsd": 4.0839775000000005,
+  "partial": false,
+  "suite": {
+    "root": "/work",
+    "ablation": "with-without",
+    "modelOverride": "claude-sonnet-5-5",
+    "judgeModel": "claude-haiku-5-5",
+    "threshold": 1,
+    "concurrency": 1,
+    "plugins": [
+      {
+        "name": "wraith",
+        "version": "0.8.3",
+        "path": "/work"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "contracts-accounts",
+      "dir": "bench-contracts/accounts",
+      "source": "mixed",
+      "promptMarkdown": "Write an ODCS v3.2.0 data contract for the accounts table (columns in tables/accounts.md) and save it as contracts/accounts.yaml.",
+      "runsPerCase": 5,
+      "timeoutSeconds": 600,
+      "maxTurns": 10,
+      "graders": [
+        {
+          "name": "quality",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the saved contract declares ODCS v3.2.0, kind DataContract, marks account_id as the primary key. It classifies email as personal data. FAIL otherwise. Secondary check only; schema validity is scored by the harness.",
+          "config": {
+            "criteria": "PASS if the saved contract declares ODCS v3.2.0, kind DataContract, marks account_id as the primary key. It classifies email as personal data. FAIL otherwise. Secondary check only; schema validity is scored by the harness.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "saved",
+          "type": "file_exists",
+          "weight": 1,
+          "config": {
+            "path": "contracts/accounts.yaml",
+            "exists": true
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 11,
+            "costUsd": 0.1067471,
+            "judgeCostUsd": 0.0010284,
+            "durationSeconds": 32,
+            "startedAt": "2026-11-09T22:29:13.129Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-ahvnMQ/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I wrote `contracts/accounts.yaml`, but I couldn't validate it, and the owning team is still a placeholder.\n\n**Validation not run.** The ODCS v3.2.0 validation (`uvx check-jsonschema`) failed because the sandbox is read-only where `uv` keeps its cache. I tried `$TMPDIR` as the cache location too, and that is read-only as well. I haven't worked around it. To validate, run this where `uv` can write:\n\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/accounts.yaml\n```\n\nOr you can loosen the sandbox so I can run it.\n\n**What the contract contains**\n- It uses `apiVersion: v3.2.0`, `version: 1.0.0`, `status: draft`, and a generated UUID as the `id`.\n- It declares the classification set `[public, internal, pii, psi]` in `customProperties`.\n- The `accounts` object has all five columns, each with the logical and physical types from `tables/accounts.md`.\n- `account_id` is the primary key and `required: true`. It has quality rules for zero nulls and zero duplicates.\n- `email` is classified `pii`. The other columns are `internal`.\n\n**Things for you to fill in or confirm**\n1. **Owner.** `team.name` is `TODO-owning-team`. An ownerless contract is a review blocker, so please give me the real team name.\n2. **Nullability.** `tables/accounts.md` doesn't say which columns can be null, so everything except `account_id` is `required: false`. Tighten this if, for example, `email` or `created_at` are always set.\n3. **Descriptions.** The `country`, `created_at` and `status` descriptions are my best reading of the column names. I didn't invent a country format or a list of status values. Please correct them.\n4. **SLAs.** I left out `slaProperties` because I have no freshness or retention requirements. Tell me the targets and what should happen on breach, and I'll add them.\n5. **Contracts directory.** `AGENTS.md` has no `contracts_dir` key. I used `contracts/` as you asked, so you may want to run `wraith:setup` to record it.\n\nI haven't generated dbt models or committed anything."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/accounts.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 12,
+            "costUsd": 0.10818370000000001,
+            "judgeCostUsd": 0.0009643,
+            "durationSeconds": 31,
+            "startedAt": "2026-11-09T22:29:44.885Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-IeJeUs/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  false
+                ],
+                "evidence": "I wrote `contracts/accounts.yaml`, but it hasn't been validated, and it needs an owning team from you.\n\n**Validation did not run.** The skill's command is `uvx check-jsonschema==0.39.0 --schemafile <v3.2.0 schema URL>`. It failed because `uvx` couldn't create its cache directory (`Read-only file system`). That happened both with the default cache location and with `UV_CACHE_DIR` pointed at `$TMPDIR`. I stopped there instead of looking for another way around the sandbox. To validate, you could allow a writable `uv` cache path, or run that command yourself. I expect it to pass, since I modelled the file on the skill's example contract, but I haven't confirmed it.\n\n**Owning team is a placeholder.** The request, `AGENTS.md` and `tables/accounts.md` don't name an owner, so the file has `team: {name: TODO-owning-team}`. Rule 12 makes an ownerless contract a review blocker, so please give me the team name, or replace it yourself.\n\nWhat the contract contains:\n- **Header:** `apiVersion: v3.2.0`, `version: 1.0.0`, `status: draft`, and a generated `id`.\n- **Object:** `accounts`, with all five columns from `tables/accounts.md` and their `physicalType` values.\n- **Classification:** the set is declared as `[public, internal, pii, psi]`. `email` is `pii` and the other columns are `internal`.\n- **Key:** `account_id` is the primary key and required.\n\nThings I assumed that you should check:\n- The other four columns are `required: false`, because the table doc doesn't say whether they can be null.\n- The descriptions are generic because the doc says nothing about what the columns mean. Please sharpen them, for example the meaning of `status` and its allowed values.\n- There are no `quality` rules or `slaProperties` yet. I didn't want to invent freshness targets or enum values.\n- `country` could arguably be personal data, depending on your policy.\n\nI haven't generated or checked any dbt models from this contract."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/accounts.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 9,
+            "costUsd": 0.10546729999999999,
+            "judgeCostUsd": 0.0005287,
+            "durationSeconds": 29,
+            "startedAt": "2026-11-09T22:30:15.762Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-PJ0rsZ/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "I wrote `contracts/accounts.yaml`, but I couldn't validate it. The schema check failed before it ran.\n\n`uvx` couldn't create its cache directory, both in `~/.cache/uv` and in `$TMPDIR`. Both returned \"Read-only file system\". That is a sandbox restriction, not a problem in the contract. I didn't look for another way around it. To validate, run this from a shell where `uvx` can write its cache:\n\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/accounts.yaml\n```\n\n**What's in the contract**\n- It uses `apiVersion: v3.2.0` and `kind: DataContract`, version `1.0.0`, status `draft`.\n- The `accounts` object has the five columns from `tables/accounts.md`. Each has `name`, `physicalName`, `logicalType`, `physicalType`, `required`, and a description of at least 50 characters.\n- `account_id` is the primary key. It has a `duplicateValues = 0` quality rule.\n- `email` is classified `pii` and has a `nullValues = 0` rule. The other columns are `internal`.\n- The classification set `[public, internal, pii, psi]` is declared in `customProperties` as `wraith.classifications`.\n\n**Things I guessed that you should check**\n- **Owning team:** nothing in the repo names one, so `team.name` is the placeholder `TODO-owning-team`. An ownerless contract blocks review, so please replace it.\n- **Contract `id`:** I generated a UUID.\n- **Physical names:** `tables/accounts.md` only gives one name per column, so each `physicalName` equals its `name`.\n- **Required flags:** `account_id`, `email`, `created_at` and `status` are `required: true`. `country` is optional. The table doc doesn't say which columns can be null, so confirm these.\n- **`country` and `status`:** the descriptions describe an ISO alpha-2 code and an active/closed-style lifecycle. That is my assumption, because the doc doesn't specify either.\n\nI added no SLA. The doc gives no freshness or retention target. I also didn't generate or check dbt models."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/accounts.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 9,
+            "costUsd": 0.1026178,
+            "judgeCostUsd": 0.0007978000000000004,
+            "durationSeconds": 38,
+            "startedAt": "2026-11-09T22:30:44.871Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-EOEH9I/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I wrote `contracts/accounts.yaml`, but I couldn't validate it. The sandbox has a read-only filesystem, so `uvx` couldn't create its cache directory. It failed both at the default location and under `$TMPDIR`. I didn't look for another way around that. The validation command to run where `uvx` works is:\n\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/accounts.yaml\n```\n\nI built the contract from the skill's example, so it should pass, but I haven't confirmed that.\n\n**What's in the contract**\n- **Header:** ODCS v3.2.0, version 1.0.0, status `draft`, and a freshly generated UUID as the id.\n- **Schema:** one object, `accounts`, with all five columns. Each has `name`, `physicalName`, `logicalType`, `physicalType`, `required`, a description of at least 50 characters, and a classification. `account_id` is the primary key.\n- **Classification:** I declared the set `[public, internal, pii, psi]` in `customProperties`. `email` is `pii` and the other four columns are `internal`.\n- **Quality rule:** `account_id` must have no duplicate values.\n\n**Needs your input**\n- **Owning team:** nothing in the repo names one, so I set `team.name` to the placeholder `TODO-owning-team`. An ownerless contract blocks review, so please give me the real team.\n- **Required flags:** the table doc doesn't say which columns can be null. I marked everything required except `country`. Please check that.\n- **Descriptions:** I wrote them from the column names alone. The doc gives no meaning for `status` (I didn't list allowed values) or `country` (I didn't say whether it's an ISO code).\n- **Not included:** I added no SLAs, because none were specified.\n- **Not done:** I haven't generated the dbt models."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/accounts.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 9,
+            "costUsd": 0.10398779999999999,
+            "judgeCostUsd": 0.0007397000000000003,
+            "durationSeconds": 28,
+            "startedAt": "2026-11-09T22:31:22.937Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-OiZpw7/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I wrote `contracts/accounts.yaml`, but I couldn't validate it against the ODCS v3.2.0 JSON Schema. Every Bash command failed with \"Read-only file system\" when `uvx` tried to create its cache. I tried `$TMPDIR`, the home cache and the working directory, and all three failed. Please run this where `uvx` can write:\n\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/accounts.yaml\n```\n\nI built the file from the skill's example contract, which validates. It has five properties:\n- **`account_id`:** the primary key, required, with a no-duplicates quality rule.\n- **`email`:** classified `pii`.\n- **`country`, `created_at`, `status`:** classified `internal`.\n\nI didn't invent any rules beyond that.\n\nThings to check before merging:\n- **Owner:** `tables/accounts.md` doesn't name one, so I put in `example-shop-data` as a placeholder. Please replace it with the real owning team.\n- **Nullability:** the table doc doesn't say which columns can be null. Only `account_id` is `required: true`; the other four are `false`. Tighten these if you know better.\n- **Classification:** I treated `email` as the only personal field. Say if `country` should be sensitive in your setup.\n- **No SLA:** I left out `slaProperties` because there's no freshness target to base one on.\n- **No allowed `status` values:** I didn't list any, since the doc doesn't give them.\n- **Extra top-level keys:** I added `status: draft` and `name: accounts`. I expect both to validate, since I recall them as standard v3.2.0 fields, but I couldn't confirm that. Drop them if the validator complains.\n- **Generated values:** the contract `id` is a UUID I generated.\n- **Models not checked:** I didn't generate or check any dbt models, and nothing is committed."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/accounts.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.0535924,
+            "judgeCostUsd": 0.0004783000000000001,
+            "durationSeconds": 18,
+            "startedAt": "2026-11-09T22:31:51.049Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-yVDPsH/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/accounts.yaml` as ODCS v3.2.0. I haven't validated it against the ODCS JSON schema.\n\n- **Columns:** it has all five from `tables/accounts.md`: `account_id`, `email`, `country`, `created_at` and `status`. Each has a logical type (string or timestamp) and its BigQuery physical type.\n- **Server:** I took the BigQuery project (`example-project-dev`) and location (`europe-west2`) from `AGENTS.md`. The dataset is `example_shop`, from the table doc.\n- **Key:** I marked `account_id` as the primary key, required and unique. The table doc says \"one row per account\" but doesn't name a key column, so that is my assumption. Please confirm it.\n- **Left out:** I didn't add nullability, enums for `status`, formats, quality rules, SLAs or an owner, because the source doesn't say anything about them.\n- **Metadata:** the contract is `version: 1.0.0` with `status: draft`."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/accounts.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.0545626,
+            "judgeCostUsd": 0.0004425999999999996,
+            "durationSeconds": 19,
+            "startedAt": "2026-11-09T22:32:09.031Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-oL5hda/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/accounts.yaml`. I haven't validated it against the ODCS schema.\n\n- **Server:** BigQuery dev server, taken from `AGENTS.md`: project `example-project-dev`, dataset `example_shop`, location `europe-west2`.\n- **Schema:** the five columns from `tables/accounts.md`, each with a logical type and the BigQuery physical type.\n- **Metadata:** the contract is `status: draft`, `version: 1.0.0`, with id `example-shop-accounts`. I chose all three, so change them if you have a convention.\n\nThe table doc doesn't say which columns are required, unique, or constrained. I only marked `account_id` as the primary key, which means required and unique. The other columns have no constraints. I didn't add quality rules, an owner, or SLAs, because nothing in the repo supports them."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/accounts.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.05659879999999999,
+            "judgeCostUsd": 0.0004666999999999996,
+            "durationSeconds": 22,
+            "startedAt": "2026-11-09T22:32:27.911Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-LP9GVk/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/accounts.yaml` as ODCS v3.2.0. I haven't validated it against the ODCS JSON schema.\n\n- **Columns:** it has the five columns from `tables/accounts.md`, each with a logical type and a BigQuery physical type. `account_id`, `email`, `country` and `status` are `string`/`STRING`. `created_at` is `timestamp`/`TIMESTAMP`.\n- **Server:** I took the dev BigQuery server from `AGENTS.md`: project `example-project-dev`, dataset `example_shop`, location `europe-west2`.\n- **Defaults I picked:** `version` is 1.0.0, `status` is `draft`, and `domain` is `example_shop`. Change any of these if you have real values.\n- **Key assumption:** I marked `account_id` as the primary key, required and unique, because the table is described as \"one row per account\". The source doesn't say this outright, so remove it if it's wrong.\n- **Left out:** the source gives nothing else, so I added no descriptions, quality rules, or constraints on `email`, `country` or `status`."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/accounts.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.0546684,
+            "judgeCostUsd": 0.0005247999999999997,
+            "durationSeconds": 16,
+            "startedAt": "2026-11-09T22:32:49.639Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-yQSsLi/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/accounts.yaml`. I haven't validated it against the ODCS v3.2.0 schema.\n\nIt covers the five columns from `tables/accounts.md`: `account_id`, `email`, `country`, `created_at` and `status`. The first line of the file sets the version with `apiVersion: v3.2.0`.\n\nI filled in a few things that `tables/accounts.md` doesn't state:\n- **Server:** I added a `dev` BigQuery server using project `example-project-dev` (from `AGENTS.md`) and dataset `example_shop`.\n- **Primary key:** I marked `account_id` as the primary key, required and unique. The table is described as one row per account, so I assumed it is the key. Please confirm.\n- **Contract metadata:** I set the contract id to `example-shop-accounts`, the version to `1.0.0` and the status to `draft`.\n\nI left out column descriptions, quality rules, SLAs, ownership and a `status` enum, because the source doesn't say what they should be."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/accounts.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.055322600000000006,
+            "judgeCostUsd": 0.0005186000000000001,
+            "durationSeconds": 16,
+            "startedAt": "2026-11-09T22:33:05.298Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-mICpNE/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/accounts.yaml`. I haven't validated it against the ODCS v3.2.0 schema.\n\n- **Table and columns:** it covers the `accounts` table with its five columns: `account_id`, `email`, `country`, `created_at` and `status`. Each has the ODCS `logicalType` plus the BigQuery `physicalType` from `tables/accounts.md`.\n- **Server:** I added one `dev` BigQuery server. It uses project `example-project-dev` and location `europe-west2` from `AGENTS.md`, and dataset `example_shop` from the table doc.\n- **Metadata:** the contract has `id: example_shop.accounts`, `version: 1.0.0` and `status: draft`.\n\nI marked `account_id` as the primary key, required and unique. The table doc says \"one row per account\" but doesn't state this, so please confirm it.\n\nI left out nullability, enums for `status`, formats for `email` and `country`, quality rules, SLAs and owners. The source doesn't specify any of them."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/accounts.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.8,
+        "passRate": 0.6,
+        "scoreWithout": 0.5,
+        "passRateWithout": 0,
+        "delta": 0.30000000000000004
+      }
+    },
+    {
+      "name": "contracts-orders",
+      "dir": "bench-contracts/orders",
+      "source": "mixed",
+      "promptMarkdown": "Write an ODCS v3.2.0 data contract for the orders table (columns in tables/orders.md) and save it as contracts/orders.yaml.",
+      "runsPerCase": 5,
+      "timeoutSeconds": 600,
+      "maxTurns": 10,
+      "graders": [
+        {
+          "name": "quality",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the saved contract declares ODCS v3.2.0, kind DataContract, marks order_id and line_no together as a composite primary key as the primary key. FAIL otherwise. Secondary check only; schema validity is scored by the harness.",
+          "config": {
+            "criteria": "PASS if the saved contract declares ODCS v3.2.0, kind DataContract, marks order_id and line_no together as a composite primary key as the primary key. FAIL otherwise. Secondary check only; schema validity is scored by the harness.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "saved",
+          "type": "file_exists",
+          "weight": 1,
+          "config": {
+            "path": "contracts/orders.yaml",
+            "exists": true
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 12,
+            "costUsd": 0.1368026,
+            "judgeCostUsd": 0.0010324999999999996,
+            "durationSeconds": 46,
+            "startedAt": "2026-11-09T22:33:20.954Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-I1IoxL/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/orders.yaml`, but I couldn't validate it, and it still needs an owning team from you.\n\n**Not validated:** The shell sandbox is read-only here. `uvx` couldn't create its cache, even with the cache pointed at `$TMPDIR`. The Write tool did work, so the file is on disk. Please run this from a normal shell:\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/orders.yaml\n```\n\n**Owner is a placeholder:** `team.name` is `TODO-owning-team` because nothing in the repo names an owner. Rule 12 makes an ownerless contract a review blocker, so tell me the team and I'll fill it in.\n\n**What the contract contains:**\n- **Header:** ODCS v3.2.0, version 1.0.0, status `draft`. The `id` is a UUID I made up.\n- **Table:** one object, `orders`, described as one row per order line. All six columns from `tables/orders.md` are included with their BigQuery types (`INT64` is `integer`, `NUMERIC` is `number`).\n- **Key:** the primary key is `order_id` plus `line_no`. A table-level `duplicateValues` check on that pair must be 0.\n- **Required:** every column is `required: true`. The table doc doesn't say which columns can be null, so please confirm.\n- **Classification:** the set `[public, internal, pii, psi]` is declared in `customProperties`. I marked every column `internal`, since none looks personal.\n- **Descriptions:** each is at least 50 characters, apart from the table description.\n\n**Not included:** there is no `slaProperties` section because no freshness or retention requirements were given. I didn't generate dbt models either."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/orders.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 11,
+            "costUsd": 0.10763390000000002,
+            "judgeCostUsd": 0.0006699999999999996,
+            "durationSeconds": 32,
+            "startedAt": "2026-11-09T22:34:06.993Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-dbdfxj/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I wrote `contracts/orders.yaml`, but I couldn't validate it. The sandbox blocked the validator, and I haven't worked around that.\n\n**Validation:** `uvx check-jsonschema` failed because uv couldn't create its cache directory: \"Read-only file system\" for both `~/.cache/uv` and a cache under `$TMPDIR`. I didn't try other ways around it, since the sandbox settings are yours to change. To check the contract, either make a uv cache path writable or run this yourself:\n\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/orders.yaml\n```\n\n**What's in the contract:**\n- **Header:** ODCS v3.2.0 `DataContract`, version `1.0.0`, status `draft`, with a generated UUID as `id`.\n- **Object:** `orders`, described as one row per order line.\n- **Properties:** all six columns from `tables/orders.md`, each with `physicalName`, `logicalType`, `physicalType`, `required: true`, and a description of at least 50 characters. `unit_price` is `number`/`NUMERIC` and `ordered_at` is `timestamp`/`TIMESTAMP`.\n- **Primary key:** `(order_id, line_no)`, set as a composite key because the table is one row per line.\n- **Quality rules:** a duplicate check on the key pair, and a null check on `quantity`. These would become dbt tests.\n- **Classification:** I declared the set `public, internal, pii, psi` and marked every column `internal`, since none look personal.\n\n**Things you need to decide:**\n1. **Owning team.** The source didn't name one, so `team.name` is the placeholder `TODO-owning-team`. An ownerless contract is a review blocker, so please give me the real team.\n2. **`required: true` on every column.** The table doc doesn't say which columns can be null. I assumed none can, and flipping any of them to optional later would count as a breaking change.\n3. **No `slaProperties`.** I had no freshness or retention figures and didn't want to invent them. If you give me values, I'll add them with what happens on breach.\n\nI didn't generate any dbt models or commit anything."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/orders.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 9,
+            "costUsd": 0.10532939999999999,
+            "judgeCostUsd": 0.000973700000000001,
+            "durationSeconds": 32,
+            "startedAt": "2026-11-09T22:34:38.958Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-fYMPp1/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I wrote `contracts/orders.yaml`, but I couldn't validate it against the v3.2.0 JSON Schema, and the owning team is a placeholder.\n\n**What the contract contains**\n- It is ODCS v3.2.0 with one schema object, `orders`, and all six columns from `tables/orders.md`.\n- The primary key is the composite `order_id` + `line_no`, because the table has one row per order line.\n- Every property has `logicalType`, `physicalType`, `required: true`, a description of at least 50 characters, and a `classification`.\n- I declared the classification set `[public, internal, pii, psi]` in `customProperties`, as the skill's example does. I labelled every column `internal`, since none looks personal.\n- The only quality rule is a `nullValues` check on `quantity`.\n- I left out a freshness SLA because nothing says what the target is.\n\n**Open items**\n1. **Not validated.** I ran `uvx check-jsonschema==0.39.0` against the v3.2.0 schema. It failed because the sandbox is read-only for uv's cache directory, including the `$TMPDIR` location I tried as a workaround. I did not try to get around the sandbox. To validate, run the command from the skill in an environment where uv can write its cache, or allow that directory.\n2. **Owning team.** `team.name` is `TODO-owning-team`. Nothing in the request or `AGENTS.md` names an owner, and an ownerless contract blocks review, so please give me the team name.\n3. **Choices to confirm:**\n   - **Contract `id`:** I made up the UUID.\n   - **`status`:** it is `draft`.\n   - **`required: true`:** I set it on all columns, because the table doc doesn't say which can be null.\n   - **`unit_price` currency:** it isn't stated, so I left it out of the description.\n\nI did not generate dbt models or commit anything."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/orders.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 11,
+            "costUsd": 0.10763980000000001,
+            "judgeCostUsd": 0.000600100000000001,
+            "durationSeconds": 33,
+            "startedAt": "2026-11-09T22:35:11.451Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-Wy8jrp/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I wrote `contracts/orders.yaml`, but I couldn't validate it against the v3.2.0 JSON Schema. `uvx` failed twice with \"Read-only file system\", first on its default cache directory and then on a cache under `$TMPDIR`. That is a sandbox write restriction, and I haven't tried to get around it. The schema check from the skill still needs a run in an environment where `uvx` can write its cache:\n\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/orders.yaml\n```\n\nThe contract follows the skill's example and `tables/orders.md`:\n- **Header:** `apiVersion: v3.2.0`, `kind: DataContract`, version `1.0.0`, and a freshly generated UUID as `id`.\n- **Object:** one object, `orders`, with a description of the grain (one row per order line).\n- **Properties:** six, covering all six columns. Each has `name`, `physicalName`, `logicalType`, `physicalType`, `required: true`, a description of at least 50 characters, and a classification. I marked every column `required: true`, but the table doc doesn't give nullability, so please check that.\n- **Primary key:** composite (`order_id`, then `line_no`), set with `primaryKeyPosition`.\n- **Classification:** the contract declares the set `public, internal, pii, psi` and labels every column `internal`. No column holds personal data.\n- **Quality:** the only rule is `nullValues` must be 0 on `quantity`. I added it as an example, so tell me if you want others, such as positive quantity or price.\n\nDecisions for you:\n- **Owner:** the owning team is a placeholder, `example-shop`, taken from the dataset name. The skill treats an ownerless contract as a review blocker, so please give me the real team name.\n- **SLAs:** I left out `slaProperties` because I have no freshness or retention requirements for this table. Send them if you want them added.\n\nI haven't generated or checked any dbt models, and nothing is committed."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/orders.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.097536,
+            "judgeCostUsd": 0.0009665000000000003,
+            "durationSeconds": 34,
+            "startedAt": "2026-11-09T22:35:44.695Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-Ror0h0/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I wrote `contracts/orders.yaml`, but I couldn't validate it against the v3.2.0 JSON Schema. The sandbox blocked the validator, so treat the file as unvalidated.\n\n`uvx check-jsonschema` failed with \"Read-only file system\" when `uv` tried to create its cache directory. That happened under both the default location and `$TMPDIR`. I didn't try to get around the sandbox. Once the cache directory is writable, or you run it yourself, this is the command:\n\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/orders.yaml\n```\n\n**What's in the contract**\n- **Header:** `apiVersion: v3.2.0`, version `1.0.0`, status `draft`, and a generated `id`.\n- **Classification set:** `public`, `internal`, `pii`, `psi`, declared in `customProperties` as `wraith.classifications`, following the skill's example contract.\n- **Object:** `orders`, with `physicalName` `orders` and a description of the grain (one row per order line).\n- **Properties:** all six columns, each with a description, `logicalType`, and `physicalType` matching the table doc.\n  - `required: true` on all six. The table doc doesn't say which columns can be null, so this is my assumption.\n  - The primary key is the composite `order_id` and `line_no`.\n  - I classified every column as `internal`, since none looked personal.\n- **Quality rules:**\n  - `quantity` must be at least 1.\n  - `unit_price` must be at least 0.\n  - `(order_id, line_no)` must be unique.\n\n  The doc doesn't state these rules, so check they're what you want.\n\n**Still needed from you**\n- **Owning team:** the doc doesn't name one, so I put the placeholder `TBD-owning-team`. An ownerless contract blocks review, so replace it.\n- **SLAs:** I left out `slaProperties` (freshness, retention) because nothing specifies them. Give me targets and I'll add them.\n- **dbt models:** I haven't generated them or run the drift check."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/orders.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.05940470000000001,
+            "judgeCostUsd": 0.0007752000000000019,
+            "durationSeconds": 22,
+            "startedAt": "2026-11-09T22:36:18.789Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-TrmFp6/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/orders.yaml`. I haven't validated it against the ODCS v3.2.0 schema.\n\n- **Columns:** all six columns from `tables/orders.md` are in, each with a logical and a physical type. `unit_price` is `number`/`NUMERIC` and `ordered_at` is `timestamp`/`TIMESTAMP`.\n- **Primary key:** I made `(order_id, line_no)` the primary key and marked both as required, because the table is one row per order line.\n- **Server:** a BigQuery dev server using project `example-project-dev` and location `europe-west2` from `AGENTS.md`, plus dataset `example_shop` from the table doc.\n- **Other fields:** the contract is version `1.0.0` with status `draft`.\n- **Descriptions:** the column descriptions are my wording, since the table doc only gave names and types.\n\nI left out an owner, SLAs, quality rules and nullability on the other columns, because none of that was in the sources."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/orders.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.0568268,
+            "judgeCostUsd": 0.0007301000000000009,
+            "durationSeconds": 18,
+            "startedAt": "2026-11-09T22:36:40.518Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-WYDpHN/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/orders.yaml`. I haven't validated it against the ODCS v3.2.0 JSON schema.\n\n- **Columns:** All six columns from `tables/orders.md` are in the contract. Their BigQuery types map to ODCS logical types: STRING to `string`, INT64 to `integer`, NUMERIC to `number` and TIMESTAMP to `timestamp`.\n- **Primary key:** I made `order_id` plus `line_no` a composite primary key, marked required. I inferred that from \"one row per order line\", so please confirm it. Every other column is optional.\n- **Server:** There is one `dev` BigQuery server, built from `AGENTS.md`: project `example-project-dev`, dataset `example_shop`, location `europe-west2`.\n- **Placeholders:** The status is `draft` and the version is `1.0.0`. Column descriptions are short ones I wrote from the column names, since the source doc has none. I did not add quality rules, SLAs, or an owner, because the source doesn't specify any."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/orders.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 5,
+            "costUsd": 0.0616033,
+            "judgeCostUsd": 0.0006058999999999995,
+            "durationSeconds": 18,
+            "startedAt": "2026-11-09T22:36:58.705Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-8l1Hg7/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I saved the contract to `contracts/orders.yaml`. It uses `contracts/` because `AGENTS.md` sets `contracts_dir: contracts`. I haven't validated it against the ODCS v3.2.0 JSON schema or run any linter.\n\n- **Header:** `apiVersion: v3.2.0`, `kind: DataContract`, id `example_shop.orders`, version `1.0.0`, status `draft`.\n- **Server:** a `dev` BigQuery server with project `example-project-dev`, dataset `example_shop` and location `europe-west2`. These come from `AGENTS.md` and `tables/orders.md`.\n- **Schema:** the `orders` table has all six columns. Each has a logical type and its physical BigQuery type:\n  - `order_id`: string / STRING\n  - `line_no`: integer / INT64\n  - `sku`: string / STRING\n  - `quantity`: integer / INT64\n  - `unit_price`: number / NUMERIC\n  - `ordered_at`: timestamp / TIMESTAMP\n\nSeveral things in the file are my inference, not something the source documents state, so please check them:\n- **Primary key:** I made `(order_id, line_no)` a composite primary key, marked required. That follows from \"one row per order line\", but the table doc doesn't say it.\n- **Descriptions:** the column descriptions are my wording. Only the table-level description comes from the doc.\n- **Version and status:** `1.0.0` and `draft` are placeholders.\n- **Left out:** I added no quality rules, SLAs, owner or team, because nothing in the repo specifies them."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/orders.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.056174600000000005,
+            "judgeCostUsd": 0.0006579000000000012,
+            "durationSeconds": 26,
+            "startedAt": "2026-11-09T22:37:17.183Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-gmv4RM/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/orders.yaml`. I haven't validated it against the ODCS v3.2.0 JSON schema.\n\n- **Columns:** all six columns from `tables/orders.md` are included, each with its logical type and BigQuery physical type.\n- **Primary key:** I made `order_id` plus `line_no` a composite primary key, because the table has one row per order line.\n- **Server:** I added a BigQuery `dev` server using `example-project-dev`, dataset `example_shop` and location `europe-west2`. These come from `AGENTS.md`.\n\nThe source doc doesn't say whether columns are nullable, so I marked every column `required: true`. I also wrote the column descriptions myself from the column names. Please check both. I left out quality rules and an SLA because nothing in the repo specifies them."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/orders.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 5,
+            "costUsd": 0.0597104,
+            "judgeCostUsd": 0.0006513999999999999,
+            "durationSeconds": 21,
+            "startedAt": "2026-11-09T22:37:43.550Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-cjIqwd/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I saved the contract at `contracts/orders.yaml`. I haven't validated it against the ODCS schema or run any linter.\n\n- **Header:** `apiVersion: v3.2.0`, `kind: DataContract`, id `example_shop.orders`, version `1.0.0`, status `draft`.\n- **Server:** a `dev` BigQuery server using values from `AGENTS.md`: project `example-project-dev`, location `europe-west2`, and dataset `example_shop` from the table doc.\n- **Schema:** the `orders` table with all six columns, each with its BigQuery type (`physicalType`) and a matching ODCS `logicalType`:\n\n  | Column | `physicalType` | `logicalType` |\n  |---|---|---|\n  | `order_id` | STRING | string |\n  | `line_no` | INT64 | integer |\n  | `sku` | STRING | string |\n  | `quantity` | INT64 | integer |\n  | `unit_price` | NUMERIC | number |\n  | `ordered_at` | TIMESTAMP | timestamp |\n\nI made two assumptions that `tables/orders.md` doesn't state:\n\n- **Primary key:** I made `(order_id, line_no)` a composite primary key and marked both columns `required`. That follows from \"one row per order line\", but please confirm it.\n- **Column descriptions:** I wrote these myself, since the source doc has none.\n\nI didn't add quality rules, SLAs or ownership, because the source gives nothing to base them on."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/orders.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.8,
+        "passRate": 0.6,
+        "scoreWithout": 0.7,
+        "passRateWithout": 0.4,
+        "delta": 0.10000000000000009
+      }
+    },
+    {
+      "name": "contracts-page_events",
+      "dir": "bench-contracts/page_events",
+      "source": "mixed",
+      "promptMarkdown": "Write an ODCS v3.2.0 data contract for the page_events table (columns in tables/page_events.md) and save it as contracts/page_events.yaml.",
+      "runsPerCase": 5,
+      "timeoutSeconds": 600,
+      "maxTurns": 10,
+      "graders": [
+        {
+          "name": "quality",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the saved contract declares ODCS v3.2.0, kind DataContract, marks event_id as the primary key. FAIL otherwise. Secondary check only; schema validity is scored by the harness.",
+          "config": {
+            "criteria": "PASS if the saved contract declares ODCS v3.2.0, kind DataContract, marks event_id as the primary key. FAIL otherwise. Secondary check only; schema validity is scored by the harness.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "saved",
+          "type": "file_exists",
+          "weight": 1,
+          "config": {
+            "path": "contracts/page_events.yaml",
+            "exists": true
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 11,
+            "costUsd": 0.11135350000000001,
+            "judgeCostUsd": 0.0010143999999999986,
+            "durationSeconds": 36,
+            "startedAt": "2026-11-09T22:38:04.877Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-hwGEeX/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: FAIL PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  true,
+                  true
+                ],
+                "evidence": "I wrote `contracts/page_events.yaml`, but I couldn't validate it. The sandbox's filesystem is read-only where `uvx` needs to write its cache, even with `UV_CACHE_DIR` pointed at `$TMPDIR`, so `check-jsonschema` failed to start. I haven't changed the sandbox settings. To validate, run this from a shell that can write a uv cache:\n\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/page_events.yaml\n```\n\n**What the contract contains**\n- It follows the skill's example contract: `apiVersion: v3.2.0`, `version: 1.0.0`, and one schema object, `page_events`.\n- It declares the classification set `[public, internal, pii, psi]` and notes the partition on `event_date` and the dataset `example_web`.\n- Each of the five columns has `physicalName`, `logicalType`, `physicalType`, `required`, a description of at least 50 characters, and a classification.\n- `event_id` is the primary key.\n- `payload` is mapped to `logicalType: object` with `physicalType: JSON`.\n- I haven't run any drift check or model generation.\n\n**Assumptions to confirm**\n- **Owning team:** `web-analytics` is a placeholder, because `tables/page_events.md` names no owner. An ownerless contract is a review blocker, so please set the real team.\n- **Classifications:** I classed `user_id` as `pii`. I also classed `payload` as `pii`, because free-form JSON can't be shown to be free of personal data, and I recorded that reason in `customProperties`. Downgrade either if you know better.\n- **Required flags:** `event_id`, `event_date` and `event_name` are `required: true`. `user_id` and `payload` are optional, to allow anonymous events. The table doc doesn't say which columns can be null.\n- **Freshness SLA:** it is 24h on `event_date`, copied from the example contract rather than taken from your requirements.\n- **Not included:** I added no `quality` rules or retention SLA, since nothing in the table doc supports specific thresholds.\n- **Contract `id`:** it is a freshly generated UUID."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/page_events.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.1007756,
+            "judgeCostUsd": 0.0008531999999999984,
+            "durationSeconds": 31,
+            "startedAt": "2026-11-09T22:38:41.101Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-YX7smP/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I wrote `contracts/page_events.yaml`, but I couldn't validate it. The sandbox's filesystem is read-only where `uvx` needs to cache its download, even with the cache redirected to `$TMPDIR`. The skill requires validation before commit, so please run this where `uvx` works:\n\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/page_events.yaml\n```\n\nI also haven't generated or checked the dbt models against it.\n\n**What the contract contains**\n- It uses ODCS v3.2.0 with version `1.0.0` and status `draft`. One schema object, `page_events`, covers the five columns from `tables/page_events.md`. The object is marked as partitioned on `event_date` through a `dbt.partition_by` custom property.\n- `event_id` is the primary key. It is required and has a no-duplicates quality rule.\n- `event_date` and `event_name` are required.\n- `user_id` and `payload` are optional.\n- The classification set is declared once for the contract as `public`, `internal`, `pii` and `psi`.\n- `user_id` and `payload` are classified `pii`, because a user id can be linked to a person and the payload is free-form JSON. The other columns are `internal`.\n- A 24-hour freshness SLA on `event_date` says the owning team is notified on breach.\n\n**Assumptions to confirm**\n- **Owning team:** I used `web-analytics` as a placeholder, because `tables/page_events.md` doesn't name an owner. An ownerless contract is a review blocker, so please give me the real team name. I flagged the placeholder in `customProperties`.\n- **Primary key:** the table doc doesn't name one, so I assumed `event_id`.\n- **Required columns:** I assumed `event_id`, `event_date` and `event_name` can't be null, and `user_id` and `payload` can be.\n- **Freshness SLA:** the 24-hour target is a guess.\n- **`payload` classification:** `pii` is deliberately conservative. Downgrade it only after someone audits what the payload actually contains.\n- **Contract `id`:** I generated a random UUID."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/page_events.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 11,
+            "costUsd": 0.1102266,
+            "judgeCostUsd": 0.0009296000000000026,
+            "durationSeconds": 35,
+            "startedAt": "2026-11-09T22:39:12.204Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-dfRNHa/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "I wrote `contracts/page_events.yaml`, but I couldn't validate it against the ODCS v3.2.0 JSON Schema. `uvx` failed twice with a read-only file system error, once on its default cache directory and once on a cache under `$TMPDIR`. I didn't try other workarounds. To validate it, run this from an environment where `uvx` can write a cache:\n\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/page_events.yaml\n```\n\nI built the file from the skill's example contract, so it should pass. Until it has been checked, treat it as unvalidated.\n\n**What's in it**\n- **Object:** `page_events`, with the BigQuery dataset `example_web` and partition field `event_date` recorded under `bigquery.*` in `customProperties`.\n- **Properties:** `event_id`, `event_date`, `user_id`, `event_name` and `payload`. Each has a `physicalName`, a logical and physical type, and a description of at least 50 characters.\n- **Primary key:** `event_id`, with quality rules for no nulls and no duplicates. `event_date` and `event_name` also have no-null rules.\n- **Classification set:** `public`, `internal`, `pii`, `psi`, declared in `customProperties`.\n- **Version:** `1.0.0`.\n\n**Assumptions to check**\n- **Owning team:** `tables/page_events.md` doesn't name one, so I used `web-analytics`. I recorded that as an assumption in `customProperties`. Please give me the real team, because a contract without an owner is a review blocker.\n- **Primary key:** I chose `event_id` as the key because the table doc doesn't state one.\n- **Required flags:** `event_date`, `event_id` and `event_name` are required. `user_id` and `payload` are optional, because anonymous visitors and events without details are likely.\n- **Classification:** I classified `user_id` and `payload` as `pii`. `payload` is free-form JSON that may contain personal data, and I noted that reasoning in the file. Change either one if you know better.\n- **Left out:** I added no freshness or retention SLA, since the table doc gives no figures. Send me the numbers if you want them."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/page_events.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 10,
+            "costUsd": 0.1042508,
+            "judgeCostUsd": 0.0008316000000000018,
+            "durationSeconds": 30,
+            "startedAt": "2026-11-09T22:39:47.001Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-sWbAxM/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I wrote `contracts/page_events.yaml`, but I couldn't validate it against the ODCS v3.2.0 JSON Schema. The sandbox makes the uv cache directory read-only, so `uvx check-jsonschema==0.39.0` failed twice. Both the default cache and a `$TMPDIR` cache were refused. The check needs a writable uv cache and access to raw.githubusercontent.com. Once the sandbox allows that, run:\n\n`uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/page_events.yaml`\n\n**What's in the contract**\n- **Object:** `page_events` in dataset `example_web`, partitioned by `event_date`. The dataset and partition field are recorded in `customProperties`.\n- **Properties:** all five columns, each with a logical and physical type and a description of at least 50 characters.\n- **Key:** `event_id` is the primary key and required. It has a `duplicateValues` quality rule that must be 0.\n- **Classification set:** I declared `public`, `internal`, `pii` and `psi`.\n- **Freshness SLA:** 24 hours on `event_date`, with paging on breach.\n\n**Decisions to confirm**\n- **Owning team:** you didn't name one, so `team.name` is the placeholder `TODO-owning-team`. An ownerless contract is a review blocker, so please give me the real team name.\n- **`user_id`:** I classified it `pii`. It is nullable, for anonymous visitors.\n- **`payload`:** I classified it `pii` as a cautious default, because free-form JSON may hold personal data. The reason is recorded on the property.\n- **Other columns:** `event_id`, `event_date` and `event_name` are `internal`.\n- **Freshness SLA:** the 24 hours is my assumption, copied from the skill's example. Please confirm or give me the real figure.\n- **Status:** the contract is `status: draft`.\n\nI haven't generated or checked dbt models from the contract."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/page_events.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 11,
+            "costUsd": 0.10947739999999999,
+            "judgeCostUsd": 0.0008768000000000005,
+            "durationSeconds": 37,
+            "startedAt": "2026-11-09T22:40:17.089Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-mGBWU2/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I wrote `contracts/page_events.yaml`, but it hasn't been validated, and the owning team is still a placeholder.\n\n**Validation:** `uvx check-jsonschema` failed twice with \"Read-only file system\" when it tried to create its cache directory. The first try used the default cache under the sandbox home. The second set `UV_CACHE_DIR` to a directory under `$TMPDIR`, which also turned out to be read-only. I stopped there instead of looking for another way around the sandbox. You can run this outside the sandbox, or tell me whether to change the cache location or allow it:\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/page_events.yaml\n```\n\n**What's in the contract**\n- It follows the skill's example contract, with `apiVersion: v3.2.0` and `version: 1.0.0`. The `id` is a UUID I generated.\n- The `page_events` object has all five columns, each with `physicalName`, `logicalType`, `physicalType`, `required` and a description of at least 50 characters.\n- `event_id` is the primary key. I assumed it is unique, so I added a `duplicateValues` check requiring zero duplicates.\n- I marked `event_id`, `event_date` and `event_name` as required. `user_id` and `payload` are optional, which is also my assumption because `tables/page_events.md` doesn't say.\n- `user_id` and `payload` are classified `pii`. `user_id` identifies a person, and `payload` is free-form JSON that could contain personal data. The other columns are `internal`. The classification set is declared in `customProperties`, as the skill requires.\n- The dataset (`example_web`) and the partition column (`event_date`) are recorded as prefixed `bigquery.*` custom properties.\n\n**For you to decide**\n- **Owner:** `team.name` is `TODO-owning-team`. Neither the table doc nor `AGENTS.md` names an owner, and an ownerless contract blocks review. Which team owns this?\n- **SLAs:** I left out `slaProperties` because no freshness or retention figures were given. Send me the numbers and the breach behaviour and I'll add them.\n- **Downstream:** I haven't generated or checked any dbt models from the contract."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/page_events.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.055377100000000005,
+            "judgeCostUsd": 0.00016290000000000054,
+            "durationSeconds": 13,
+            "startedAt": "2026-11-09T22:40:54.042Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-SdNvTx/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/page_events.yaml`. I haven't validated it against the ODCS schema or run any tooling on it.\n\n- **Schema:** it has the five columns from `tables/page_events.md`, each with a logical type and its BigQuery physical type. `event_date` is marked as the partition key, and `payload` is an object with the description \"Free-form event JSON\".\n- **Server:** I added one `dev` BigQuery server. The project (`example-project-dev`), dataset (`example_web`) and location (`europe-west2`) come from `AGENTS.md` and the table doc.\n- **Placeholders:** `version: 1.0.0`, `status: draft` and `domain: example_web` are my own picks, since the table doc doesn't say. The `domain` value is just the dataset name.\n- **Left out:** I didn't add primary keys, nullability, quality rules or SLAs, because nothing in the sources states them. `event_id` looks like a natural primary key, but I didn't want to assume it."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/page_events.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.055182300000000004,
+            "judgeCostUsd": 0.00020649999999999835,
+            "durationSeconds": 15,
+            "startedAt": "2026-11-09T22:41:07.485Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-CwFHro/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/page_events.yaml`. I haven't validated it against the ODCS v3.2.0 schema or run it against BigQuery.\n\n- **Columns:** All five are included with their logical and physical types: `event_id`, `event_date`, `user_id`, `event_name` and `payload`. `event_date` is marked as the partition column, and `payload` is an object described as free-form event JSON.\n- **Server:** I added a BigQuery `dev` server using project `example-project-dev`, dataset `example_web` and location `europe-west2`. The project and location come from `AGENTS.md`, and the dataset comes from the table doc.\n- **Metadata:** I set the status to `draft` and the version to `1.0.0`. I also used the table name as the contract id and `example_web` as the domain. Change these if you use different conventions.\n\nI left out nullability, primary key, quality rules and descriptions for the other columns, because the table doc doesn't give them. You can add those once someone confirms them."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/page_events.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.054635500000000004,
+            "judgeCostUsd": 0.0003472999999999983,
+            "durationSeconds": 16,
+            "startedAt": "2026-11-09T22:41:22.597Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-UC7wbv/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/page_events.yaml`. I haven't validated it against the ODCS v3.2.0 schema.\n\n- **Server:** I took the BigQuery project (`example-project-dev`) and location (`europe-west2`) from `AGENTS.md`. I took the dataset (`example_web`) from the table doc. It's set up as a `dev` server.\n- **Columns:** All five columns are included with their logical and physical types. `event_date` is marked as the partition key. `payload` is an `object` (`JSON` in BigQuery) and described as free-form.\n- **Left out:** The table doc doesn't say which columns are required, unique or a primary key. It also gives no owner, SLAs or quality rules. I didn't invent any of those. The contract is `status: draft` at version `1.0.0`, so you can add them when you know them."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/page_events.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.0572713,
+            "judgeCostUsd": 0.0002979000000000037,
+            "durationSeconds": 22,
+            "startedAt": "2026-11-09T22:41:38.605Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-I3CH3k/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/page_events.yaml`. I haven't validated it against the ODCS schema.\n\n- **Columns:** it covers the five columns from `tables/page_events.md`: `event_id`, `user_id` and `event_name` as strings, `event_date` as a date, and `payload` as a JSON object. Each column has its BigQuery physical type.\n- **Partitioning:** `event_date` is marked as the partition key.\n- **Server:** I took the BigQuery server details from `AGENTS.md`: project `example-project-dev`, location `europe-west2`, and dataset `example_web` from the table doc. I labelled it `dev`.\n- **Metadata:** `id` is `page-events`, `version` is `1.0.0`, `status` is `draft`, and `domain` is `web`. These are my placeholders, since the table doc doesn't specify them.\n\nI didn't add primary keys, required flags, quality rules or SLAs, because the source doesn't say anything about them."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/page_events.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.054808300000000004,
+            "judgeCostUsd": 0.0003045999999999986,
+            "durationSeconds": 16,
+            "startedAt": "2026-11-09T22:42:00.884Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-Vng1q4/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/page_events.yaml` as ODCS v3.2.0. I haven't validated it against the ODCS schema or run any tooling on it.\n\n- **Columns:** it covers the five columns from `tables/page_events.md`: `event_id`, `event_date`, `user_id`, `event_name` and `payload`. Each has a logical type, the BigQuery physical type and a short description. `event_date` is marked as the partition key. `payload` is typed as `object` with physical type `JSON`.\n- **Server:** I took the dev server settings from `AGENTS.md`. It's BigQuery, project `example-project-dev`, dataset `example_web`, location `europe-west2`.\n- **Placeholders:** the source gave only column names and types, so the descriptions are my wording. I set `version: 1.0.0` and `status: draft` and set `domain` to `example_web` (the dataset name).\n- **Left out:** I added no owner, quality rules, SLAs, primary keys or nullability constraints. The source doesn't say what they should be, and I didn't want to invent them."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/page_events.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 0.5,
+        "passRateWithout": 0,
+        "delta": 0.5
+      }
+    },
+    {
+      "name": "contracts-payments",
+      "dir": "bench-contracts/payments",
+      "source": "mixed",
+      "promptMarkdown": "Write an ODCS v3.2.0 data contract for the payments table (columns in tables/payments.md) and save it as contracts/payments.yaml.",
+      "runsPerCase": 5,
+      "timeoutSeconds": 600,
+      "maxTurns": 10,
+      "graders": [
+        {
+          "name": "quality",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the saved contract declares ODCS v3.2.0, kind DataContract, marks payment_id as the primary key. It classifies card_last4 as personal or payment data. FAIL otherwise. Secondary check only; schema validity is scored by the harness.",
+          "config": {
+            "criteria": "PASS if the saved contract declares ODCS v3.2.0, kind DataContract, marks payment_id as the primary key. It classifies card_last4 as personal or payment data. FAIL otherwise. Secondary check only; schema validity is scored by the harness.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "saved",
+          "type": "file_exists",
+          "weight": 1,
+          "config": {
+            "path": "contracts/payments.yaml",
+            "exists": true
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 11,
+            "costUsd": 0.10856810000000001,
+            "judgeCostUsd": 0.0009280999999999977,
+            "durationSeconds": 44,
+            "startedAt": "2026-11-09T22:42:16.968Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-D36Iwb/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I wrote `contracts/payments.yaml`, but I couldn't validate it. The sandbox has no writable cache directory for `uvx`, so `check-jsonschema` failed with \"Read-only file system\". I tried `$TMPDIR` as the cache and that was read-only too. I haven't worked around it, since that would mean changing the sandbox settings, which is your call. Once `uvx` has a writable cache, run this from the repo root:\n\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/payments.yaml\n```\n\nI built the contract from the skill's example, so the structure should pass, but that is unconfirmed.\n\n**What's in it**\n- **Object:** `payments`, with all five columns from `tables/payments.md`. Each has `physicalName`, `logicalType`, `physicalType`, `required`, and a description of at least 50 characters.\n- **Key:** `payment_id` is the primary key, with a `duplicateValues` = 0 quality rule.\n- **Classification:** the closed set is declared in `customProperties` as `[public, internal, pii, psi]`. I classified `card_last4` as `pii` and the other columns as `internal`.\n- **Metadata:** version is 1.0.0 and the `id` is a freshly generated UUID.\n\n**Things I guessed, so please check them**\n- **Owning team:** nothing in the repo names one. I used `example-pay`, taken from the dataset name, and flagged it in a `customProperties` note. An ownerless contract blocks review, and so does a wrong owner, so please give me the real team.\n- **`required` flags:** the table doc doesn't give nullability. I set `payment_id`, `order_id`, `amount` and `paid_at` to required, and `card_last4` to optional.\n- **`card_last4` classification:** `pii` is a judgement call. Change it if your policy treats partial card numbers differently.\n- **No SLA:** I left out `slaProperties` because I'd have had to invent a freshness target. Tell me one (for example, hours on `paid_at`) and the breach behaviour, and I'll add it.\n- **No dbt models:** I haven't generated any."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/payments.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.0976354,
+            "judgeCostUsd": 0.0005585,
+            "durationSeconds": 28,
+            "startedAt": "2026-11-09T22:43:01.007Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-OxOZkj/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I wrote `contracts/payments.yaml`, but I couldn't validate it against the ODCS v3.2.0 JSON Schema. The validator (`uvx check-jsonschema`) failed because it couldn't create its cache directory: \"Read-only file system\" for both `~/.cache/uv` and `$TMPDIR/uv`. I didn't look for another way around that. Once the sandbox allows `uv` a writable cache, run:\n\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/payments.yaml\n```\n\nI also haven't generated or checked any dbt models from the contract.\n\n**What the contract contains**\n- **Header:** `apiVersion: v3.2.0`, `kind: DataContract`, `version: 1.0.0`, and an `id` I generated.\n- **Classification set:** `[public, internal, pii, psi]`, declared in `customProperties`.\n- **Table:** a `payments` object with five properties, each with `physicalName`, `logicalType`, `physicalType`, `required` and a description of at least 50 characters.\n- **Primary key:** `payment_id`, with a `duplicateValues` quality rule that must be 0.\n- **`card_last4`:** classified `pii`.\n- **Everything else:** classified `internal`.\n\n**Things for you to settle**\n- **Owning team:** the table doc doesn't name one, so `team.name` is the placeholder `TODO-owning-team`. An ownerless contract blocks review, so please give me the real team.\n- **Nullability:** I set `required: true` for every column except `card_last4`. The doc doesn't say which columns can be null, so please confirm.\n- **`amount` currency:** the doc doesn't give one.\n- **Freshness SLA:** I left out `slaProperties` rather than invent a freshness target. Tell me the target and what should happen on breach, and I'll add it.\n- **`status: draft`:** I set this because of the open items above. Drop it once they're resolved."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/payments.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 11,
+            "costUsd": 0.1126994,
+            "judgeCostUsd": 0.0007806999999999988,
+            "durationSeconds": 36,
+            "startedAt": "2026-11-09T22:43:29.089Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-B5xsZU/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I wrote `contracts/payments.yaml`, but I couldn't validate it, and it has no real owning team yet.\n\n**Needs your input**\n- **Owning team:** nothing in the repo names one, so `team.name` is `TODO-owning-team`. An ownerless contract blocks review. Tell me the team and I'll fill it in.\n\n**Not validated**\n- The validator (`uvx check-jsonschema`) failed with `Read-only file system` when it tried to create its cache directory. I tried `$TMPDIR` as the cache location and that failed too. I didn't try to get around the sandbox.\n- Please run this where uv can write:\n  `uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/payments.yaml`\n\n**What's in the contract**\n- It follows the skill's example contract. The object is `payments`, with all five columns from `tables/payments.md`. Each has `physicalName`, `logicalType`, `physicalType`, `required` and a description of at least 50 characters.\n- `payment_id` is the primary key, with a `duplicateValues` quality rule (must be 0), because the table is one row per payment.\n- `card_last4` is classified `pii`. The other columns are `internal`. The classification set is declared in `customProperties`.\n- The `id` is a UUID I made up.\n\n**My assumptions**\n- `order_id`, `amount` and `paid_at` are `required: true`, and `card_last4` is optional. The table doc doesn't say.\n- `amount` has `logicalType: number`, and its description notes that no currency column exists.\n- There is no `slaProperties` block, since no freshness or latency targets were given.\n\nI haven't generated or checked any dbt models, and I haven't committed anything."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/payments.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 11,
+            "costUsd": 0.106734,
+            "judgeCostUsd": 0.0010278000000000023,
+            "durationSeconds": 41,
+            "startedAt": "2026-11-09T22:44:04.797Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-AND24D/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "I wrote `contracts/payments.yaml`, but I couldn't validate it against the v3.2.0 JSON Schema. The skill says to validate before committing, so treat it as unvalidated.\n\n**Validation:** `uvx check-jsonschema` failed because the sandbox has no writable uv cache directory. The default location and a cache under `$TMPDIR` both returned \"Read-only file system\". I haven't worked around it, since changing the sandbox is your decision. To validate, run this outside the sandbox or allow a writable uv cache:\n\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/payments.yaml\n```\n\n**What's in the contract:**\n- **Format:** `apiVersion: v3.2.0`, version 1.0.0, status `draft`. The `id` is a new UUID I generated.\n- **Table:** one `payments` object with five properties. Each has `physicalName`, logical and physical types, `required`, and a description of at least 50 characters.\n- **Key and quality rule:** `payment_id` is the primary key, with a `duplicateValues = 0` quality rule.\n- **Classification:** I declared `public`, `internal`, `pii` and `psi` as the closed set. `card_last4` is `pii` and the other columns are `internal`. Those labels are my judgement, so please check them.\n- **Required flags:** I set `required: true` on every column except `card_last4`. The table doc doesn't give nullability, so confirm these.\n\n**Open items:**\n1. **Owning team:** The table doc doesn't name an owner, so `team.name` is the placeholder `TODO-owning-team`, flagged in `customProperties`. An ownerless contract blocks review, so please tell me the team.\n2. **Currency:** `amount` is `NUMERIC`, mapped to `number`. The doc gives no currency or precision, and I didn't invent any.\n3. **No SLAs:** I left out `slaProperties` because the doc has no freshness or retention requirements.\n4. **dbt models:** I haven't generated or checked any."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/payments.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 10,
+            "costUsd": 0.0990307,
+            "judgeCostUsd": 0.0003776999999999982,
+            "durationSeconds": 28,
+            "startedAt": "2026-11-09T22:44:46.183Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-feavKo/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I saved the contract at `contracts/payments.yaml`, but I couldn't validate it. `uvx` failed with a read-only file system error when creating its cache directory (`/tmp/claude-eval-feavKo/home/.cache/uv`). I didn't try to get around the sandbox.\n\nTo validate it yourself, run:\n`uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/payments.yaml`\n\n**What's in the contract**\n- **Format:** ODCS v3.2.0, version 1.0.0, status `draft`. The `id` is a UUID I generated.\n- **Schema:** One object, `payments`, with the five columns from `tables/payments.md`. Each has `physicalName`, `logicalType`, `physicalType`, `required` and a description of at least 50 characters.\n- **Key and quality:** `payment_id` is the primary key, with a `duplicateValues` must-be-0 quality rule.\n- **Types:** `amount` is `logicalType: number` with physical type `NUMERIC`.\n- **Classification:** The set is declared in `customProperties` as `[public, internal, pii, psi]`. I marked `card_last4` as `pii` and the other columns as `internal`.\n\n**Assumptions to confirm**\n- **Owning team:** The table doc doesn't name an owner, so I used `payments`. An ownerless contract is a review blocker, so please set the real team name.\n- **`card_last4` classification:** `pii` is my judgement call.\n- **Required columns:** I set every column except `card_last4` to `required: true`. The doc doesn't say which columns can be null.\n- **Freshness SLA:** I left out `slaProperties` because no freshness or retention target was given. Tell me the target and I'll add one.\n\nI haven't generated or checked any dbt models from the contract either."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/payments.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.0567458,
+            "judgeCostUsd": 0.00047589999999999785,
+            "durationSeconds": 19,
+            "startedAt": "2026-11-09T22:45:14.143Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-nXb61a/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract at `contracts/payments.yaml`. I haven't validated it against the ODCS schema.\n\n- **Structure:** It uses `apiVersion: v3.2.0` and `kind: DataContract`. The contract is `payments`, version `1.0.0`, status `draft`.\n- **Server:** A BigQuery `dev` server using project `example-project-dev`, dataset `example_pay` and location `europe-west2`. The project and location come from `AGENTS.md` and the dataset from `tables/payments.md`.\n- **Columns:** All five columns are included with their logical and physical types:\n\n  | Column | Logical type | Physical type |\n  |---|---|---|\n  | `payment_id` | string | STRING |\n  | `order_id` | string | STRING |\n  | `card_last4` | string | STRING |\n  | `amount` | number | NUMERIC |\n  | `paid_at` | timestamp | TIMESTAMP |\n\nI added a few things the table doc doesn't state:\n\n- **`payment_id`:** I marked it as the primary key, required and unique, since the table has one row per payment.\n- **`card_last4`:** I classified it as `confidential`.\n- **`status`:** I set it to `draft`.\n\nPlease check these three against what you intend, and change them if they're wrong.\n\nI didn't add nullability, quality rules or SLAs for the other columns, because the source doesn't say anything about them."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/payments.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.058037000000000005,
+            "judgeCostUsd": 0.0004160999999999991,
+            "durationSeconds": 28,
+            "startedAt": "2026-11-09T22:45:32.962Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-wWbwJO/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/payments.yaml` as ODCS v3.2.0. I haven't validated it against the ODCS JSON schema.\n\n- **Server:** a `dev` BigQuery server with project `example-project-dev` and dataset `example_pay`. Both come from `AGENTS.md` and the table doc.\n- **Columns:** all five from `tables/payments.md`, each with its BigQuery physical type and a matching logical type. The logical types are string for the ID and card columns, number for `amount`, and timestamp for `paid_at`.\n\nI added a few things the table doc doesn't state, so please check them:\n- **Primary key:** I made `payment_id` the primary key, required and unique, because the table is one row per payment.\n- **Classification:** I marked `card_last4` as `confidential`. Change it to match your own classification scheme.\n- **Status and version:** `status: draft` and `version: 1.0.0`.\n- **Contract id:** `id: payments`. You may want a UUID or a different naming convention.\n\nI left out quality rules, SLAs, and ownership because the source doesn't cover them. I also left out the `europe-west2` location, since ODCS has no standard BigQuery location field."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/payments.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.055774599999999994,
+            "judgeCostUsd": 0.000471700000000002,
+            "durationSeconds": 17,
+            "startedAt": "2026-11-09T22:46:01.195Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-CJCfGT/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/payments.yaml`. I haven't validated it against the ODCS v3.2.0 JSON schema.\n\n- **Columns:** it has all five columns from `tables/payments.md`, each with its BigQuery type (`STRING`, `NUMERIC`, `TIMESTAMP`) and a matching logical type.\n- **Server:** I added a `dev` BigQuery server, built from `AGENTS.md` and the dataset in the table doc. It uses project `example-project-dev`, dataset `example_pay` and location `europe-west2`.\n- **Status:** `status` is `draft` and `version` is `1.0.0`.\n\nThese parts are my assumptions, not facts from the table doc, so please check them:\n- `payment_id` is marked as the primary key and unique.\n- `payment_id`, `order_id`, `amount` and `paid_at` are marked required. `card_last4` is left optional.\n- `card_last4` is classified as `confidential`.\n- I set the `domain` to `payments`."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/payments.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.0580532,
+            "judgeCostUsd": 0.0004820999999999992,
+            "durationSeconds": 26,
+            "startedAt": "2026-11-09T22:46:18.424Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-zq3sfU/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/payments.yaml`, using the `contracts_dir` from `AGENTS.md`. I didn't validate it against the ODCS schema.\n\n- **Header:** `apiVersion: v3.2.0`, `id: example_pay.payments`, `version: 1.0.0`, `status: draft`.\n- **Server:** a BigQuery `dev` server with project `example-project-dev`, dataset `example_pay` and location `europe-west2`, taken from `AGENTS.md` and `tables/payments.md`.\n- **Schema:** the five columns, each with its BigQuery type as `physicalType`. I mapped them to logical types as follows:\n\n  | Column | Logical type |\n  |---|---|\n  | `payment_id` | string |\n  | `order_id` | string |\n  | `card_last4` | string |\n  | `amount` | number |\n  | `paid_at` | timestamp |\n\nI added some things the source doc doesn't state, so please check them:\n- **Primary key:** I marked `payment_id` as the primary key (required and unique), since the table has one row per payment.\n- **Classification:** I set `card_last4` to `confidential`.\n- **Descriptions:** I wrote one for each column.\n- **Left out:** I added no owner, SLAs or quality rules."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/payments.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.056551699999999996,
+            "judgeCostUsd": 0.000963000000000002,
+            "durationSeconds": 23,
+            "startedAt": "2026-11-09T22:46:44.484Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-70xmO9/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/payments.yaml`. I haven't validated it against the ODCS v3.2.0 schema.\n\nIt has five columns, with types taken from `tables/payments.md`:\n- `payment_id` is a string. I marked it as the primary key, required and unique, which the table doc doesn't state.\n- `order_id` is a string.\n- `card_last4` is a string. I tagged it `pii` and classified it `confidential`, which is also my addition.\n- `amount` is NUMERIC, so a `number` logical type.\n- `paid_at` is a TIMESTAMP.\n\nI also added a `dev` BigQuery server entry from `AGENTS.md`: project `example-project-dev`, dataset `example_pay`, location `europe-west2`.\n\nI set the contract's `id` to `payments`, its version to `1.0.0` and its status to `draft`. Change the `id` if you use a different convention.\n\nI didn't add quality rules, SLAs, or an owner, because the source doesn't say anything about them."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/payments.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 0.5,
+        "passRateWithout": 0,
+        "delta": 0.5
+      }
+    },
+    {
+      "name": "contracts-products",
+      "dir": "bench-contracts/products",
+      "source": "mixed",
+      "promptMarkdown": "Write an ODCS v3.2.0 data contract for the products table (columns in tables/products.md) and save it as contracts/products.yaml.",
+      "runsPerCase": 5,
+      "timeoutSeconds": 600,
+      "maxTurns": 10,
+      "graders": [
+        {
+          "name": "quality",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the saved contract declares ODCS v3.2.0, kind DataContract, marks product_id as the primary key. FAIL otherwise. Secondary check only; schema validity is scored by the harness.",
+          "config": {
+            "criteria": "PASS if the saved contract declares ODCS v3.2.0, kind DataContract, marks product_id as the primary key. FAIL otherwise. Secondary check only; schema validity is scored by the harness.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "saved",
+          "type": "file_exists",
+          "weight": 1,
+          "config": {
+            "path": "contracts/products.yaml",
+            "exists": true
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 11,
+            "costUsd": 0.11598060000000002,
+            "judgeCostUsd": 0.0007627000000000016,
+            "durationSeconds": 34,
+            "startedAt": "2026-11-09T22:47:07.117Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-KhIiZn/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I wrote `contracts/products.yaml`, but I couldn't validate it. The sandbox blocked the validator.\n\n`uvx check-jsonschema` couldn't create its cache directory, and I got a \"Read-only file system\" error even when I pointed the cache at `$TMPDIR`. I did not try other ways around it. To check the file, run this where `uvx` can write:\n\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/products.yaml\n```\n\n**What's in the contract**\n- **Header:** `apiVersion: v3.2.0`, version `1.0.0`, status `draft`. I generated the `id` by hand as a UUID.\n- **Object:** `products`, with one property for each of the five columns in `tables/products.md`. Each property has a description of at least 50 characters. Column names, physical names and physical types come straight from the table doc.\n- **Types:** `product_id`, `name` and `category` are strings. `price` is a number (`NUMERIC`) and `active` is a boolean (`BOOL`).\n- **Key and required flags:** `product_id` is the primary key. `category` is optional and the other four are required.\n- **Quality rules:** `product_id` must have no duplicates. `price` must have no negative values, written as a SQL check.\n- **Classifications:** the contract declares `public`, `internal`, `pii` and `psi`. No column holds personal data. `name`, `category` and `active` are `public`, and `product_id` and `price` are `internal`.\n\n**Things for you to decide**\n- **Owning team:** it is set to `TODO-owning-team` because I don't know who owns it. A contract without an owner is a review blocker, so please replace it.\n- **Required flags:** the source doc doesn't say which columns can be null. I assumed everything except `category` is required, so please confirm.\n- **Currency:** `price` has no currency in the source, and the description says so.\n- **SLAs:** I left out `slaProperties` because the table has no timestamp column to measure freshness against. Tell me the freshness or retention targets if you want them.\n\nI haven't generated or checked any dbt models."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/products.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 11,
+            "costUsd": 0.1240689,
+            "judgeCostUsd": 0.000825300000000001,
+            "durationSeconds": 48,
+            "startedAt": "2026-11-09T22:47:41.497Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-VARTRw/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "I wrote `contracts/products.yaml`, but I couldn't validate it against the ODCS v3.2.0 schema. It also needs an owning team before it can pass review.\n\n**Validation:** The `uvx check-jsonschema` run failed because the sandbox filesystem is read-only for the uv cache. I didn't try to get around that. To run it yourself, use this from the project root:\n`uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/products.yaml`\nI followed the skill's example contract, which validates, but that isn't a check of this file.\n\n**Owning team:** Nothing in the repo names one, so `team.name` is the placeholder `TODO-owning-team`. An ownerless contract blocks review, so please tell me the team or edit that line.\n\n**What's in the contract:**\n- **Object:** `products`, physical name `products`, in dataset `example_shop`. It has version `1.0.0` and a fresh UUID as its `id`.\n- **Properties:** the five columns from `tables/products.md`, each with a logical and physical type, `required`, and a description of at least 50 characters.\n- **Key:** `product_id` is the primary key and the only required column.\n- **Classification:** I used the standard set (`public`, `internal`, `pii`, `psi`) and labelled `product_id` and `active` as `internal`, and `name`, `category` and `price` as `public`. None of the columns hold personal data.\n\n**Other gaps:**\n- The source doesn't say which columns can be null, so I set everything except `product_id` to `required: false`.\n- I added no quality rules or SLAs because none were specified.\n- The `price` description says \"the shop's selling currency\" because the currency isn't stated anywhere.\n\nI didn't generate or check dbt models."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/products.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.09507170000000001,
+            "judgeCostUsd": 0.0004281000000000007,
+            "durationSeconds": 25,
+            "startedAt": "2026-11-09T22:48:29.498Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-Wcfwcg/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I wrote `contracts/products.yaml`, but I couldn't validate it against the v3.2.0 JSON Schema. `uvx` failed because the sandbox has a read-only filesystem. It couldn't create its cache directory, either in the home directory or under `$TMPDIR`. I didn't try to get around that. Once the sandbox allows writes there, run this:\n\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/products.yaml\n```\n\nThe contract is modeled on the example in the skill:\n\n- **Header:** `apiVersion: v3.2.0`, `kind: DataContract`, version 1.0.0, a generated UUID as `id`, and `status: active`.\n- **Schema:** one object, `products`, with all five columns from `tables/products.md`. Each has `physicalName`, `logicalType`, `physicalType` and `required`, plus a description of at least 50 characters.\n- **Key:** `product_id` is the primary key and is marked unique.\n- **Classification:** the closed set (`public`, `internal`, `pii`, `psi`) is declared in `customProperties`. No column holds personal data, so `product_id` and `active` are `internal` and the rest are `public`.\n- **Quality:** `price` has a rule that it must not be negative.\n\nPlease check these, because the source table doesn't say and I filled them in:\n- **Owning team:** I used `example-shop-data` as a placeholder. Replace it with the real team, since a contract without an owner can't pass review.\n- **Required flags:** I set `product_id`, `name`, `price` and `active` to required, and `category` to optional. Please confirm against the source data.\n- **Price currency:** I described `price` as being in a single sale currency. Please confirm that.\n- **SLAs:** I left out `slaProperties` because I have no freshness or retention targets.\n\nI also didn't check or generate the dbt models."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/products.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 11,
+            "costUsd": 0.10587709999999999,
+            "judgeCostUsd": 0.0009139999999999981,
+            "durationSeconds": 38,
+            "startedAt": "2026-11-09T22:48:54.549Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-O9dcNN/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  false
+                ],
+                "evidence": "I wrote `contracts/products.yaml`, but I couldn't validate it, and it still needs an owning team.\n\n**Validation didn't run.** The `uvx check-jsonschema` run against the v3.2.0 schema failed twice. The sandbox has a read-only filesystem, so `uv` couldn't create its cache directory. I tried the default location and `$TMPDIR`, and both failed. The contract has not been checked against the schema. To get it validated, you could make a cache directory writable or run the command outside the sandbox:\n\n`uvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/products.yaml`\n\n**Owner needed.** `tables/products.md` and `AGENTS.md` don't name a team, so I set `team.name` to the placeholder `TODO-owning-team`. An ownerless contract blocks review, so please tell me the real team.\n\nWhat the contract contains:\n- **Table:** `products` is the only schema object. It has `physicalName: products`, and `product_id` is the primary key.\n- **Columns:** each has a logical and physical type, a `required` flag and a description of at least 50 characters. `price` (NUMERIC) uses `logicalType: number`, and `active` (BOOL) uses `boolean`.\n- **Required flags:** the source doc doesn't say which columns can be null. I made `category` optional and the other four required. Please confirm.\n- **Quality rules:** `product_id` must have no duplicate values, and `price` must not be negative.\n- **Classification:** the contract declares the classification set `[public, internal, pii, psi]`. The table has no personal data, so `name` and `category` are `public` and the other columns are `internal`.\n- **Metadata I added:** `id` (a generated UUID), `version: 1.0.0`, `status: active` and `name: products`.\n\nI left out `slaProperties` because there's no timestamp column to measure freshness against and you didn't give an SLA. I also haven't generated the dbt models or committed anything."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/products.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 0.10216540000000002,
+            "judgeCostUsd": 0.0009649999999999971,
+            "durationSeconds": 31,
+            "startedAt": "2026-11-09T22:49:32.973Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-9KHXKC/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I wrote `contracts/products.yaml`, but I couldn't validate it against the v3.2.0 JSON Schema. Please run the check before you commit.\n\nThe sandbox blocked it. `uvx` needs a writable cache directory, and both its default location and `$TMPDIR` are read-only in this session. I haven't tried to get around that. To validate, run this where `uvx` can write:\n\n```\nuvx check-jsonschema==0.39.0 --schemafile https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/v3.2.0/schema/odcs-json-schema-v3.2.0.json contracts/products.yaml\n```\n\n**What the contract contains**\n- **Table:** a `products` object with the dataset `example_shop` recorded in `customProperties` (`bigquery.dataset`). It has the five columns from `tables/products.md`, with the types mapped to ODCS logical types.\n- **Key:** `product_id` is the primary key, with a no-duplicates quality rule.\n- **Price:** `price` has a rule that it can't be negative.\n- **Required:** I set `required: true` on `product_id`, `name`, `price` and `active`, and left `category` optional.\n- **Classification:** the allowed set is declared in `customProperties` (`public`, `internal`, `pii`, `psi`). `product_id` and `active` are `internal`, and `name`, `category` and `price` are `public`. There is no personal data in this table.\n- **Physical names:** I assumed they match the column names, because `tables/products.md` doesn't say otherwise.\n\n**Things for you to settle**\n- **Owner:** `team.name` is the placeholder `TODO-owning-team`. A contract without a real owner is a review blocker, so please give me the team name.\n- **Freshness SLA:** I left out `slaProperties`, because the table doc gives no freshness or retention target. If you give me one, I'll add it with the behaviour on breach.\n- **Assumed values:** the `id` is a UUID I generated, and `required`, the classifications and the price rule are my guesses. Check them.\n- **Models:** I haven't generated or checked any dbt models from the contract."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/products.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.05349229999999999,
+            "judgeCostUsd": 0.0005185999999999975,
+            "durationSeconds": 16,
+            "startedAt": "2026-11-09T22:50:03.904Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-wyTkLr/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/products.yaml`. I haven't validated it against the ODCS schema or run it through any tooling.\n\n- **Table and columns:** it declares the `products` table with its five columns: `product_id`, `name`, `category`, `price` and `active`. Each column has a logical type and the BigQuery physical type from `tables/products.md`.\n- **Server:** I took the BigQuery details from `AGENTS.md`. They are project `example-project-dev`, location `europe-west2` and dataset `example_shop`, set up as a `dev` server.\n- **Metadata:** the contract has status `draft` and version `1.0.0`. The id is `example_shop.products`.\n\nThe table doc doesn't say which columns are keys or required, so these are my assumptions. Please confirm or correct them:\n- `product_id` is the primary key, unique and required.\n- `name` is required.\n- `category`, `price` and `active` are optional.\n\nI didn't add quality rules, an owner, SLAs or a price precision, because the source doesn't say anything about them."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/products.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.053004100000000005,
+            "judgeCostUsd": 0.0004998000000000016,
+            "durationSeconds": 18,
+            "startedAt": "2026-11-09T22:50:19.487Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-5V9qiI/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/products.yaml`. I haven't validated it against the ODCS schema or run it through any tooling.\n\n- **Servers:** the `dev` BigQuery server uses project `example-project-dev`, dataset `example_shop` and location `europe-west2`. These come from `AGENTS.md` and `tables/products.md`.\n- **Columns:** all five (`product_id`, `name`, `category`, `price`, `active`) have a logical type and the physical type from the table doc.\n- **Assumption:** `product_id` is marked as the primary key, required and unique. The doc doesn't say this. I took it from \"one row per product\", so check it.\n- **Left out:** `tables/products.md` doesn't say whether the other columns can be null, so I left them unconstrained. I didn't invent an owner, SLAs, quality rules or descriptions.\n- **Placeholders:** `version` is `1.0.0` and `status` is `draft`."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/products.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.0536105,
+            "judgeCostUsd": 0.0005370999999999987,
+            "durationSeconds": 17,
+            "startedAt": "2026-11-09T22:50:37.936Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-mNzW8R/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract at `contracts/products.yaml`. I haven't validated it against the ODCS schema.\n\n- **Columns:** it covers all five columns from `tables/products.md`: `product_id`, `name`, `category`, `price` and `active`. Each has a logical type mapped from its BigQuery type, plus the physical type.\n- **Server:** the BigQuery details come from `AGENTS.md`: project `example-project-dev`, location `europe-west2`, dataset `example_shop`.\n- **Assumptions of mine:** the table doc doesn't say any of this.\n  - I marked `product_id` as the primary key, required and unique.\n  - I set the contract `version` to 1.0.0 and the `status` to `draft`.\n  - The column descriptions are my own wording.\n\nChange any of these if they're wrong."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/products.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.053861700000000005,
+            "judgeCostUsd": 0.0005577000000000082,
+            "durationSeconds": 20,
+            "startedAt": "2026-11-09T22:50:54.798Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-KCZdE1/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I saved the contract to `contracts/products.yaml`. I haven't validated it against the ODCS schema or run it through any tooling.\n\n- **Schema:** The `products` table has all five columns from `tables/products.md`. Each one has its BigQuery type and a matching ODCS logical type: STRING is `string`, NUMERIC is `number`, and BOOL is `boolean`.\n- **Server:** I took the dev BigQuery server details from `AGENTS.md`: project `example-project-dev`, location `europe-west2`, and dataset `example_shop`. I put the `contracts` folder choice there too.\n- **Guesses to check:**\n  - I marked `product_id` as the primary key, required and unique. That's inferred from \"one row per product\", and the table doc doesn't say it.\n  - The contract is `draft` at version `1.0.0`.\n  - The column descriptions are my own wording, since the doc gives none."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/products.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.0532469,
+            "judgeCostUsd": 0.0005554000000000045,
+            "durationSeconds": 22,
+            "startedAt": "2026-11-09T22:51:14.571Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-F7BuZ5/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "quality",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I wrote the contract to `contracts/products.yaml`. I haven't validated it against the ODCS schema.\n\n- **Columns:** All five columns from `tables/products.md` are in it. Each has a logical type (`string`, `number` or `boolean`) and the BigQuery physical type (`STRING`, `NUMERIC` or `BOOL`).\n- **Server:** I took the BigQuery details from `AGENTS.md`: project `example-project-dev`, location `europe-west2`, and dataset `example_shop` from the table doc.\n- **Key assumption:** I marked `product_id` as required, unique and the primary key. The table doc doesn't say this, so I inferred it from \"one row per product\". Remove it if that's wrong.\n- **Placeholders:** I set `version: 1.0.0` and `status: draft`.\n\nI left out quality rules and descriptions for individual columns because the source doesn't give any."
+              },
+              {
+                "name": "saved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "contracts/products.yaml exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.7,
+        "passRate": 0.4,
+        "scoreWithout": 0.5,
+        "passRateWithout": 0,
+        "delta": 0.19999999999999996
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 5,
+    "casesPassed": 2,
+    "overallScore": 0.86,
+    "overallPassRate": 0.72,
+    "meanDelta": 0.32
+  }
+}

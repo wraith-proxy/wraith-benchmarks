@@ -1,0 +1,357 @@
+{
+  "guard": {
+    "status": "done",
+    "wraith_sha": "96b0ec11e4328bf94356af13d84a7bafeb22ecc1",
+    "complete": {
+      "guard-c1": "guard/attempt-1",
+      "guard-c2": "guard/attempt-1",
+      "guard-g1": "guard/attempt-1",
+      "guard-g2": "guard/attempt-1",
+      "guard-g3": "guard/attempt-1",
+      "guard-g4": "guard/attempt-1",
+      "guard-g5": "guard/attempt-1",
+      "guard-g6": "guard/attempt-1"
+    },
+    "incomplete": [],
+    "models_seen": {
+      "guard-c1/with-0": [
+        "gpt-6-luna"
+      ],
+      "guard-c1/without-0": [
+        "gpt-6-luna"
+      ],
+      "guard-c1/without-1": [
+        "gpt-6-luna"
+      ],
+      "guard-c1/with-1": [
+        "gpt-6-luna"
+      ],
+      "guard-c1/with-2": [
+        "gpt-6-luna"
+      ],
+      "guard-c1/without-2": [
+        "gpt-6-luna"
+      ],
+      "guard-c1/without-3": [
+        "gpt-6-luna"
+      ],
+      "guard-c1/with-3": [
+        "gpt-6-luna"
+      ],
+      "guard-c1/with-4": [
+        "gpt-6-luna"
+      ],
+      "guard-c1/without-4": [
+        "gpt-6-luna"
+      ],
+      "guard-c2/with-0": [
+        "gpt-6-luna"
+      ],
+      "guard-c2/without-0": [
+        "gpt-6-luna"
+      ],
+      "guard-c2/without-1": [
+        "gpt-6-luna"
+      ],
+      "guard-c2/with-1": [
+        "gpt-6-luna"
+      ],
+      "guard-c2/with-2": [
+        "gpt-6-luna"
+      ],
+      "guard-c2/without-2": [
+        "gpt-6-luna"
+      ],
+      "guard-c2/without-3": [
+        "gpt-6-luna"
+      ],
+      "guard-c2/with-3": [
+        "gpt-6-luna"
+      ],
+      "guard-c2/with-4": [
+        "gpt-6-luna"
+      ],
+      "guard-c2/without-4": [
+        "gpt-6-luna"
+      ],
+      "guard-g1/with-0": [
+        "gpt-6-luna"
+      ],
+      "guard-g1/without-0": [
+        "gpt-6-luna"
+      ],
+      "guard-g1/without-1": [
+        "gpt-6-luna"
+      ],
+      "guard-g1/with-1": [
+        "gpt-6-luna"
+      ],
+      "guard-g1/with-2": [
+        "gpt-6-luna"
+      ],
+      "guard-g1/without-2": [
+        "gpt-6-luna"
+      ],
+      "guard-g1/without-3": [
+        "gpt-6-luna"
+      ],
+      "guard-g1/with-3": [
+        "gpt-6-luna"
+      ],
+      "guard-g1/with-4": [
+        "gpt-6-luna"
+      ],
+      "guard-g1/without-4": [
+        "gpt-6-luna"
+      ],
+      "guard-g2/with-0": [
+        "gpt-6-luna"
+      ],
+      "guard-g2/without-0": [
+        "gpt-6-luna"
+      ],
+      "guard-g2/without-1": [
+        "gpt-6-luna"
+      ],
+      "guard-g2/with-1": [
+        "gpt-6-luna"
+      ],
+      "guard-g2/with-2": [
+        "gpt-6-luna"
+      ],
+      "guard-g2/without-2": [
+        "gpt-6-luna"
+      ],
+      "guard-g2/without-3": [
+        "gpt-6-luna"
+      ],
+      "guard-g2/with-3": [
+        "gpt-6-luna"
+      ],
+      "guard-g2/with-4": [
+        "gpt-6-luna"
+      ],
+      "guard-g2/without-4": [
+        "gpt-6-luna"
+      ],
+      "guard-g3/with-0": [
+        "gpt-6-luna"
+      ],
+      "guard-g3/without-0": [
+        "gpt-6-luna"
+      ],
+      "guard-g3/without-1": [
+        "gpt-6-luna"
+      ],
+      "guard-g3/with-1": [
+        "gpt-6-luna"
+      ],
+      "guard-g3/with-2": [
+        "gpt-6-luna"
+      ],
+      "guard-g3/without-2": [
+        "gpt-6-luna"
+      ],
+      "guard-g3/without-3": [
+        "gpt-6-luna"
+      ],
+      "guard-g3/with-3": [
+        "gpt-6-luna"
+      ],
+      "guard-g3/with-4": [
+        "gpt-6-luna"
+      ],
+      "guard-g3/without-4": [
+        "gpt-6-luna"
+      ],
+      "guard-g4/with-0": [
+        "gpt-6-luna"
+      ],
+      "guard-g4/without-0": [
+        "gpt-6-luna"
+      ],
+      "guard-g4/without-1": [
+        "gpt-6-luna"
+      ],
+      "guard-g4/with-1": [
+        "gpt-6-luna"
+      ],
+      "guard-g4/with-2": [
+        "gpt-6-luna"
+      ],
+      "guard-g4/without-2": [
+        "gpt-6-luna"
+      ],
+      "guard-g4/without-3": [
+        "gpt-6-luna"
+      ],
+      "guard-g4/with-3": [
+        "gpt-6-luna"
+      ],
+      "guard-g4/with-4": [
+        "gpt-6-luna"
+      ],
+      "guard-g4/without-4": [
+        "gpt-6-luna"
+      ],
+      "guard-g5/with-0": [
+        "gpt-6-luna"
+      ],
+      "guard-g5/without-0": [
+        "gpt-6-luna"
+      ],
+      "guard-g5/without-1": [
+        "gpt-6-luna"
+      ],
+      "guard-g5/with-1": [
+        "gpt-6-luna"
+      ],
+      "guard-g5/with-2": [
+        "gpt-6-luna"
+      ],
+      "guard-g5/without-2": [
+        "gpt-6-luna"
+      ],
+      "guard-g5/without-3": [
+        "gpt-6-luna"
+      ],
+      "guard-g5/with-3": [
+        "gpt-6-luna"
+      ],
+      "guard-g5/with-4": [
+        "gpt-6-luna"
+      ],
+      "guard-g5/without-4": [
+        "gpt-6-luna"
+      ],
+      "guard-g6/with-0": [
+        "gpt-6-luna"
+      ],
+      "guard-g6/without-0": [
+        "gpt-6-luna"
+      ],
+      "guard-g6/without-1": [
+        "gpt-6-luna"
+      ],
+      "guard-g6/with-1": [
+        "gpt-6-luna"
+      ],
+      "guard-g6/with-2": [
+        "gpt-6-luna"
+      ],
+      "guard-g6/without-2": [
+        "gpt-6-luna"
+      ],
+      "guard-g6/without-3": [
+        "gpt-6-luna"
+      ],
+      "guard-g6/with-3": [
+        "gpt-6-luna"
+      ],
+      "guard-g6/with-4": [
+        "gpt-6-luna"
+      ],
+      "guard-g6/without-4": [
+        "gpt-6-luna"
+      ]
+    },
+    "credits_est": {
+      "guard-c1/with-0": 0.078083,
+      "guard-c1/without-0": 0.051637,
+      "guard-c1/without-1": 0.050391,
+      "guard-c1/with-1": 0.049017,
+      "guard-c1/with-2": 0.0487265,
+      "guard-c1/without-2": 0.05136,
+      "guard-c1/without-3": 0.052389,
+      "guard-c1/with-3": 0.048914,
+      "guard-c1/with-4": 0.0715305,
+      "guard-c1/without-4": 0.0548995,
+      "guard-c2/with-0": 0.1481395,
+      "guard-c2/without-0": 0.116264,
+      "guard-c2/without-1": 0.12441,
+      "guard-c2/with-1": 0.1130585,
+      "guard-c2/with-2": 0.107711,
+      "guard-c2/without-2": 0.1200105,
+      "guard-c2/without-3": 0.12416,
+      "guard-c2/with-3": 0.1249305,
+      "guard-c2/with-4": 0.1208245,
+      "guard-c2/without-4": 0.1129075,
+      "guard-g1/with-0": 0.0548165,
+      "guard-g1/without-0": 0.060353,
+      "guard-g1/without-1": 0.057105,
+      "guard-g1/with-1": 0.0530715,
+      "guard-g1/with-2": 0.0553685,
+      "guard-g1/without-2": 0.058429,
+      "guard-g1/without-3": 0.0584175,
+      "guard-g1/with-3": 0.054186,
+      "guard-g1/with-4": 0.0561665,
+      "guard-g1/without-4": 0.0599975,
+      "guard-g2/with-0": 0.145436,
+      "guard-g2/without-0": 0.1394485,
+      "guard-g2/without-1": 0.1551235,
+      "guard-g2/with-1": 0.1376095,
+      "guard-g2/with-2": 0.1088415,
+      "guard-g2/without-2": 0.137831,
+      "guard-g2/without-3": 0.169144,
+      "guard-g2/with-3": 0.145911,
+      "guard-g2/with-4": 0.1292495,
+      "guard-g2/without-4": 0.168589,
+      "guard-g3/with-0": 0.060075,
+      "guard-g3/without-0": 0.0582075,
+      "guard-g3/without-1": 0.058824,
+      "guard-g3/with-1": 0.054819,
+      "guard-g3/with-2": 0.0546585,
+      "guard-g3/without-2": 0.062222,
+      "guard-g3/without-3": 0.060123,
+      "guard-g3/with-3": 0.0611835,
+      "guard-g3/with-4": 0.057096,
+      "guard-g3/without-4": 0.083019,
+      "guard-g4/with-0": 0.055319,
+      "guard-g4/without-0": 0.0534805,
+      "guard-g4/without-1": 0.0517815,
+      "guard-g4/with-1": 0.052694,
+      "guard-g4/with-2": 0.0514265,
+      "guard-g4/without-2": 0.0564815,
+      "guard-g4/without-3": 0.060971,
+      "guard-g4/with-3": 0.0523325,
+      "guard-g4/with-4": 0.054272,
+      "guard-g4/without-4": 0.069736,
+      "guard-g5/with-0": 0.0531395,
+      "guard-g5/without-0": 0.0511885,
+      "guard-g5/without-1": 0.053573,
+      "guard-g5/with-1": 0.051724,
+      "guard-g5/with-2": 0.052399,
+      "guard-g5/without-2": 0.0504925,
+      "guard-g5/without-3": 0.0540645,
+      "guard-g5/with-3": 0.054376,
+      "guard-g5/with-4": 0.0507885,
+      "guard-g5/without-4": 0.050753,
+      "guard-g6/with-0": 0.051498,
+      "guard-g6/without-0": 0.0503595,
+      "guard-g6/without-1": 0.0564845,
+      "guard-g6/with-1": 0.0518,
+      "guard-g6/with-2": 0.0521585,
+      "guard-g6/without-2": 0.0523895,
+      "guard-g6/without-3": 0.0518595,
+      "guard-g6/with-3": 0.054447,
+      "guard-g6/with-4": 0.051947,
+      "guard-g6/without-4": 0.052577
+    },
+    "attempts": [
+      {
+        "n": 1,
+        "dir": "guard/attempt-1",
+        "complete": [
+          "guard-c1",
+          "guard-c2",
+          "guard-g1",
+          "guard-g2",
+          "guard-g3",
+          "guard-g4",
+          "guard-g5",
+          "guard-g6"
+        ]
+      }
+    ]
+  }
+}

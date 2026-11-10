@@ -1,0 +1,782 @@
+{
+  "cases": [
+    {
+      "name": "plan-review-p01",
+      "arms": {
+        "with": [
+          {
+            "score": 0.6666666666666666,
+            "turns": 7,
+            "error": null,
+            "durationSeconds": 67.8,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL FAIL"
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p01/with-0/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 60939,
+              "session_ms": 64224,
+              "nano_aiu": 508618000,
+              "ai_credits_est": 0.508618,
+              "turns": 7,
+              "unmapped_tools": []
+            }
+          },
+          {
+            "score": 0.6666666666666666,
+            "turns": 7,
+            "error": null,
+            "durationSeconds": 59.0,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL FAIL"
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p01/with-1/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 50920,
+              "session_ms": 55709,
+              "nano_aiu": 441532000,
+              "ai_credits_est": 0.441532,
+              "turns": 7,
+              "unmapped_tools": []
+            }
+          },
+          {
+            "score": 0.3333333333333333,
+            "turns": 9,
+            "error": null,
+            "durationSeconds": 60.7,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": false,
+                "explanation": "judge votes: PASS FAIL FAIL"
+              },
+              {
+                "name": "2-dedup",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL FAIL"
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p01/with-2/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 54547,
+              "session_ms": 57444,
+              "nano_aiu": 431662500,
+              "ai_credits_est": 0.4316625,
+              "turns": 9,
+              "unmapped_tools": []
+            }
+          },
+          {
+            "score": 0.6666666666666666,
+            "turns": 7,
+            "error": null,
+            "durationSeconds": 50.9,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL FAIL"
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p01/with-3/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 44995,
+              "session_ms": 47828,
+              "nano_aiu": 403449500,
+              "ai_credits_est": 0.4034495,
+              "turns": 7,
+              "unmapped_tools": []
+            }
+          },
+          {
+            "score": 0.6666666666666666,
+            "turns": 8,
+            "error": null,
+            "durationSeconds": 67.4,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL PASS"
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p01/with-4/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 53030,
+              "session_ms": 64298,
+              "nano_aiu": 425877000,
+              "ai_credits_est": 0.425877,
+              "turns": 8,
+              "unmapped_tools": []
+            }
+          }
+        ],
+        "without": [
+          {
+            "score": 0.6666666666666666,
+            "turns": 5,
+            "error": null,
+            "durationSeconds": 162.6,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "3-scan",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL FAIL"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p01/without-0/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 154366,
+              "session_ms": 159491,
+              "nano_aiu": 164418000,
+              "ai_credits_est": 0.164418,
+              "turns": 5,
+              "unmapped_tools": []
+            }
+          },
+          {
+            "score": 0.6666666666666666,
+            "turns": 4,
+            "error": null,
+            "durationSeconds": 46.5,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL FAIL"
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p01/without-1/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 37845,
+              "session_ms": 41758,
+              "nano_aiu": 197798500,
+              "ai_credits_est": 0.1977985,
+              "turns": 4,
+              "unmapped_tools": []
+            }
+          },
+          {
+            "score": 0.6666666666666666,
+            "turns": 5,
+            "error": null,
+            "durationSeconds": 37.0,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL FAIL"
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p01/without-2/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 28144,
+              "session_ms": 33396,
+              "nano_aiu": 168121000,
+              "ai_credits_est": 0.168121,
+              "turns": 5,
+              "unmapped_tools": []
+            }
+          },
+          {
+            "score": 0.3333333333333333,
+            "turns": 6,
+            "error": null,
+            "durationSeconds": 37.6,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL FAIL"
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "3-scan",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL FAIL"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p01/without-3/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 29812,
+              "session_ms": 34343,
+              "nano_aiu": 179073500,
+              "ai_credits_est": 0.1790735,
+              "turns": 6,
+              "unmapped_tools": []
+            }
+          },
+          {
+            "score": 0.6666666666666666,
+            "turns": 5,
+            "error": null,
+            "durationSeconds": 45.1,
+            "graders": [
+              {
+                "name": "1-grain",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL FAIL"
+              },
+              {
+                "name": "2-dedup",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "3-scan",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p01/without-4/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 39090,
+              "session_ms": 41805,
+              "nano_aiu": 215025500,
+              "ai_credits_est": 0.2150255,
+              "turns": 5,
+              "unmapped_tools": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "plan-review-p02",
+      "arms": {
+        "with": [
+          {
+            "score": 0.6666666666666666,
+            "turns": 7,
+            "error": null,
+            "durationSeconds": 51.7,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL FAIL"
+              },
+              {
+                "name": "2-scan",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p02/with-0/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 43940,
+              "session_ms": 48358,
+              "nano_aiu": 429266500,
+              "ai_credits_est": 0.4292665,
+              "turns": 7,
+              "unmapped_tools": []
+            }
+          },
+          {
+            "score": 1.0,
+            "turns": 10,
+            "error": null,
+            "durationSeconds": 153.1,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "2-scan",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p02/with-1/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 144940,
+              "session_ms": 150055,
+              "nano_aiu": 435961000,
+              "ai_credits_est": 0.435961,
+              "turns": 10,
+              "unmapped_tools": []
+            }
+          },
+          {
+            "score": 1.0,
+            "turns": 11,
+            "error": null,
+            "durationSeconds": 63.8,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "2-scan",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p02/with-2/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 57153,
+              "session_ms": 60225,
+              "nano_aiu": 552067500,
+              "ai_credits_est": 0.5520675,
+              "turns": 11,
+              "unmapped_tools": []
+            }
+          },
+          {
+            "score": 1.0,
+            "turns": 7,
+            "error": null,
+            "durationSeconds": 146.9,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "2-scan",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p02/with-3/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 136657,
+              "session_ms": 143697,
+              "nano_aiu": 384252500,
+              "ai_credits_est": 0.3842525,
+              "turns": 7,
+              "unmapped_tools": []
+            }
+          },
+          {
+            "score": 0.6666666666666666,
+            "turns": 7,
+            "error": null,
+            "durationSeconds": 65.5,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL PASS"
+              },
+              {
+                "name": "2-scan",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p02/with-4/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 55330,
+              "session_ms": 62276,
+              "nano_aiu": 430228000,
+              "ai_credits_est": 0.430228,
+              "turns": 7,
+              "unmapped_tools": []
+            }
+          }
+        ],
+        "without": [
+          {
+            "score": 0.6666666666666666,
+            "turns": 4,
+            "error": null,
+            "durationSeconds": 36.6,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "2-scan",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL FAIL"
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p02/without-0/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 30514,
+              "session_ms": 33334,
+              "nano_aiu": 160688500,
+              "ai_credits_est": 0.1606885,
+              "turns": 4,
+              "unmapped_tools": []
+            }
+          },
+          {
+            "score": 0.3333333333333333,
+            "turns": 3,
+            "error": null,
+            "durationSeconds": 31.3,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL FAIL"
+              },
+              {
+                "name": "2-scan",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL FAIL"
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p02/without-1/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 23293,
+              "session_ms": 27758,
+              "nano_aiu": 121838000,
+              "ai_credits_est": 0.121838,
+              "turns": 3,
+              "unmapped_tools": []
+            }
+          },
+          {
+            "score": 0.6666666666666666,
+            "turns": 3,
+            "error": null,
+            "durationSeconds": 31.2,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              },
+              {
+                "name": "2-scan",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL FAIL"
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p02/without-2/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 21084,
+              "session_ms": 27489,
+              "nano_aiu": 137814500,
+              "ai_credits_est": 0.1378145,
+              "turns": 3,
+              "unmapped_tools": []
+            }
+          },
+          {
+            "score": 0.6666666666666666,
+            "turns": 5,
+            "error": null,
+            "durationSeconds": 40.4,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": true,
+                "explanation": "judge votes: FAIL PASS PASS"
+              },
+              {
+                "name": "2-scan",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL FAIL"
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p02/without-3/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 31294,
+              "session_ms": 37357,
+              "nano_aiu": 173884500,
+              "ai_credits_est": 0.1738845,
+              "turns": 5,
+              "unmapped_tools": []
+            }
+          },
+          {
+            "score": 0.3333333333333333,
+            "turns": 3,
+            "error": null,
+            "durationSeconds": 23.0,
+            "graders": [
+              {
+                "name": "1-dedup",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL FAIL"
+              },
+              {
+                "name": "2-scan",
+                "passed": false,
+                "explanation": "judge votes: FAIL FAIL FAIL"
+              },
+              {
+                "name": "3-pii",
+                "passed": true,
+                "explanation": "judge votes: PASS PASS PASS"
+              }
+            ],
+            "flags": [],
+            "tracePath": "traces/plan-review-p02/without-4/trace.norm.jsonl",
+            "meta": {
+              "model_routed": "gpt-6-luna",
+              "models_called": [
+                "gpt-6-luna"
+              ],
+              "premium_requests": 1,
+              "api_ms": 16658,
+              "session_ms": 19879,
+              "nano_aiu": 110435000,
+              "ai_credits_est": 0.110435,
+              "turns": 3,
+              "unmapped_tools": []
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

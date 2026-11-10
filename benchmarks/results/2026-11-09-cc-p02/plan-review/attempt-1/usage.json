@@ -1,0 +1,182 @@
+[
+  {
+    "case": "plan-review-p02",
+    "arm": "with",
+    "run": 0,
+    "score": 1,
+    "turns": 8,
+    "seconds": 58,
+    "cost_usd": 0.10061779999999998,
+    "judge_cost_usd": 0.0025889999999999993,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 12708,
+      "cache_read_input_tokens": 82888,
+      "output_tokens": 3888,
+      "duration_ms": 37071,
+      "cost_usd": 0.09802879999999999
+    }
+  },
+  {
+    "case": "plan-review-p02",
+    "arm": "with",
+    "run": 1,
+    "score": 0,
+    "turns": 8,
+    "seconds": 52,
+    "cost_usd": 0.1022685,
+    "judge_cost_usd": 0.0009117000000000001,
+    "tokens": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 12956,
+      "cache_read_input_tokens": 83148,
+      "output_tokens": 4119,
+      "duration_ms": 42694,
+      "cost_usd": 0.1013568
+    }
+  },
+  {
+    "case": "plan-review-p02",
+    "arm": "with",
+    "run": 2,
+    "score": 0,
+    "turns": 1,
+    "seconds": 1,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 396,
+      "cost_usd": 0
+    }
+  },
+  {
+    "case": "plan-review-p02",
+    "arm": "with",
+    "run": 3,
+    "score": 0,
+    "turns": 1,
+    "seconds": 1,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 442,
+      "cost_usd": 0
+    }
+  },
+  {
+    "case": "plan-review-p02",
+    "arm": "with",
+    "run": 4,
+    "score": 0,
+    "turns": 1,
+    "seconds": 1,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 424,
+      "cost_usd": 0
+    }
+  },
+  {
+    "case": "plan-review-p02",
+    "arm": "without",
+    "run": 0,
+    "score": 0,
+    "turns": 1,
+    "seconds": 1,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 381,
+      "cost_usd": 0
+    }
+  },
+  {
+    "case": "plan-review-p02",
+    "arm": "without",
+    "run": 1,
+    "score": 0,
+    "turns": 1,
+    "seconds": 1,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 390,
+      "cost_usd": 0
+    }
+  },
+  {
+    "case": "plan-review-p02",
+    "arm": "without",
+    "run": 2,
+    "score": 0,
+    "turns": 1,
+    "seconds": 1,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 393,
+      "cost_usd": 0
+    }
+  },
+  {
+    "case": "plan-review-p02",
+    "arm": "without",
+    "run": 3,
+    "score": 0,
+    "turns": 1,
+    "seconds": 1,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 409,
+      "cost_usd": 0
+    }
+  },
+  {
+    "case": "plan-review-p02",
+    "arm": "without",
+    "run": 4,
+    "score": 0,
+    "turns": 1,
+    "seconds": 1,
+    "cost_usd": 0,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 0,
+      "duration_ms": 402,
+      "cost_usd": 0
+    }
+  }
+]

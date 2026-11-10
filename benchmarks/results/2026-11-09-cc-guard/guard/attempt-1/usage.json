@@ -1,0 +1,1442 @@
+[
+  {
+    "case": "guard-c1",
+    "arm": "with",
+    "run": 0,
+    "score": 0,
+    "turns": 2,
+    "seconds": 10,
+    "cost_usd": 0.047377699999999995,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10522,
+      "cache_read_input_tokens": 25317,
+      "output_tokens": 275,
+      "duration_ms": 8862,
+      "cost_usd": 0.047377699999999995
+    }
+  },
+  {
+    "case": "guard-c1",
+    "arm": "with",
+    "run": 1,
+    "score": 0,
+    "turns": 2,
+    "seconds": 16,
+    "cost_usd": 0.047775,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10392,
+      "cache_read_input_tokens": 25190,
+      "output_tokens": 368,
+      "duration_ms": 15340,
+      "cost_usd": 0.047775
+    }
+  },
+  {
+    "case": "guard-c1",
+    "arm": "with",
+    "run": 2,
+    "score": 0,
+    "turns": 2,
+    "seconds": 9,
+    "cost_usd": 0.04733539999999999,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10458,
+      "cache_read_input_tokens": 25254,
+      "output_tokens": 297,
+      "duration_ms": 7972,
+      "cost_usd": 0.04733539999999999
+    }
+  },
+  {
+    "case": "guard-c1",
+    "arm": "with",
+    "run": 3,
+    "score": 0,
+    "turns": 2,
+    "seconds": 9,
+    "cost_usd": 0.0479122,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10467,
+      "cache_read_input_tokens": 25262,
+      "output_tokens": 351,
+      "duration_ms": 7812,
+      "cost_usd": 0.0479122
+    }
+  },
+  {
+    "case": "guard-c1",
+    "arm": "with",
+    "run": 4,
+    "score": 0,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.0475332,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10455,
+      "cache_read_input_tokens": 25252,
+      "output_tokens": 318,
+      "duration_ms": 6561,
+      "cost_usd": 0.0475332
+    }
+  },
+  {
+    "case": "guard-c1",
+    "arm": "without",
+    "run": 0,
+    "score": 0,
+    "turns": 2,
+    "seconds": 13,
+    "cost_usd": 0.03986049999999999,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8508,
+      "cache_read_input_tokens": 23305,
+      "output_tokens": 349,
+      "duration_ms": 12451,
+      "cost_usd": 0.03986049999999999
+    }
+  },
+  {
+    "case": "guard-c1",
+    "arm": "without",
+    "run": 1,
+    "score": 0,
+    "turns": 2,
+    "seconds": 6,
+    "cost_usd": 0.0401049,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8514,
+      "cache_read_input_tokens": 23309,
+      "output_tokens": 371,
+      "duration_ms": 5135,
+      "cost_usd": 0.0401049
+    }
+  },
+  {
+    "case": "guard-c1",
+    "arm": "without",
+    "run": 2,
+    "score": 0,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0397832,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8516,
+      "cache_read_input_tokens": 23312,
+      "output_tokens": 338,
+      "duration_ms": 6335,
+      "cost_usd": 0.0397832
+    }
+  },
+  {
+    "case": "guard-c1",
+    "arm": "without",
+    "run": 3,
+    "score": 0,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.0397732,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8372,
+      "cache_read_input_tokens": 23172,
+      "output_tokens": 396,
+      "duration_ms": 6587,
+      "cost_usd": 0.0397732
+    }
+  },
+  {
+    "case": "guard-c1",
+    "arm": "without",
+    "run": 4,
+    "score": 0,
+    "turns": 2,
+    "seconds": 6,
+    "cost_usd": 0.04046759999999999,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8583,
+      "cache_read_input_tokens": 23376,
+      "output_tokens": 379,
+      "duration_ms": 5417,
+      "cost_usd": 0.04046759999999999
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "with",
+    "run": 0,
+    "score": 0,
+    "turns": 2,
+    "seconds": 18,
+    "cost_usd": 0.050213299999999995,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10475,
+      "cache_read_input_tokens": 25253,
+      "output_tokens": 578,
+      "duration_ms": 16791,
+      "cost_usd": 0.050213299999999995
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "with",
+    "run": 1,
+    "score": 0,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.049927299999999994,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10476,
+      "cache_read_input_tokens": 25253,
+      "output_tokens": 549,
+      "duration_ms": 5990,
+      "cost_usd": 0.049927299999999994
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "with",
+    "run": 2,
+    "score": 0,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.050375399999999994,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10493,
+      "cache_read_input_tokens": 25254,
+      "output_tokens": 587,
+      "duration_ms": 6937,
+      "cost_usd": 0.050375399999999994
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "with",
+    "run": 3,
+    "score": 0,
+    "turns": 3,
+    "seconds": 9,
+    "cost_usd": 0.050050899999999995,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10572,
+      "cache_read_input_tokens": 25249,
+      "output_tokens": 523,
+      "duration_ms": 7439,
+      "cost_usd": 0.050050899999999995
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "with",
+    "run": 4,
+    "score": 0,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.049847600000000006,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10542,
+      "cache_read_input_tokens": 25316,
+      "output_tokens": 514,
+      "duration_ms": 6490,
+      "cost_usd": 0.049847600000000006
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "without",
+    "run": 0,
+    "score": 0,
+    "turns": 2,
+    "seconds": 9,
+    "cost_usd": 0.0412325,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8526,
+      "cache_read_input_tokens": 23305,
+      "output_tokens": 479,
+      "duration_ms": 7545,
+      "cost_usd": 0.0412325
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "without",
+    "run": 1,
+    "score": 0,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.040668699999999995,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8530,
+      "cache_read_input_tokens": 23307,
+      "output_tokens": 421,
+      "duration_ms": 5796,
+      "cost_usd": 0.040668699999999995
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "without",
+    "run": 2,
+    "score": 0,
+    "turns": 2,
+    "seconds": 10,
+    "cost_usd": 0.041604699999999994,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8529,
+      "cache_read_input_tokens": 23307,
+      "output_tokens": 515,
+      "duration_ms": 9009,
+      "cost_usd": 0.041604699999999994
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "without",
+    "run": 3,
+    "score": 0,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.0407286,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8525,
+      "cache_read_input_tokens": 23306,
+      "output_tokens": 429,
+      "duration_ms": 6881,
+      "cost_usd": 0.0407286
+    }
+  },
+  {
+    "case": "guard-c2",
+    "arm": "without",
+    "run": 4,
+    "score": 0,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0411616,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8455,
+      "cache_read_input_tokens": 23236,
+      "output_tokens": 501,
+      "duration_ms": 5849,
+      "cost_usd": 0.0411616
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "with",
+    "run": 0,
+    "score": 1,
+    "turns": 3,
+    "seconds": 9,
+    "cost_usd": 0.05231960000000001,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 11130,
+      "cache_read_input_tokens": 25276,
+      "output_tokens": 526,
+      "duration_ms": 8380,
+      "cost_usd": 0.05231960000000001
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "with",
+    "run": 1,
+    "score": 1,
+    "turns": 3,
+    "seconds": 10,
+    "cost_usd": 0.0534779,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 11038,
+      "cache_read_input_tokens": 25139,
+      "output_tokens": 680,
+      "duration_ms": 9238,
+      "cost_usd": 0.0534779
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "with",
+    "run": 2,
+    "score": 1,
+    "turns": 3,
+    "seconds": 11,
+    "cost_usd": 0.0523989,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 11079,
+      "cache_read_input_tokens": 25209,
+      "output_tokens": 555,
+      "duration_ms": 10165,
+      "cost_usd": 0.0523989
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "with",
+    "run": 3,
+    "score": 1,
+    "turns": 3,
+    "seconds": 8,
+    "cost_usd": 0.053138,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 11213,
+      "cache_read_input_tokens": 25340,
+      "output_tokens": 574,
+      "duration_ms": 7000,
+      "cost_usd": 0.053138
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "with",
+    "run": 4,
+    "score": 1,
+    "turns": 3,
+    "seconds": 12,
+    "cost_usd": 0.053672899999999996,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 11105,
+      "cache_read_input_tokens": 25209,
+      "output_tokens": 672,
+      "duration_ms": 10923,
+      "cost_usd": 0.053672899999999996
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "without",
+    "run": 0,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0409174,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8674,
+      "cache_read_input_tokens": 23334,
+      "output_tokens": 388,
+      "duration_ms": 5525,
+      "cost_usd": 0.0409174
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "without",
+    "run": 1,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0412212,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8655,
+      "cache_read_input_tokens": 23332,
+      "output_tokens": 426,
+      "duration_ms": 5970,
+      "cost_usd": 0.0412212
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "without",
+    "run": 2,
+    "score": 1,
+    "turns": 2,
+    "seconds": 11,
+    "cost_usd": 0.0411556,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8661,
+      "cache_read_input_tokens": 23336,
+      "output_tokens": 417,
+      "duration_ms": 10220,
+      "cost_usd": 0.0411556
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "without",
+    "run": 3,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0411154,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8661,
+      "cache_read_input_tokens": 23334,
+      "output_tokens": 413,
+      "duration_ms": 6357,
+      "cost_usd": 0.0411154
+    }
+  },
+  {
+    "case": "guard-g1",
+    "arm": "without",
+    "run": 4,
+    "score": 1,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.040650099999999995,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8584,
+      "cache_read_input_tokens": 23261,
+      "output_tokens": 398,
+      "duration_ms": 6792,
+      "cost_usd": 0.040650099999999995
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "with",
+    "run": 0,
+    "score": 1,
+    "turns": 4,
+    "seconds": 11,
+    "cost_usd": 0.0584337,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 11669,
+      "cache_read_input_tokens": 43717,
+      "output_tokens": 737,
+      "duration_ms": 10049,
+      "cost_usd": 0.0584337
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "with",
+    "run": 1,
+    "score": 1,
+    "turns": 4,
+    "seconds": 16,
+    "cost_usd": 0.0598418,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 11636,
+      "cache_read_input_tokens": 43718,
+      "output_tokens": 891,
+      "duration_ms": 14428,
+      "cost_usd": 0.0598418
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "with",
+    "run": 2,
+    "score": 1,
+    "turns": 4,
+    "seconds": 10,
+    "cost_usd": 0.05875,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 11712,
+      "cache_read_input_tokens": 43960,
+      "output_tokens": 749,
+      "duration_ms": 9349,
+      "cost_usd": 0.05875
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "with",
+    "run": 3,
+    "score": 1,
+    "turns": 4,
+    "seconds": 10,
+    "cost_usd": 0.05848829999999999,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 11695,
+      "cache_read_input_tokens": 25263,
+      "output_tokens": 917,
+      "duration_ms": 9257,
+      "cost_usd": 0.05848829999999999
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "with",
+    "run": 4,
+    "score": 1,
+    "turns": 4,
+    "seconds": 30,
+    "cost_usd": 0.05986470000000001,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 11738,
+      "cache_read_input_tokens": 43867,
+      "output_tokens": 851,
+      "duration_ms": 28445,
+      "cost_usd": 0.05986470000000001
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "without",
+    "run": 0,
+    "score": 1,
+    "turns": 4,
+    "seconds": 13,
+    "cost_usd": 0.0561849,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 10223,
+      "cache_read_input_tokens": 57069,
+      "output_tokens": 957,
+      "duration_ms": 11829,
+      "cost_usd": 0.0561849
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "without",
+    "run": 1,
+    "score": 1,
+    "turns": 3,
+    "seconds": 12,
+    "cost_usd": 0.0484756,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 9313,
+      "cache_read_input_tokens": 39816,
+      "output_tokens": 723,
+      "duration_ms": 10943,
+      "cost_usd": 0.0484756
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "without",
+    "run": 2,
+    "score": 1,
+    "turns": 3,
+    "seconds": 10,
+    "cost_usd": 0.0466341,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 9102,
+      "cache_read_input_tokens": 39641,
+      "output_tokens": 625,
+      "duration_ms": 8556,
+      "cost_usd": 0.0466341
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "without",
+    "run": 3,
+    "score": 1,
+    "turns": 4,
+    "seconds": 15,
+    "cost_usd": 0.0545735,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9951,
+      "cache_read_input_tokens": 57035,
+      "output_tokens": 905,
+      "duration_ms": 13517,
+      "cost_usd": 0.0545735
+    }
+  },
+  {
+    "case": "guard-g2",
+    "arm": "without",
+    "run": 4,
+    "score": 1,
+    "turns": 3,
+    "seconds": 13,
+    "cost_usd": 0.046447199999999994,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 9183,
+      "cache_read_input_tokens": 39732,
+      "output_tokens": 573,
+      "duration_ms": 11458,
+      "cost_usd": 0.046447199999999994
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "with",
+    "run": 0,
+    "score": 1,
+    "turns": 2,
+    "seconds": 11,
+    "cost_usd": 0.053466799999999995,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10818,
+      "cache_read_input_tokens": 25268,
+      "output_tokens": 766,
+      "duration_ms": 10175,
+      "cost_usd": 0.053466799999999995
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "with",
+    "run": 1,
+    "score": 1,
+    "turns": 3,
+    "seconds": 10,
+    "cost_usd": 0.055817,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10973,
+      "cache_read_input_tokens": 25270,
+      "output_tokens": 939,
+      "duration_ms": 8970,
+      "cost_usd": 0.055817
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "with",
+    "run": 2,
+    "score": 1,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.049776400000000005,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10703,
+      "cache_read_input_tokens": 25264,
+      "output_tokens": 443,
+      "duration_ms": 6513,
+      "cost_usd": 0.049776400000000005
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "with",
+    "run": 3,
+    "score": 1,
+    "turns": 2,
+    "seconds": 10,
+    "cost_usd": 0.0535347,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10700,
+      "cache_read_input_tokens": 25267,
+      "output_tokens": 820,
+      "duration_ms": 9331,
+      "cost_usd": 0.0535347
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "with",
+    "run": 4,
+    "score": 1,
+    "turns": 2,
+    "seconds": 9,
+    "cost_usd": 0.054351,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10854,
+      "cache_read_input_tokens": 25270,
+      "output_tokens": 840,
+      "duration_ms": 7791,
+      "cost_usd": 0.054351
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "without",
+    "run": 0,
+    "score": 1,
+    "turns": 2,
+    "seconds": 6,
+    "cost_usd": 0.0409676,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8576,
+      "cache_read_input_tokens": 23256,
+      "output_tokens": 433,
+      "duration_ms": 5206,
+      "cost_usd": 0.0409676
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "without",
+    "run": 1,
+    "score": 1,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.0411696,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8579,
+      "cache_read_input_tokens": 23256,
+      "output_tokens": 452,
+      "duration_ms": 6611,
+      "cost_usd": 0.0411696
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "without",
+    "run": 2,
+    "score": 1,
+    "turns": 2,
+    "seconds": 6,
+    "cost_usd": 0.0405657,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8593,
+      "cache_read_input_tokens": 23257,
+      "output_tokens": 386,
+      "duration_ms": 4773,
+      "cost_usd": 0.0405657
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "without",
+    "run": 3,
+    "score": 1,
+    "turns": 2,
+    "seconds": 6,
+    "cost_usd": 0.0400991,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8579,
+      "cache_read_input_tokens": 23251,
+      "output_tokens": 345,
+      "duration_ms": 4722,
+      "cost_usd": 0.0400991
+    }
+  },
+  {
+    "case": "guard-g3",
+    "arm": "without",
+    "run": 4,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.040808199999999996,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8647,
+      "cache_read_input_tokens": 23322,
+      "output_tokens": 388,
+      "duration_ms": 5807,
+      "cost_usd": 0.040808199999999996
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "with",
+    "run": 0,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.04862299999999999,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10499,
+      "cache_read_input_tokens": 25190,
+      "output_tokens": 410,
+      "duration_ms": 6322,
+      "cost_usd": 0.04862299999999999
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "with",
+    "run": 1,
+    "score": 1,
+    "turns": 2,
+    "seconds": 10,
+    "cost_usd": 0.048941799999999994,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10542,
+      "cache_read_input_tokens": 25258,
+      "output_tokens": 424,
+      "duration_ms": 8898,
+      "cost_usd": 0.048941799999999994
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "with",
+    "run": 2,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0499477,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10546,
+      "cache_read_input_tokens": 25257,
+      "output_tokens": 523,
+      "duration_ms": 6326,
+      "cost_usd": 0.0499477
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "with",
+    "run": 3,
+    "score": 1,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.0505784,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10677,
+      "cache_read_input_tokens": 25324,
+      "output_tokens": 533,
+      "duration_ms": 6659,
+      "cost_usd": 0.0505784
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "with",
+    "run": 4,
+    "score": 1,
+    "turns": 2,
+    "seconds": 11,
+    "cost_usd": 0.048961199999999996,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10511,
+      "cache_read_input_tokens": 25192,
+      "output_tokens": 439,
+      "duration_ms": 9406,
+      "cost_usd": 0.048961199999999996
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "without",
+    "run": 0,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.041707100000000004,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8562,
+      "cache_read_input_tokens": 23311,
+      "output_tokens": 512,
+      "duration_ms": 6291,
+      "cost_usd": 0.041707100000000004
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "without",
+    "run": 1,
+    "score": 1,
+    "turns": 2,
+    "seconds": 9,
+    "cost_usd": 0.0410844,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8493,
+      "cache_read_input_tokens": 23244,
+      "output_tokens": 478,
+      "duration_ms": 7571,
+      "cost_usd": 0.0410844
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "without",
+    "run": 2,
+    "score": 1,
+    "turns": 2,
+    "seconds": 9,
+    "cost_usd": 0.0410176,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8567,
+      "cache_read_input_tokens": 23316,
+      "output_tokens": 441,
+      "duration_ms": 8168,
+      "cost_usd": 0.0410176
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "without",
+    "run": 3,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0408721,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8490,
+      "cache_read_input_tokens": 23241,
+      "output_tokens": 458,
+      "duration_ms": 5766,
+      "cost_usd": 0.0408721
+    }
+  },
+  {
+    "case": "guard-g4",
+    "arm": "without",
+    "run": 4,
+    "score": 1,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.039644,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8488,
+      "cache_read_input_tokens": 23240,
+      "output_tokens": 336,
+      "duration_ms": 7280,
+      "cost_usd": 0.039644
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "with",
+    "run": 0,
+    "score": 1,
+    "turns": 3,
+    "seconds": 8,
+    "cost_usd": 0.052300799999999995,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 11226,
+      "cache_read_input_tokens": 25348,
+      "output_tokens": 485,
+      "duration_ms": 7153,
+      "cost_usd": 0.052300799999999995
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "with",
+    "run": 1,
+    "score": 1,
+    "turns": 3,
+    "seconds": 8,
+    "cost_usd": 0.0521034,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 11110,
+      "cache_read_input_tokens": 25214,
+      "output_tokens": 513,
+      "duration_ms": 7140,
+      "cost_usd": 0.0521034
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "with",
+    "run": 2,
+    "score": 1,
+    "turns": 3,
+    "seconds": 9,
+    "cost_usd": 0.052587800000000004,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 11152,
+      "cache_read_input_tokens": 25278,
+      "output_tokens": 544,
+      "duration_ms": 8024,
+      "cost_usd": 0.052587800000000004
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "with",
+    "run": 3,
+    "score": 1,
+    "turns": 3,
+    "seconds": 8,
+    "cost_usd": 0.052568,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 11172,
+      "cache_read_input_tokens": 25280,
+      "output_tokens": 534,
+      "duration_ms": 6534,
+      "cost_usd": 0.052568
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "with",
+    "run": 4,
+    "score": 1,
+    "turns": 3,
+    "seconds": 8,
+    "cost_usd": 0.05268780000000001,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 11187,
+      "cache_read_input_tokens": 25278,
+      "output_tokens": 540,
+      "duration_ms": 7336,
+      "cost_usd": 0.05268780000000001
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "without",
+    "run": 0,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0414872,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8619,
+      "cache_read_input_tokens": 23332,
+      "output_tokens": 467,
+      "duration_ms": 5964,
+      "cost_usd": 0.0414872
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "without",
+    "run": 1,
+    "score": 1,
+    "turns": 2,
+    "seconds": 12,
+    "cost_usd": 0.04144,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8693,
+      "cache_read_input_tokens": 23400,
+      "output_tokens": 432,
+      "duration_ms": 10582,
+      "cost_usd": 0.04144
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "without",
+    "run": 2,
+    "score": 1,
+    "turns": 2,
+    "seconds": 6,
+    "cost_usd": 0.041159799999999996,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8627,
+      "cache_read_input_tokens": 23338,
+      "output_tokens": 431,
+      "duration_ms": 5004,
+      "cost_usd": 0.041159799999999996
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "without",
+    "run": 3,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0412173,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8619,
+      "cache_read_input_tokens": 23333,
+      "output_tokens": 440,
+      "duration_ms": 6066,
+      "cost_usd": 0.0412173
+    }
+  },
+  {
+    "case": "guard-g5",
+    "arm": "without",
+    "run": 4,
+    "score": 1,
+    "turns": 2,
+    "seconds": 9,
+    "cost_usd": 0.0401951,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8621,
+      "cache_read_input_tokens": 23331,
+      "output_tokens": 337,
+      "duration_ms": 7564,
+      "cost_usd": 0.0401951
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "with",
+    "run": 0,
+    "score": 1,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.050331100000000004,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10724,
+      "cache_read_input_tokens": 25271,
+      "output_tokens": 490,
+      "duration_ms": 7294,
+      "cost_usd": 0.050331100000000004
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "with",
+    "run": 1,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0500928,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10722,
+      "cache_read_input_tokens": 25268,
+      "output_tokens": 467,
+      "duration_ms": 5893,
+      "cost_usd": 0.0500928
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "with",
+    "run": 2,
+    "score": 1,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.0514434,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10812,
+      "cache_read_input_tokens": 25274,
+      "output_tokens": 566,
+      "duration_ms": 7387,
+      "cost_usd": 0.0514434
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "with",
+    "run": 3,
+    "score": 1,
+    "turns": 2,
+    "seconds": 10,
+    "cost_usd": 0.05377319999999999,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10827,
+      "cache_read_input_tokens": 25272,
+      "output_tokens": 793,
+      "duration_ms": 8673,
+      "cost_usd": 0.05377319999999999
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "with",
+    "run": 4,
+    "score": 1,
+    "turns": 2,
+    "seconds": 10,
+    "cost_usd": 0.052945400000000004,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 10651,
+      "cache_read_input_tokens": 25134,
+      "output_tokens": 782,
+      "duration_ms": 9222,
+      "cost_usd": 0.052945400000000004
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "without",
+    "run": 0,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0414929,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8613,
+      "cache_read_input_tokens": 23329,
+      "output_tokens": 470,
+      "duration_ms": 5593,
+      "cost_usd": 0.0414929
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "without",
+    "run": 1,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.041710699999999996,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8610,
+      "cache_read_input_tokens": 23327,
+      "output_tokens": 493,
+      "duration_ms": 6233,
+      "cost_usd": 0.041710699999999996
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "without",
+    "run": 2,
+    "score": 1,
+    "turns": 2,
+    "seconds": 14,
+    "cost_usd": 0.040340299999999996,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8544,
+      "cache_read_input_tokens": 23263,
+      "output_tokens": 383,
+      "duration_ms": 12688,
+      "cost_usd": 0.040340299999999996
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "without",
+    "run": 3,
+    "score": 1,
+    "turns": 2,
+    "seconds": 8,
+    "cost_usd": 0.042272899999999995,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8613,
+      "cache_read_input_tokens": 23329,
+      "output_tokens": 548,
+      "duration_ms": 6726,
+      "cost_usd": 0.042272899999999995
+    }
+  },
+  {
+    "case": "guard-g6",
+    "arm": "without",
+    "run": 4,
+    "score": 1,
+    "turns": 2,
+    "seconds": 7,
+    "cost_usd": 0.0414766,
+    "judge_cost_usd": 0,
+    "tokens": {
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8609,
+      "cache_read_input_tokens": 23326,
+      "output_tokens": 470,
+      "duration_ms": 6155,
+      "cost_usd": 0.0414766
+    }
+  }
+]
