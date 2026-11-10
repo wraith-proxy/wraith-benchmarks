@@ -337,3 +337,20 @@ class PluginRootTest(unittest.TestCase):
             self.assertEqual(run.plugin_root(clone), clone)
             (clone / "plugin").mkdir()
             self.assertEqual(run.plugin_root(clone), clone / "plugin")
+
+
+class KeepTempTest(unittest.TestCase):
+    def test_traces_are_kept_without_the_flag(self):
+        seen = {}
+
+        def fake_eval_command(*a, **kw):
+            seen["keep_temp"] = kw.get("keep_temp")
+            raise SystemExit(0)
+        with mock.patch.object(run, "eval_command", fake_eval_command), \
+                mock.patch.object(run, "subprocess") as sp:
+            sp.run.return_value = subprocess.CompletedProcess([], 0, "abc\n", "")
+            with tempfile.TemporaryDirectory() as tmp, \
+                    contextlib.suppress(SystemExit, Exception):
+                run.main(["--task", "guard", "--dry-run", "--out", tmp,
+                          "--wraith-ref", "v0.8.3"])
+        self.assertIs(seen.get("keep_temp"), True)
